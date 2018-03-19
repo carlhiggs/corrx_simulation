@@ -24,7 +24,7 @@ gen group = length > 200
 
 mata
 data = st_data(.,"id price mpg")
-n = nrow(data)
+n = rows(data)
 id = data[.,1]
 y = data[.,2]
 x = data[.,3]
@@ -33,14 +33,14 @@ xdiff = x:-mean(x)
 sd_y = sqrt(1/(n-1) * sum((ydiff):^2))
 sd_x = sqrt(1/(n-1) * sum((xdiff):^2))
 
-// COMMENTED OUT  - Not true; i perhaps i changed something?
-// r = (sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)*(n-1))
-// r
-// // or equiv:
-// r
-// r = 1/(n-1)*((sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)))
-// r
-// or equiv:
+ 
+ r = (sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)*(n-1))
+ r
+ // or equiv:
+ r
+ r = 1/(n-1)*((sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)))
+ r
+ or equiv:
 
 r = sum(xdiff:*ydiff) / sqrt(sum(xdiff:^2)* sum(ydiff:^2))
 r
@@ -49,18 +49,50 @@ r = 1/(sd_x*sd_y) * sum(xdiff:*ydiff)/(n-1)
 r
 r = 1/(n-1)*((sum(xdiff:*ydiff))/(sd_x*sd_y))
 r
+/*  -.4685966882 */
 end
 
+
 corr price mpg
+/*
+(obs=74)
+
+             |    price      mpg
+-------------+------------------
+       price |   1.0000
+         mpg |  -0.4686   1.0000
+*/
+
+* following statistical thinking in epidemiology (yu), we can also approach this as
+foreach var in price mpg {
+  su `var'
+  capture gen `var'_std = (`var'-r(mean))/r(sd)
+}
+mata
+test = st_data(.,"price_std mpg_std")
+ty = test[.,1]
+tx = test[.,2]
+(ty'tx)/(n-1)
+/* -.4685966854 Perhaps the disjunct is due to rounding in Stata? */
+ 
+// and applying this as per our formulas above
+r = ((ydiff:/sd_y)'(xdiff:/sd_x))/(n-1) 
+/* -.4685966882 equal to other mata results */
+ 
+end
+* note this differs in the 9th decimal place
+
 
 // confidence interval
 // following Nick Cox http://www.stata-journal.com/sjpdf.html?articlenum=pr0041
 // but also David 1938, who notes that the Fisher-transformed value z' ~N(mean \zeta, sd 1/\sqrt(n-3)), such that ci for z' is zeta \pm \psi_0 / sqrt(n-3).  See p.xxx and moreso xxvi, where in dagger footnote an approximation for stddev is derived as \sigma_z'^2 = (3n^2+8)/(x(n-1)^2)  .  The formula this approximates itself is derived using the method of moments on Fisher's transformation.  Fisher references the sd of z as 1/\sqrt(n-3) in  section 35 on transformed coefficients in the chapter on correlation coefficients in Statistical Methods for Research Workers (14th ed. 1990, p200).
 
-mata: alpha = 0.05
-mata: df = n-3
-mata: r_ci = r,tanh(atanh(r) :+ invnormal(1-alpha/2) * (-1,1)/sqrt(df))
-mata: r_ci
+mata
+alpha = 0.05
+df = n-3
+r_ci = r,tanh(atanh(r) :+ invnormal(1-alpha/2) * (-1,1)/sqrt(df))
+r_ci
+end
 
 ci2 price mpg, corr
 
@@ -140,8 +172,51 @@ F test that
   
 /* different types of ICCs: consistency of agreement (CA-ICC) and absolute agreement (AA-ICC);  "We want to compare individual CA-ICC with individual AA-ICC for each of the three IQ variables." */
 
+mixed iq3 || family: , reml var
+estat icc
+/*
+Intraclass correlation
+------------------------------------------------------------------------------
+                       Level |        ICC   Std. Err.     [95% Conf. Interval]
+-----------------------------+------------------------------------------------
+                      family |   .7216082   .1557153      .3619825    .9221322
+------------------------------------------------------------------------------
+*/
+// note that the icc presented here is equal to 
+//    var(_cons) / (var(_cons) + var(Residual))
+// However, it is also not the value we calculated earlier.  Perhpas because we include mc as a fixed effect??
 
-// trying my own thing
+mixed iq3 mc || family: , reml var
+estat icc
+/*  This is our magic number!!  But what if we don't want mc as fixed effect??
+Residual intraclass correlation
+------------------------------------------------------------------------------
+                       Level |        ICC   Std. Err.     [95% Conf. Interval]
+-----------------------------+------------------------------------------------
+                      family |   .7142153   .1632988       .342513     .923013
+------------------------------------------------------------------------------
+*/
+mixed iq3 || family: || family: mc, reml
+/* close
+
+Conditional intraclass correlation
+
+------------------------------------------------------------------------------
+                       Level |        ICC   Std. Err.     [95% Conf. Interval]
+-----------------------------+------------------------------------------------
+                      family |   .7215698   .1557673      .3618508    .9221456
+------------------------------------------------------------------------------
+Note: ICC is conditional on zero values of random-effects covariates.
+
+*/
+
+// Some explanation here: https://www.stata.com/statalist/archive/2012-05/msg01132.html
+
+
+// trying my own thing  (which i establish above, is equiv to 
+// mixed iq3 mc || family: , reml var
+// estat icc
+// Which is not quite what we want - we don't want mc  -- trial again below
 use http://www.stata-press.com/data/r13/adoption, clear
 reshape wide iq3 iq9 iq15, i(family) j(mc)
 mata
@@ -186,10 +261,29 @@ for(i=1; i<=n;i++){
     WMS = WMS + (data_w[i,j]-ybar_i)^2 / (n*(k-1))
   }
 }
-end
 
 // Residual mean square error
 RMSE = sum(((data_w:-mean_total):^2):-((k-1)*JMS-(n-1)*BMS))/((n-1)*(k-1))
+
+// ALTERNATE APPROACH  - revisit first, but attempt to note adjust for mc
+
+mata
+data_f = st_data(.,"family iq31 iq32")
+mother = data_f[.,2]
+child = data_f[.,3]
+
+//  following fisher
+xbar = 1/(2*rows(data_f)) * sum(mother:+child)
+mdiff = mother:-mean(mother)
+cdiff = child:-mean(child)
+
+var =  1/(2*rows(data_f)) * (sum(mdiff:^2)+sum(cdiff:^2))
+
+sd = sqrt(var)
+// the below corresponds to consistency of agreement
+r_icc_ca = 1/(rows(data_f)*var) * sum(mdiff:*cdiff)
+end
+
 
 end
 
@@ -260,6 +354,9 @@ N_ty = sum(t_y)
 k_tau_b = S/sqrt((N-N_tx)*(N-N_ty))
 k_tau_b
 end
+
+
+
 
 
   
