@@ -1,0 +1,265 @@
+* Project: BCA_rp2
+* Purpose: Notes on correlation coefficients and their calculation
+* Date: 20180319
+* Author: Carl Higgs       
+
+/*
+Suppose
+
+Correlation is one method used to describe the relationship between two variables X and Y.  
+
+There are different approaches (kinds of correlation coefficient).
+
+Pearson product-moment correlation coefficient may be the most common: supposing X and Y were standardised to share a common scale, the product moment correlation coefficient describes the direction and proportional change in Y for a given a unit increase in X.
+
+Expectation:  E(Y) = \mu
+Variance:     Var(Y) = E(Y^2)-\mu^2
+Standard deviation: sigma(Y) = sqrt(Var(Y))
+
+*/
+// for convenience, using car data
+sysuse auto.dta, clear
+gen id = _n
+gen group = length > 200
+
+mata
+data = st_data(.,"id price mpg")
+n = nrow(data)
+id = data[.,1]
+y = data[.,2]
+x = data[.,3]
+ydiff = y:-mean(y)
+xdiff = x:-mean(x)
+sd_y = sqrt(1/(n-1) * sum((ydiff):^2))
+sd_x = sqrt(1/(n-1) * sum((xdiff):^2))
+
+// COMMENTED OUT  - Not true; i perhaps i changed something?
+// r = (sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)*(n-1))
+// r
+// // or equiv:
+// r
+// r = 1/(n-1)*((sum(x:*y)- n*mean(x)*mean(y))/((sd_x*sd_y)))
+// r
+// or equiv:
+
+r = sum(xdiff:*ydiff) / sqrt(sum(xdiff:^2)* sum(ydiff:^2))
+r
+// or perhaps -following Fisher - apparently equal
+r = 1/(sd_x*sd_y) * sum(xdiff:*ydiff)/(n-1)
+r
+r = 1/(n-1)*((sum(xdiff:*ydiff))/(sd_x*sd_y))
+r
+end
+
+corr price mpg
+
+// confidence interval
+// following Nick Cox http://www.stata-journal.com/sjpdf.html?articlenum=pr0041
+// but also David 1938, who notes that the Fisher-transformed value z' ~N(mean \zeta, sd 1/\sqrt(n-3)), such that ci for z' is zeta \pm \psi_0 / sqrt(n-3).  See p.xxx and moreso xxvi, where in dagger footnote an approximation for stddev is derived as \sigma_z'^2 = (3n^2+8)/(x(n-1)^2)  .  The formula this approximates itself is derived using the method of moments on Fisher's transformation.  Fisher references the sd of z as 1/\sqrt(n-3) in  section 35 on transformed coefficients in the chapter on correlation coefficients in Statistical Methods for Research Workers (14th ed. 1990, p200).
+
+mata: alpha = 0.05
+mata: df = n-3
+mata: r_ci = r,tanh(atanh(r) :+ invnormal(1-alpha/2) * (-1,1)/sqrt(df))
+mata: r_ci
+
+ci2 price mpg, corr
+
+
+/* Incidentally, David's formula for probability distribution of the correlation coefficient r for any n and rho 
+p(r) = (1-\rho^2)^((n-1)/2) /(\pi \times (n-3)) \times (1-r^2)^((n-4)/2)\times d^(n-2)/d(r\rho)^(n-2)) \times (arccos(-\rho r) / \sqrt(1-\rho^2 r^2))
+*/
+
+
+/* 
+For a sample drawn from normal distribution, using summation notation:
+
+\mu is estimated by x\bar, and \sigma is estimated by s; r is the estimator for the population correlation coefficient \rho.
+
+x\bar  = 1/n \Sum_(i=1)^n x
+s = \sqrt(((x-x\bar)^2)/(n-1))
+r = (1/(n-1))\Sum_(i=1)^n(((x_i-x\bar)/s_x)((y_i-y\bar)/s_x))
+  = (1/(n-1))\Sum_(i=1)^n((x_i-x\bar)(y_i-y\bar)/(s_x s_y))
+  = (XtX YtY)/XtY
+
+
+
+Note comment on mix distribution here: https://math.stackexchange.com/questions/14630/generating-random-values-from-non-normal-and-correlated-distributions
+https://stackoverflow.com/questions/4454513/combining-two-normal-random-variables/4454941#4454941
+
+
+Is it product-moment correlation coefficient due to the 2*2 determinant calc.?
+
+ie. for 2x2 matrix inverse is 
+det = ad-bc
+(2x2 matrix)^-1 = 1/det[flipped and negative 2x2 matrix with positive diagonal]
+
+hmmm - tatachoric correlation
+https://books.google.com.au/books?id=gbrFCgAAQBAJ&pg=PA31&lpg=PA31&dq=ad-bc+product+moment+odds+ratio&source=bl&ots=D6myJbq2yY&sig=tIvPtIQrSkE1WrpDPc461CMwes0&hl=en&sa=X&ved=0ahUKEwj5ssfUkPfZAhVFi7wKHVt6A50Q6AEIKTAA#v=onepage&q=ad-bc%20product%20moment%20odds%20ratio&f=false
+
+
+The Pearson product-moment correlation coefficient may be considered a measure of interclass correlation, in that it is a global measure.  An alternate approach which may have relevance in the case of twin studies is intra-class correlation, which reflects the average correlation in context of paired measurements.  In the case of twin sibling pairs for example, we may be interested in whether values within pairs tend to be more similar than those between pairs.
+
+see David Duffy https://genepi.qimr.edu.au/staff/davidD/asthma11.html for discussion in twin context, including note citing Falconer re heritability that
+H=2(ICC_MZ-ICC_DZ) =(VA+1.5*VD)/VP
+
+That is heritability - which may be is the population variance standardised sum of additive plus 1.5 times dominance variances.
+
+also provides a heuristic icc interpretation table "heuristics for intraclass correlations for a single variable (Table)":
+
+
+Table 2. Genetic hypothesis testing for a single continuous trait in the classical twin design. The MZ and DZ intraclass correlations are rMZ and rDZ respectively.
+Relationship      Interpretation	
+rMZ > 4rDZ	      Epistasis	
+rMZ > 2rDZ	      Genetic dominance (or epistasis; shared environment small)	
+2rDZ > rMZ > rDZ	Additive genes and shared environment (genetic dominance small)	
+rMZ = 2rDZ	      Additive genetic effect - either monogenic or polygenic	
+rMZ = rDZ > 0	    No genetic contribution - effects of family environment	
+rMZ = rDZ = 0	    No familial aggregation
+*/
+// in stata / mata, using adoption data; see stata manual
+use http://www.stata-press.com/data/r13/adoption, clear
+describe
+icc iq3 family mc, mixed
+
+/*
+Two-way mixed-effects model
+Consistency of agreement
+
+Random effects: family           Number of targets =        10
+ Fixed effects: mc               Number of raters  =         2
+
+--------------------------------------------------------------
+                   iq3 |        ICC       [95% Conf. Interval]
+-----------------------+--------------------------------------
+            Individual |   .7142152       .1967504     .920474
+               Average |   .8332853       .3288078    .9585904
+--------------------------------------------------------------
+F test that
+  ICC=0.00: F(9.0, 9.0) = 6.00                Prob > F = 0.007
+  */
+  
+/* different types of ICCs: consistency of agreement (CA-ICC) and absolute agreement (AA-ICC);  "We want to compare individual CA-ICC with individual AA-ICC for each of the three IQ variables." */
+
+
+// trying my own thing
+use http://www.stata-press.com/data/r13/adoption, clear
+reshape wide iq3 iq9 iq15, i(family) j(mc)
+mata
+data_f = st_data(.,"family iq31 iq32")
+mother = data_f[.,2]
+child = data_f[.,3]
+
+//  following fisher
+xbar = 1/(2*rows(data_f)) * sum(mother:+child)
+mdiff = mother:-mean(mother)
+cdiff = child:-mean(child)
+
+var =  1/(2*rows(data_f)) * (sum(mdiff:^2)+sum(cdiff:^2))
+
+sd = sqrt(var)
+// the below corresponds to consistency of agreement
+r_icc_ca = 1/(rows(data_f)*var) * sum(mdiff:*cdiff)
+end
+//  ALTERNATE APPROACH USING MEAN SQUARES --- 
+// NOT WORKING, but may be required for CIs
+// formulated for wide data with paired data (cluster size 2)
+mata
+data_w = mother,child
+k = cols(data_w)  // cluster size
+n = rows(data_w)  // observations
+
+// preliminary holders for estimates - summed in iteration
+WMS  = 0  // within pair mean squares
+BMS  = 0  // between pair mean squares
+
+mean_total   = mean(mean(data_w)')
+rater_means = colsum(data_w):/rows(data_w)
+
+// between rater mean squares (joint??)
+JMS  =  rowsum(((rater_means:-mean_total):^2):/(k-1))  
+
+// iterate to build estimatess
+for(i=1; i<=n;i++){
+  ybar_i = rowsum(data_w[i,.])/k
+  BMS = BMS + (ybar_i-mean_total)^2 /(n-1)
+  for(j=1; j<=k;j++){
+    WMS = WMS + (data_w[i,j]-ybar_i)^2 / (n*(k-1))
+  }
+}
+end
+
+// Residual mean square error
+RMSE = sum(((data_w:-mean_total):^2):-((k-1)*JMS-(n-1)*BMS))/((n-1)*(k-1))
+
+end
+
+
+// Spearman correlation coefficient provides a non-parametric approach to considering correlation: instead of making distributional assumptions, it considers the degree to which the relationship two variables can be considered to display a monotonic trend.
+
+// (according to wikipedia): defined as the pearson correlation coefficient of the two variables using their rank order
+
+// In stata / mata:
+sysuse auto.dta
+gen id = _n
+
+// append rank order of the respective variables
+foreach var in price mpg {
+  egen `var'_rank = rank(`var')
+}
+
+mata
+data_r = st_data(.,"id price_rank mpg_rank")
+y_r = data_r[.,2]
+x_r = data_r[.,3]
+yr_diff = y_r:-mean(y_r)
+xr_diff = x_r:-mean(x_r)
+sd_yr = sqrt(1/(n-1) * sum((yr_diff):^2))
+sd_xr = sqrt(1/(n-1) * sum((xr_diff):^2))
+r_s = 1/(n-1)*((sum(xr_diff:*yr_diff))/(sd_xr*sd_yr))
+end
+spearman price mpg
+
+
+// Kendall's tau is another non-parametric approach calculated and is a summary measure of correlation based on concordancy of trend across the sample. Pairs are concordant if the product of consecutive rank pair differences is > 0, and discordant if this product is < 0.  The number of concordant (C) and discordant (D) pairs are tallied, and the difference C - D is the score S.   Kendall's Tau A is calculated as S / N, where N is the total number of pairs calculated as n(n-1)/2.  Kendall's b includes further adjustment to account for ties in pairs of x and y variables.
+
+// note that the kendall's tau b formula may not be technically correct in calculation of ties, but it gives the right answer - I simplified so it works!
+
+mata
+N = n*(n-1)/2
+C = J(N,1,.)
+D = J(N,1,.)
+t_x = J(N,1,.)
+t_y = J(N,1,.)
+k = 1
+for(i=2; i<=rows(data_r);i++){
+  for(j=1; j<=i-1;j++){
+    // calculate rank differences
+    x_ij_diff = (x_r[i]-x_r[j])
+    y_ij_diff = (y_r[i]-y_r[j])
+    // calculate ties
+    t_x[k] = x_ij_diff == 0
+    t_y[k] = y_ij_diff == 0
+    // calculate concordancies
+    concordancy = x_ij_diff*y_ij_diff
+    C[k] = concordancy > 0
+    D[k] = concordancy < 0
+    // increment pair index
+    k = k+1
+  }
+}
+// calculate Score
+S = sum(C) - sum(D)
+
+// Kendall's tau a
+k_tau_a = S/N
+k_tau_a
+
+// Kendall's tau b
+N_tx = sum(t_x)
+N_ty = sum(t_y)
+k_tau_b = S/sqrt((N-N_tx)*(N-N_ty))
+k_tau_b
+end
+
+
+  
