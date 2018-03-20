@@ -7,7 +7,7 @@
 % Inferences about \rho\hat based on more than one sample
 % From: Burkett - Correlation_Regression_and_Analysis_of_Variance.
 % http://www.academia.edu/34260699/Correlation_Regression_and_Analysis_of_Variance
-
+%  NOTE: this is not difference, this is inference using a pooled sample estimates of r
 r = [.7  .9]
 n = [19 25]
 z = atanh(r)
