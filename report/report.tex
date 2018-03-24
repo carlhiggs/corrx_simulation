@@ -1,0 +1,275 @@
+\documentclass[graybox,envcountchap,sectrefs]{svmono}
+
+% to create a note \todo{rephrase sentence}  or
+			% \todo[color=green!40]{And a green note}
+			% \todo[inline]{A todonote placed in the text}
+			% %the above can be used before the end of a figure to advise to update
+			% \todo[inline, size=\tiny]{Note with very small font size.}.
+			% \missingfigure[figcolor=white]{Testing figcolor}
+
+			% \todo[inline]{From Fransisca et al. Comparison of rapid diagnostic test Plasmotec Malaria-3, microscopy, and quantitative real-time PCR for diagnoses of \plf and \plv infections in Mimika Regency, Papua, Indonesia. Malaria journal. 2015;14:103: "standard expert microscopy should continue to be used as the reference gold standard for malaria diagnosis despite the \emph{likelihood of missing some low density parasitemia and sub-microscopic infections}." }
+
+% A4 paper
+\paperwidth 210mm
+\paperheight 297mm
+\pdfpagewidth=\paperwidth
+\pdfpageheight=\paperheight
+
+%Remove Springer Logo
+\usepackage{xpatch}
+
+\makeatletter
+\xpatchcmd{\@maketitle}{{\Large Springer\par}}{}{}{}
+\makeatother
+
+%extra url help
+
+% Links and colours
+	\usepackage[pdftex]{hyperref}
+	\usepackage{xcolor}
+	\hypersetup{
+		colorlinks,
+		linkcolor={black},
+		citecolor={black},
+		urlcolor=[RGB]{56 108 176}
+	}
+
+% Bibliography
+	% \usepackage{natbib,har2nat} 
+	% \setcitestyle{authoryear,open={(},close={)}}
+	% \bibliographystyle{spmpsci.bst} 
+	\usepackage[numbers]{natbib}
+	
+% Fonts, lists, symbols and matrices
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+	\usepackage{enumitem}
+	\usepackage{graphicx}
+  % \usepackage{mathptmx}
+  \usepackage{newtxtext,newtxmath}
+  \usepackage{amsmath}
+	% \usepackage[retainorgcmds]{IEEEtrantools}
+	\usepackage{multirow}
+	\usepackage{rotating}
+	\usepackage{changepage}
+	\usepackage{dcolumn}
+	\usepackage{booktabs}
+	\usepackage{longtable}
+	
+%geometry for electronic version:
+	\usepackage[
+	  outer=30mm,
+	  inner=30mm,
+	  vmargin=20mm,
+	  includehead,
+	  includefoot,
+	  headheight=15pt,
+	]{geometry}
+
+%% for printing, use these margins! *********************************************
+%	\usepackage[
+%	  outer=25mm,			
+%	  inner=35mm,
+%	  vmargin=20mm,
+%	  includehead,
+%	  includefoot,
+%	  headheight=15pt,
+%	]{geometry}
+  
+  
+%Headers and Footers
+	\usepackage{fancyhdr}
+	\pagestyle{fancy}
+	% \fancyhf{}
+	%\renewcommand{\headrulewidth}{1pt}    %remove top horizontal bar
+	% %\fancyheadoffset{0\textwidth}        % center place top horizontal bar?        
+	% \renewcommand{\footrulewidth}{0pt}    %remove bottom horizontal bar
+	% \usepackage{lastpage}
+	% \rightmark
+	 % % \rhead{Student 659810}
+	 % % \lhead{}
+	\cfoot{}
+	% % \cfoot{Page \thepage\ of \pageref{LastPage}}
+	\fancyhead[L]{\nouppercase{\leftmark}}
+	\fancyhead[R]{\thepage}
+	\renewcommand{\chaptermark}[1]{\markright{#1}}
+	
+	\usepackage{pdflscape}
+	
+%formatting miscellanies
+	\renewcommand\thepart{\Alph{part}}
+	\usepackage{capt-of}
+	% \addtolength{\hoffset}{-0.5cm}
+	% \addtolength{\textwidth}{1cm}
+
+	\usepackage{setspace} %For double spacing
+
+
+	\usepackage{todonotes} %For to do notes
+
+	% \usepackage[font=large]{caption} %make captions larger (doesn't seem to work)
+	
+\usepackage{helvet}
+\usepackage{courier}
+%
+\usepackage{type1cm}         
+
+\usepackage{makeidx}         % allows index generation
+
+\usepackage{multicol}        % used for the two-column index
+\usepackage[bottom]{footmisc}% places footnotes at page bottom
+
+
+
+	\setlength{\parindent}{0em}  %remove all indenting of paragrapgs
+	% \setlength{\parskip}{1em} 
+	\usepackage{pdfpages} 
+	\usepackage{upgreek}
+
+% %For correction positioning of bibliography
+% \usepackage{bookmark}
+% \bookmarksetup{open,numbered}% I like numbered bookmarks
+
+\usepackage{appendix}    % puts the word 'Appendices' in the ToC
+	
+%Not sure what this is
+		% \makeatletter
+		% \newcommand*{\gmshow@textheight}{\textheight}
+		% \newdimen\gmshow@@textheight
+		% \g@addto@macro\landscape{%
+		  % \gmshow@@textheight=\hsize
+		  % \renewcommand*{\gmshow@textheight}{\gmshow@@textheight}%
+		% }
+		% \def\Gm@vrule{%
+		  % \vrule width 0.2pt height\gmshow@textheight depth\z@
+		% }%
+		\makeatother
+		% \setlength{\parindent}{0pt}
+
+	
+%Custom commands
+	\newcommand{\tdn}{\todo[inline, color=green!40]}
+
+% Custom Colours
+	\definecolor{farb1}{rgb}{27	 158 119 }
+	\definecolor{farb2}{rgb}{217 95	 2   }
+	\definecolor{farb3}{rgb}{117 112 179 }
+	\definecolor{farb4}{rgb}{231 41	 138 }
+	\definecolor{farb5}{rgb}{102 166 30  }
+	\definecolor{farb6}{rgb}{230 171 2   }
+	\definecolor{farb7}{rgb}{166 118 29  }
+	\definecolor{farb8}{rgb}{102 102 102 }
+
+%establish correct inset  style for appendices	
+\makeatletter
+ \newcommand\chapassect{%
+\def\@chapter[##1]##2{\ifnum \c@secnumdepth >\m@ne
+                       \if@mainmatter
+                         \refstepcounter{chapter}%
+                         \typeout{\@chapapp\space\thechapter.}%
+                         \addcontentsline{toc}{section}%
+                                   {\protect\numberline{\thechapter}##1}%
+                       \else
+                         \addcontentsline{toc}{section}{##1}%
+                       \fi
+                    \else
+                      \addcontentsline{toc}{section}{##1}%
+                    \fi
+                    \chaptermark{##1}%
+                    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+                    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+                    \if@twocolumn
+                      \@topnewpage[\@makechapterhead{##2}]%
+                    \else
+                      \@makechapterhead{##2}%
+                      \@afterheading
+                    \fi}%
+}
+\makeatother
+	
+\begin{document}
+
+% \listoftodos
+
+% Title page
+% •	Include: Title of topic
+% •	Your name
+% •	Department
+% •	University
+% •	Course/subject code and name
+% •	Date
+
+\author{Carl Higgs \\ 
+		\large{School of Population and Global Health \\ 
+		The University of Melbourne}}
+
+\title{Power to detect a difference in correlations \\ 
+		in identical and non-identical twins}
+\subtitle{Simulation study and power calculator utility \\
+		\vspace{4.5cm}
+		\large{
+		\\
+		Research project in partial fulfilment of the degree\\
+		Master of Biostatistics\\
+		  \\
+		Supervisors: \\
+		Enes Makalic \\
+		Elasma Milanzi \\
+		Katrina Scurrah
+		 }}%
+
+
+\date{July 2018}
+
+% \maketitle%
+
+% \frontmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \include{sections/acknowledgements}
+% \include{sections/declaration}
+% \include{sections/abstract}
+% \tableofcontents
+% \include{sections/acronym}
+\mainmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\doublespacing
+\include{sections/background}			
+% \include{sections/methods}
+% \include{sections/results}
+% \include{sections/discussion}
+% \include{sections/conclusion}
+
+\backmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{sections/glossary}
+%%References - extra code to display as own chapter, without header, and in contents only once
+\let\oldaddcontentsline\addcontentsline
+\let\oldsection\section
+
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+\markboth{Rerences}{}
+\renewcommand\refname{}
+% \lhead{\itshape References}
+\begingroup
+\small
+
+\renewcommand{\addcontentsline}[3]{}% Remove functionality of \addcontentsline
+\renewcommand{\section}[2]{}% Remove functionality of \section
+\begin{thebibliography}{}
+\input{sections/build/referenceLoader.bbl}
+
+%%NOTE! Manually reorder v2.bbl to reflect numeric ordering
+
+\end{thebibliography}{}
+\endgroup
+
+% \input{sections/build/referenceLoader.bbl}
+\renewcommand{\addcontentsline}{\oldaddcontentsline}
+\renewcommand{\section}{\oldsection}
+
+
+% \include{sections/appendices}
+
+\printindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

@@ -1,0 +1,2838 @@
+/********************************************************************************
+*Malaria early morbidity and mortality 											*
+*1. Data preparation do file 													*
+*Author: Carl Higgs    Last edited: 30 October 2015								*
+********************************************************************************/
+
+***Set up log of analysis***
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\Users\Carl\Google Drive\MPH\Projects\Malaria project\Data"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+
+***Label unlabelled variables***
+label variable dod "Date of first discharge"
+label variable Age "Age at date of presentation"
+label variable pf "P.falciparum"
+label variable pv "P.vivax"
+label variable pm "P.malariae"
+label variable po "P.ovale"
+label variable HbDGr7 "Anaemia at death (< 7g/dL)"
+label variable HbDGr5 "Anaemia at death (< 5g/dL)"
+label variable Malaria_Last63Gr "Presentations with malaria in the last 2 months"
+label variable AGR4 "Age"
+label variable Era "ACT Era"
+label variable Sex "Sex"
+label variable Species "Initial Species"
+label variable wbcmin "White Cell Count (minimum)"
+label variable wbcmax "White Cell Count (maximum)"
+label variable hbmin_Min "Haemoglobin (minimum)"
+label variable pltmin "Platelet count (minimum)"
+label variable hbmin_First "Haemoglobin (first recorded value)"
+label variable hbmin_Last "Haemoglobin (last recorded value)"
+label variable aa_any "Amodiaquine+Artesunate"
+label variable cq_any "Chloroquine"
+label variable cl_any "Clindamycin"
+label variable dhp_any "DHA-Piperaquine"
+label variable dox_any "Doxycycline"
+label variable ivart_any "Iv Artesunate"
+label variable ivq_any "Iv Quinine"
+label variable oralq_any "Oral Quinine"
+label variable pq_any "Primaquine"
+label variable sp_any "Sulfadoxine-Pyrimethamine"
+label variable PQmgkg_Sum "Sum total dose of Primaquine (mg/kg)"
+label variable MalNut "Under-nutrition"
+label variable MalNutD "Under-nutrition at death"
+label variable op "Outpatient"
+label variable Source "Source"
+label variable ip "Inpatient"
+label variable Bleeding "Bleeding"
+label variable EthnicGr "Ethnic Group"
+
+format %12.1f Age
+format %12.2f PQmgkg_Sum
+format %9.1f predwt
+
+
+***Generate observation id number (for ease of computing totals, etc)
+gen long obsno = _n
+order obsno
+label variable obsno "Admissions"
+
+***Generate constant in case needed
+gen constant = 1
+label define total 1 "Total admissions"
+label values constant total
+
+***Generate Anemia on admission
+gen HbAdmGr7 = 1 if hbmin_First<7
+recode HbAdmGr7 (.=0)
+tab HbAdmGr7 HbDGr7
+label variable HbAdmGr7 "Anaemia at admission (< 7g/dL)"
+gen HbAdmGr5 = 1 if hbmin_First<5
+recode HbAdmGr5 (. = 0) if hbmin_First>=5 & hbmin_First<.  
+label variable HbAdmGr5 "Anaemia at admission (< 5g/dL)"
+tab HbAdmGr5 HbDGr5
+
+***Generate Severe Thrombocytopenia (platelet count < 50,000/uL)
+gen sevThrom = 1 if pltmin<50
+recode sevThrom (.=0) if pltmin>=50 & pltmin~=.
+local micro = char(181)
+label variable sevThrom "Severe thrombocytopenia (platelet count < 50,000/`micro'L)"
+list sevThrom pltmin in 1/10
+
+***Generate Log of  WBC, Platelets and Primaquine mg/kg
+gen log10hbmin_f= log10(hbmin_First)
+label variable log10hbmin_f "Haemoglobin count (first recorded value; log base 10)"
+gen log10wbcmin= log10(wbcmin)
+label variable log10wbcmin "White Blood Cell count (minimum; log base 10)"
+gen log10pltmin= log10(pltmin)
+label variable log10pltmin "Platelet count (minimum; log base 10)"
+gen log10PQmgkg_Sum= log10(PQmgkg_Sum)
+label variable log10PQmgkg_Sum "Sum total dose of Primaquine (mg/kg; log base 10)"
+gen Age_log10= log10(Age)
+label variable Age_log10 "Age (years; log base 10)"
+gen log2wbcmin= log(wbcmin)/log(2)
+label variable log2wbcmin "White Blood Cell count (minimum; log base 2)"
+gen log2pltmin= log(pltmin)/log(2)
+label variable log2pltmin "Platelet count (minimum; log base 2)"
+gen log2PQmgkg_Sum= log(PQmgkg_Sum)/log(2)
+label variable log2PQmgkg_Sum "Sum total dose of Primaquine (mg/kg; log base 2)"
+gen Age_log2= log(Age)/log(2)
+label variable Age_log2 "Age (years; log base 2)"
+
+***Generate quintiles of variable list to check for linearity
+/*this code assigns labels based on the min and max of each quintile.  For example 1 "100 to 4100" 2 "4110 to 5090" etc */
+loc q5 wbcmin pltmin/*Designates variables to quintile and label without decimals*/
+foreach v of varlist `q5' {
+xtile q5_`v' = `v', nq(5)
+su q5_`v', meanonly
+loc vmin = r(min)
+loc vmax = r(max)
+forval j = `vmin'/`vmax' {
+su `v' if q5_`v'==`j', meanonly
+local call `call' `j' "`: di %3.0f `=r(min)'' to `: di %3.0f `=r(max)''"
+}
+label define q5_`v' `call', replace
+label values q5_`v' q5_`v'
+codebook q5_`v'
+}
+
+loc q5 PQmgkg_Sum/*Designates variables to quintile and label with decimals*/
+foreach v of varlist `q5' {
+xtile q5_`v' = `v', nq(5)
+su q5_`v', meanonly
+loc vmin = r(min)
+loc vmax = r(max)
+forval j = `vmin'/`vmax' {
+su `v' if q5_`v'==`j', meanonly
+local call `call' `j' "`: di %3.2f `=r(min)'' to `: di %3.2f `=r(max)''"
+}
+label define q5_`v' `call', replace
+label values q5_`v' q5_`v'
+codebook q5_`v'
+}
+label variable q5_PQmgkg_Sum "Sum total dose of primaquine (mg/kg, quintiles)"
+label variable q5_wbcmin "White cell count (minimum, quintiles)"
+label variable q5_pltmin "Platelet count (minimum, quintiles)"
+
+
+***Generate 'dummy' variable for later Tabout table output macros
+generate dummy = 1
+
+***Generate Female only Pregnancy variable (males are missing)
+gen pregWom = Preg if Sex==2
+label variable pregWom "Pregnant (females only)"
+
+***Convert Year to labelled categories starting at 1
+loc convert Year
+foreach v of varlist `convert' {
+su `v', meanonly
+loc vmin = r(min)
+loc vmax = r(max)
+loc n 0
+forvalues j = `vmin'/`vmax' {
+	local cat = `++n'
+	local convi `convi' "(" `j' "=" `cat' ")"
+	local def `def' `cat' "`j'"
+}
+recode `v' `convi', gen(`v'Cat)
+label define `v'Cat `def', replace
+label values `v'Cat `v'Cat
+label variable `v'Cat "`v'"
+codebook `v'Cat
+}
+
+***Define and assign value labels***
+label define SOURCE 1 "OP" 2 "OP to IP" 3 "IP", replace
+label define AGR4 1 "< 1 year" 2 "1 to < 5 years" 3 "5 to <15 years" 4 "15+ years", modify
+label define yesno 0 "No" 1 "Yes"
+label values aa_any cq_any cl_any dhp_any dox_any ivart_any ivq_any oralq_any pq_any sp_any ///
+			MalNut Bleeding Preg pregWom HbDGr7 HbDGr5 MalNutD VivaxDeath HbAdmGr5 HbAdmGr7 sevThrom ///
+			MalariaNext365 PFNext365 PVNext365 PMNext365 MIXNext365 AdmNext14 DiedNext14 DiedNext365 DiedNext7 yesno
+
+***Sort database by hrn, date of admission and date of discharge, in that order***
+sort hrn doa dod
+
+
+*Round age to two decimal places (the current long data format causes difficulties with 'if' statements using scalars where Age < 1, apparently)
+replace Age = round(Age, .01)
+
+*Generate sex variable differentiating between pregant and not pregnant females
+gen sexPreg= Sex+Preg
+recode sexPreg (1=3) (2=1) (3=2)
+lab def sexPreg 1 "Female (not pregnant)" 2 "Female (pregnant)" 3 "Male"
+lab val sexPreg sexPreg
+lab var sexPreg "Sex and pregnancy status"
+codebook sexPreg
+
+*Generate combined HRN and MalCluster variable for generating Riskset graphics
+
+gen hrnmal = hrn + (MalCluster/10) if MalCluster <10
+tempvar maxmal
+by hrn: egen `maxmal' = max(MalCluster)
+replace hrnmal = hrn +(MalCluster/(`maxmal'+1)) if `maxmal' >=10
+list hrnmal if `maxmal' >10
+
+
+*Generate early exit variables with "t1" as day zero instead of "t.5", for equal intervals when plotting
+
+gen AdmFU15 = Adm_FU14+1
+recode AdmFU15 (1.5=1)
+lab var AdmFU15 "Admission: Follow up to 15 days"
+
+gen DiedFU15 = Died_FU14+1
+recode DiedFU15 (1.5=1)
+lab var DiedFU15 "Died: Follow up to 15 days"
+
+*generate estimated date of admission / death
+gen doX_adm = doa+AdmFU15
+gen doX_died = doa+DiedFU15
+
+*Generate pltCat
+recode pltmin  (20/50=2 "20 to 50"), gen(pltCat)
+replace pltCat = 1 if pltmin<20
+replace pltCat = 3 if pltmin>50&pltmin<.
+list pltmin pltCat
+label define pltCat 2 "20 to 50" 1 "< 20" 3 "> 50", replace
+label variable pltCat "Platelet count (minimum))"
+label variable pltCat "Platelet count ( x 1000s/µL)"
+
+*Generate reduced categories of MalPres
+recode MalPres (1=1 "1") (2=2 "2") (3/9=3 "3+"), gen(MalPres_cat)
+label variable MalPres_cat "Number of malaria events in episode"
+
+
+*Gen white blood cell above, below or within normal range indicator
+generate whiteCat = .
+replace whiteCat=1 if Age<0.0192 & (wbcmin<20000) & wbcmin!=.
+replace whiteCat=2 if Age<0.0192 & (wbcmax>40000) & wbcmin!=.
+replace whiteCat=1 if (Age>=0.0192 & Age<0.0385) & (wbcmin<5000) & wbcmin!=.
+replace whiteCat=2 if (Age>=0.0192 & Age<0.0385) & (wbcmax>21000) & wbcmin!=.
+replace whiteCat=1 if (Age>=0.0385 & Age<0.25) & (wbcmin<5000) & wbcmin!=.
+replace whiteCat=2 if (Age>=0.0385 & Age<0.25) & (wbcmax>20000) & wbcmin!=.
+replace whiteCat=1 if (Age>=0.25 & Age<1) & (wbcmin<5000) & wbcmin!=.
+replace whiteCat=2 if (Age>=0.25 & Age<1) & (wbcmax>15000) & wbcmin!=.
+replace whiteCat=1 if (Age>=1 & Age<5) & (wbcmin<50000) & wbcmin!=.
+replace whiteCat=2 if (Age>=1 & Age<5) & (wbcmax>12000) & wbcmin!=.
+replace whiteCat=1 if Age>=5 & (wbcmin<4000) & wbcmin!=.
+replace whiteCat=2 if Age>=5 & (wbcmax>10000) & wbcmin!=.
+replace whiteCat=0 if whiteCat==. & wbcmin!=.
+replace whiteCat=0 if whiteCat==1 & whiteout==0  
+label define whiteCat 0 "within normal range" 1 "below normal range" 2 "above normal range"
+label values whiteCat whiteCat
+tab whiteCat
+label variable whiteCat "WBC count"
+
+*Generate Species variable omitting  P.ovale  
+gen SpeciesX = Species if Species !=3
+label variable SpeciesX "Species"
+label copy Species SpeciesX
+label values SpeciesX SpeciesX
+label define SpeciesX 3 "", modify
+
+*Generate AGR4 with age category 4 hard coded as baseline (for conveniance)
+recode AGR4 (4=0), gen(AGR4_4b)
+label copy AGR4 AGR4_4b
+label values AGR4_4b AGR4_4b
+label variable AGR4_4b "Age"
+label define AGR4_4b 1 "< 1 year" 2 "1 to < 5 years" 3 "5 to <15 years" 0 "15+ years (baseline)", replace
+
+*create EthnicX with Highland as baseline reference
+codebook Ethnic
+recode Ethnic (1=3) (2=1) (3=2), gen(EthnicX)
+codebook EthnicX
+label copy Ethnic EthnicX
+label variable EthnicX EthnicX
+codebook EthnicX
+label values EthnicX EthnicX
+label define EthnicX 3 "Non Papuan" 1 "Highland" 2 "Lowland", replace
+codebook EthnicX
+tab Ethnic EthnicX
+tab Ethnic EthnicX, missing
+label variable EthnicX "Ethnicity"
+
+*IV Quinine and Artesunate variable
+gen ivArt = 1 if TreatGr_First ==5
+replace ivArt = 0 if TreatGr_First ==6
+lab copy TreatGr_First ivArt
+label define ivArt 1 "ivArtesunate +/-DHP,Cq,SP" 0 "ivQuinine +/-DHP,Cq,SP", replace
+label values ivArt ivArt
+lab var ivArt "IV treatment"
+codebook ivArt
+
+*oral quinine and DHP variable
+gen oral_v_dhp = 1 if TreatGr_First==4
+replace oral_v_dhp =0 if TreatGr_First == 2
+tab oral_v_dhp TreatGr_First
+
+
+/************************************************************
+*Malaria early morbidity and mortality 
+* 2. Data checking do file
+*  First run set up
+* Author: Carl Higgs    Last modified: 5 October 2015
+*************************************************************/
+
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\Users\Carl\Google Drive\MPH\Projects\Malaria project\Data"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+
+	
+***setup for stvary  /// note: have used date variables and id options for setup for diagnostic analysis; stset for survival analysis 
+sort hrn doa dod
+
+***Generate date based follow up time variables for clarity around ID times using stvary process
+gen FU_Adm = doa + Adm_FU14
+format %tdD_m_Y FU_Adm
+gen FU_Died = doa + Died_FU14
+format %tdD_m_Y FU_Died
+								
+stset FU_Adm, fail(AdmNext14) exit(FU_Adm) id(hrn) time0(doa) origin(doa)
+streset, future /* includes presentations subsequent to first in the analysis*/
+*Diagnostics
+list hrn doa DOEnd AdmNext14 _t0 _t _d  _st if hrn<100
+	
+loc varlist obsno hrn MalCluster doa dod DOEnd Age Sex Source op ip Stay Ethnic Preg Died Species pf pv pm po MalPres TotalPres Year Month TimeM Era MalNut Bleeding NumbDiags EthnicGr AGR2 AGR3 AGR4 aa_any cq_any cl_any dhp_any dox_any ivart_any ivq_any oralq_any pq_any sp_any matchscript predwt PQmgkg_Sum PQdose_First PQDose_Any TreatGr_First TreatGr1_First TreatGr2_First hbmin_First hbmin_Last hbmin_Min pltmin wbcmin wbcmax MalariaDay Malaria_FU365 MalariaNext365 PFDay PF_FU365 PFNext365 PVDay PV_FU365 PVNext365 PMDay PM_FU365 PMNext365 MixDay MIX_FU365 MIXNext365 AdmDay Adm_FU14 AdmNext14 SpeciesAdm DiedDay Died_FU Died_FU14 DiedNext14 Died_FU365 DiedNext365 SpeciesD MalNutD HbD HbDGr7 HbDGr5 VivaxDeath FollowUp365 Malaria_Next365 Malaria_Last14 Malaria_Last63Gr PVMIX_Include PqDoseGr Rank_Any Rank_Pv DiedNext7 Died_FU7 constant HbAdmGr7 HbAdmGr5 sevThrom log10wbcmin log10pltmin log10PQmgkg_Sum log2wbcmin log2pltmin log2PQmgkg_Sum q5_wbcmin q5_pltmin q5_PQmgkg_Sum dummy pregWom YearCat FU_Adm FU_Died begin_m end_Adm end_D _insmpl _st _d _origin _t _t0
+
+loc today = c(current_date)
+loc filename = c(filename) 
+putexcel A1=("stvary diagnostics using `filename' on `today' " ) using diagnostics_log.xlsx, modify sheet("stvary diagnostics")
+putexcel A2=("variable") B2=("constant") C2=("varying") D2=("never missing") E2=("always missing") F2=("sometimes missing") ///
+	using diagnostics_log.xlsx, modify sheet("stvary diagnostics") 
+loc xcell = 3
+
+foreach x of varlist `varlist' {
+	stvary `x'
+	putexcel A`xcell'=("`x'") B`xcell'=(r(cons)) C`xcell'=(r(varies)) D`xcell'=(r(never)) E`xcell'=(r(always)) F`xcell'=(r(miss)) ///
+		using diagnostics_log.xlsx, modify sheet("stvary diagnostics") 
+	loc ++xcell
+	}
+	
+
+*Post stvary diagnostics: investigate and fix where possible missing data (some may be identifiable from subsequent/prior presentations)
+
+***dod & DOEnd ***
+list hrn doa dod DOEnd AdmNext14 DiedNext14 if dod==.
+list hrn doa dod DOEnd AdmNext14 DiedNext14 if inlist(hrn, 54616, 85200, 85286, 138181, 188041, 191522)
+/* The missing values of dod and DOEnd were all for patients admitted on same day as presentation 
+(Adm_FU14 =0.4, AdmNext14==1; none died within 14 days) */
+
+*** AGE ***
+levelsof hrn if Age==., loc(hlist)
+local hlist_c : subinstr local hlist " " ",", all
+drop issue_Age
+gen issue_Age = 0
+/// Export to excel data of age and visits for hrns with missing age data; equivalent of : list hrn obsno doa Age AGR2 AGR3 AGR4 if inlist(hrn,`hlist_c')
+putexcel A1=("Diagnostics") using diagnostics_log.xlsx, modify sheet("Missing age diagnostics")
+export excel hrn obsno doa Age AGR2  AGR3 AGR4 using diagnostics_log.xlsx  if inlist(hrn,`hlist_c'), cell(A2) sheetmodify sheet("Missing age diagnostics")  firstrow(variables)  missing("*MISSING*")  datestring("%tdD_m_CY")
+foreach x of loc hlist {
+/// Derive age based on subsequent or prior visit dates where possible
+	qui: su Age if hrn==`x', meanonly
+	loc n_age = r(N)
+
+	if `n_age' == 0 {
+		di "No data available from which to derive Age for missing values for HRN " `x' "."
+		}
+	if `n_age' > 0{
+		loc minAge = r(min)	
+		qui: su doa if hrn==`x' & Age==`minAge' & Age!=., meanonly
+		loc ageDate = r(min)
+		qui misstable sum Age if hrn==`x'
+		loc nm= r(N_eq_dot)
+		di "hrn: " `x' "     minAge: " `minAge' "    ageDate: " %tdD_m_Y " Missing entries:" `nm' 
+ /// Identify details of hrn and obs with missing Age values
+		list obs hrn doa Age AGR2 AGR3 AGR4 if hrn==`x' 
+		forval m = 1/`nm' {
+			qui: su doa if hrn==`x' & Age==. , meanonly
+			loc missDate = r(min)	
+			qui: su obsno if hrn==`x' & Age==. & doa==`missDate' , meanonly
+			loc obs = r(min)
+			di "obs: "  `obs' "     ageDate: " %tdD_m_Y `ageDate' "     missDate: "  %tdD_m_Y `missDate'
+			if `ageDate' > `missDate' {
+				replace Age = round(`minAge'-((`ageDate' - `missDate')/365.25),.1) in `obs'
+				di "Age in observation `obs' = `minAge'-((`ageDate' - `missDate')/365.25) = " `minAge'-((`ageDate' - `missDate')/365.25)
+				}
+			else if `ageDate' < `missDate' {
+				replace Age = round(`minAge'+((`missDate' - `ageDate')/365.25),.1) in `obs'
+				di "Age in observation `obs' = `minAge'+((`missDate' - `ageDate')/365.25) = "  `minAge'+((`missDate' - `ageDate')/365.25)
+				}
+			else if `ageDate' == `missDate'{
+				replace Age = `minAge' in `obs'
+				di "Age in observation `obs' = " `minAge' "(same value)"
+				}
+replace issue_Age = 1 if Age < 0
+replace issue_Age = 1 if Age ==.
+replace Age = 0.01 if Age < 0 in `obs'  
+///Replace missing age categories based on derived age
+			replace AGR2 = 1 if AGR2==. & hrn == `x' & Age < 15 in `obs' 
+			replace AGR2 = 0 if AGR2==. & hrn == `x' & Age >=15 & Age !=. 	in `obs' 
+			replace AGR3 = 1 if AGR3==. & hrn == `x' & Age <5 				in `obs' 
+			replace AGR3 = 2 if AGR3==. & hrn == `x' & Age >=5  & Age <=15 	in `obs' 
+			replace AGR3 = 3 if AGR3==. & hrn == `x' & Age >15  & Age !=. 	in `obs' 
+			replace AGR4 = 1 if AGR4==. & hrn == `x' & Age <1 				in `obs' 
+			replace AGR4 = 1 if AGR4==. & hrn == `x' & Age >=1 & Age <5 	in `obs' 
+			replace AGR4 = 1 if AGR4==. & hrn == `x' & Age >=5 & Age <15 	in `obs' 
+			replace AGR4 = 1 if AGR4==. & hrn == `x' & Age >=15 & Age !=. 	in `obs' 
+			sort hrn doa dod
+
+			}
+			///Examine final changes
+			di "Final changes made, if any:"
+			list obs hrn doa Age AGR2 AGR3 AGR4 if hrn==`x'
+		}
+	}
+putexcel H1=("Derivations, where possible (Age < 0 recorded as 0.01)")  using diagnostics_log.xlsx, modify sheet("Missing age diagnostics")
+export excel hrn doa Age AGR2  AGR3 AGR4 using diagnostics_log.xlsx  if inlist(hrn,`hlist_c'), cell(H2) sheetmodify  sheet("Missing age diagnostics") firstrow(variables)  missing("*MISSING*")  datestring("%tdD_m_CY")		
+
+levelsof hrn if Age==., loc(hlist)
+local hlist_c : subinstr local hlist " " ",", all
+list obs hrn doa Age AGR2 AGR3 AGR4 if inlist(hrn,`hlist_c')
+
+*11/19missing ages have been derived, however for two infant patients there are negative values - it may be best to make these "0.01" but I have not yet done this.
+
+***Sex***
+///  Examine all hrns for more than 1 response to Sex (takes approximately 40 mins - see diagnostics_log.xlsx)
+/// Exports to Excel file
+timer clear 1
+timer on 1
+
+sort hrn doa dod
+qui: su hrn, meanonly
+loc n_hrn = r(N)
+
+putexcel A1=("HRNs with inconsistent recorded values of Sex") using diagnostics_log.xlsx, modify sheet("Inconsistent Sex")
+putexcel A2=("hrn") B2=("obsno") C2=("doa") D2=("Sex")using diagnostics_log.xlsx, modify sheet("Inconsistent Sex") 
+loc xcell = 3
+drop issue_Sex
+gen issue_Sex = 0
+
+
+loc varlist hrn obsno doa Sex
+forval x = 1/`n_hrn' {
+	qui: su Sex if hrn==`x', meanonly
+	loc diffSex = r(max)-r(min)
+
+	if `diffSex' > 0 & `diffSex' !=. {
+		list `varlist' if hrn==`x'
+		su hrn  if hrn==`x', meanonly
+		loc n_hrn = r(N)
+		export excel `varlist' using diagnostics_log.xlsx  if hrn==`x', ///
+			cell(A`xcell') sheetmodify  sheet("Inconsistent Sex") missing("*MISSING*")  datestring("%tdD_m_CY")
+		loc xcell = `xcell'+`n_hrn'+1	
+		replace issue_Sex = 1 if hrn==`x'
+		}
+	}
+codebook hrn if issue_Sex ==1
+
+timer off 1
+timer list 1
+
+***Stay***
+list hrn doa dod DOEnd AdmNext14 DiedNext14 if Stay==.
+list hrn doa DOEnd Source ip Stay Adm_FU14 AdmNext14 if inlist(hrn, 54616, 85200, 85286, 138181, 188041, 191522)
+/*the same patients as missing dod and DOEnd; inpatients, with 54616, 138181 &188041 having presentation through the UGD (Unit Gawat Darurat)-Emergency treatment room */
+
+***Era***
+list hrn doa Year Month Era Adm_FU14 AdmNext14  if Era==.
+assert Year==2006 & Month==4 if Era==.
+/*  Era is missing only for participants admitted in April 2006, presumably the month of transition into using ACT */
+
+
+*** Ethnic *** (some incongruous data - participants of unique hrn listed at different times "Papuan" and "non-Papuan")
+levelsof hrn if Ethnic==., loc(hlist)
+/// local hlist_c : subinstr local hlist " " ",", all
+/// list obs hrn doa Ethnic EthnicGr if inlist(hrn,`hlist_c')
+foreach x of loc hlist {
+qui: su Ethnic if hrn==`x', meanonly
+loc n_Ethnic = r(N)
+
+if `n_Ethnic' > 0 {
+	list obs hrn doa Ethnic EthnicGr if hrn == `x' 
+	}
+}
+
+/*  The above results are concerning and cast doubt on values of non-missing data - of the 6 hrns with both recorded and missing Ethnic data: 
+	one record (hrn  184136) would allow for derivation of Ethnic status (highland); however the other 5 entries contain contradictory records in EthnicGr, with the participant recorded variously as Papuan and non-Papuan across multiple visits (from 2 to 4).  The concerning trend is that all were recorded as Papuan for earlier visits (pre 2009) , but for their later visits (all post 2009) they were recorded as non-Papuan, which seems non-random error.*/
+
+///  Examining all hrns for more than 1 response to Ethnic and EthnicGr items	
+sort hrn doa dod
+qui: su hrn, meanonly
+loc n_hrn = r(N)
+
+putexcel A1=("HRNs with inconsistent recorded values of Ethnicity") using diagnostics_log.xlsx, modify sheet("Inconsistent ethnicity")
+putexcel A2=("hrn") B2=("obsno") C2=("doa") D2=("Ethnic") E2=("EthnicGr") using diagnostics_log.xlsx, modify sheet("Inconsistent ethnicity") 
+loc xcell = 3
+gen issue_Ethn = 0
+/// The below code takes hours to run - just see diagnostics_log.xlsx for results
+loc varlist hrn obsno doa Ethnic EthnicGr
+forval x = 1/`n_hrn' {
+	qui: su Ethnic if hrn==`x', meanonly
+	loc diff1 = r(max)-r(min)
+	qui: su EthnicGr if hrn==`x', meanonly
+	loc diff2 = r(max)-r(min)
+	if `diff1' > 0 & `diff1' !=. | `diff2' > 0 & `diff2' !=. {
+		di "Ethnic difference: " `diff1' "     EthnicGr difference: " `diff2'
+		list `varlist' if hrn==`x'
+		qui: su hrn  if hrn==`x', meanonly
+		loc n_hrn = r(N)
+		export excel `varlist' using diagnostics_log.xlsx  if hrn==`x', cell(A`xcell') sheetmodify  sheet("Inconsistent ethnicity") missing("*MISSING*")  datestring("%tdD_m_CY")
+		loc xcell = `xcell'+`n_hrn'+1	
+		replace issue_Ethn = 1 if hrn==`x'
+		}
+	}
+codebook hrn if issue_Ethn ==1
+/// 48 unique values of hrn with issues with Ethnic or EthnicGr according to above formula
+
+***Further examination of sex and ethnicity***
+list hrn obsno doa Age Sex Ethnic EthnicGr issue_Ethn issue_Sex if issue_Ethn==1& issue_Sex ==1
+/* 
+        +----------------------------------------------------------------------------------------+
+        |    hrn   obsno         doa    Age      Sex     Ethnic   EthnicGr   issue_~n   issue_~x |
+        |----------------------------------------------------------------------------------------|
+ 15586. |  26853   15586   23 Apr 06    8.3     Male    Lowland     Papuan          1          1 |
+ 15587. |  26853   15587   18 Nov 13    2.3   Female   Highland     Papuan          1          1 |
+ 74554. | 103681   74554   14 Oct 05    9.0     Male    Lowland     Papuan          1          1 |
+ 74555. | 103681   74555   04 Sep 13   53.0   Female   Highland     Papuan          1          1 |
+        +----------------------------------------------------------------------------------------+
+Problems: subject 103681 is a 2.3 year old highland female at their visit in 2013, but at their visit 7 years earlier in 2006 they are an 8.3 year old lowland boy. Similar issue with patient 103681 */
+
+*** Compare expected  and observed ages, using age at date of first visit where age is recorded
+timer clear 1
+timer on 1  /* timer took 1560 seconds (26 mins) up to 7556) &  19598 seconds (5.4 hours) for remainder  */
+qui: su hrn, meanonly
+loc hmin = 7556/* r(min) */
+loc hmax = r(max)
+di "Processing hrns of " `hmin' " through " `hmax' "..."
+drop predAge
+drop issue_predAge
+drop diffAge
+gen predAge = 0
+gen issue_predAge = 0
+gen diffAge = 0
+format %9.3f diffAge
+gen long age1000 = Age*1000  
+forval x = `hmin'/`hmax' {
+	qui: su Age if hrn==`x', meanonly
+	loc n_age = r(N)
+	if `n_age' > 0 {
+		loc minAge = r(min)
+		qui: su age1000 if hrn==`x', meanonly		
+		loc minAge1000 = r(min)  /* silly code to force Stata to be less precise with decimal point  */
+		qui: su doa if hrn==`x' & age1000==`minAge1000'
+		loc ageDate = r(min)
+		levelsof obsno if hrn==`x', loc(olist)
+		foreach obs of loc olist {
+			qui: su doa if hrn==`x' & obsno==`obs', meanonly
+			loc obsDate = r(min)	
+			di "hrn: " `x' "   obs: "  `obs' " minAge: " `minAge' "    ageDate: " %tdD_m_Y `ageDate' " obsDate: "  %tdD_m_Y `obsDate'
+			replace predAge = round(`minAge'+((`obsDate' - `ageDate')/365.25),.1) in `obs'
+			qui: su Age if obsno==`obs', meanonly
+			loc r_age = r(min)
+			qui: su predAge if obsno==`obs' 
+			loc p_age = r(min)
+			replace diffAge = Age - predAge in `obs'
+			loc d_age = `r_age' - `p_age'
+			loc xd_age = sqrt(`d_age' * `d_age')
+			if `xd_age' == 0 {
+				di "For observation `obs', actual age (" `r_age' ") and predicted age (" `p_age' ") are the same," ///
+					" with difference of (" `d_age' ") year."
+				}
+			if `xd_age' > 0 & `xd_age'<=1 {
+				di "For observation `obs', actual age (" `r_age' ") and predicted age (" `p_age' ") are similar," ///
+					" with difference of (" `d_age' ") year."
+				}
+			if `xd_age' >1 & `d_age' <=3 {
+				di "For observation `obs', actual age (" `r_age' ") and predicted age (" `p_age' ") are different," ///
+					" with difference of (" `d_age' ") years."
+				replace issue_predAge=1 in `obs'
+				}
+			if `xd_age' >3 & `xd_age' <.{
+				di "For observation `obs', actual age (" `r_age' ") and predicted age (" `p_age' ") are very different," ///
+					" with difference of (" `d_age' ") years."
+				replace issue_predAge=1 in `obs'
+				}
+				
+			}
+		}
+	}
+drop age1000
+timer off 1
+timer list 1
+***719 hrns have predicted age over 1 year differnece
+***Output inconsistencies in observed and predicted ages to excel  if difference >= 3 years
+
+gen diffAge_pos = round(sqrt(diffAge*diffAge),0.01)
+recode diffAge_pos (0/0.99 = 0 "0 to 0.99") (1/2.99 = 1 "1.00 to 2.99") (3/max = 2 "3.00 to 54.40") (.=.), gen(c_diffAge)
+lab var c_diffAge "Differences between observed and expected ages (years)"
+tab Year c_diffAge, matcell(diff)
+
+
+*differential misclassification? prob not - just smaller sample pools
+stset Adm_FU14, fail(AdmNext14) 
+stcox i.c_diffAge, strata(MalCluster) cluster(hrn) 
+stset Died_FU14, fail(DiedNext14)
+stcox i.c_diffAge, strata(MalCluster) cluster(hrn) 
+						
+*** Possible problem with Species - mixed designation (as described in RSMM on p 4)
+codebook obs if pf==1 & pv==1 & Species!=5
+/*There are 1017 cases which appear to have both pf and pv infection recorded, but are not mixed - should they be?
+For example: */
+
+/* list hrn doa Species pf pv AdmNext14 if hrn==160
+
+        +------------------------------------------------+
+        | hrn         doa   Species   pf   pv   AdmNe~14 |
+        |------------------------------------------------|
+   158. | 160   06 Jan 06        Pf    1    0         No |
+   159. | 160   17 Apr 07        Pv    0    1         No |
+   160. | 160   11 Feb 08        Pf    1    0         No |
+   161. | 160   26 Aug 08        Pf    1    0         No |
+   162. | 160   06 Sep 09        Pf    1    0         No |
+        |------------------------------------------------|
+   163. | 160   29 Jan 10        Pf    1    0         No |
+   164. | 160   22 Apr 10       Mix    1    1        Yes |
+   165. | 160   25 Oct 11        Pf    1    0         No |
+   166. | 160   11 Jan 12        Pf    2    0         No |
+   167. | 160   14 Jun 12        Pf    1    1         No |*******
+        |------------------------------------------------|
+   168. | 160   23 Feb 13        Pv    0    1         No |
+        +------------------------------------------------+
+		
+		Answer: the Species variable is initial infection; possible to have subsequently acquired (but unlikely in 14 day period).
+ */
+ *** Pregnant males
+ list hrn obsno Sex Preg if Sex==1 & Preg==1
+ list hrn obsno Sex sexPreg Preg if inlist(hrn, 88007, 108005)
+ /*
+ . list hrn Sex sexPreg Preg if inlist(hrn, 88007, 108005)
+        +----------------------------------------------+
+        |    hrn    Sex                 sexPreg   Preg |
+        |----------------------------------------------|
+ 57265. |  88007   Male                    Male     No |
+ 57266. |  88007   Male                    Male     No |
+ 57267. |  88007   Male                    Male     No |
+ 57268. |  88007   Male                    Male     No |
+ 57269. |  88007   Male                    Male     No |
+        |----------------------------------------------|
+ 57270. |  88007   Male                    Male     No |
+ 57271. |  88007   Male   Female (not pregnant)    Yes |
+ 79336. | 108005   Male                    Male     No |
+ 79337. | 108005   Male   Female (not pregnant)    Yes |
+ 79338. | 108005   Male                    Male     No |
+        +----------------------------------------------+
+*/
+ replace Preg = 0 in 57271
+replace Preg = 0 in 79337
+replace sexPreg = 1 in 79337
+replace sexPreg = 1 in 57271
+list hrn Sex sexPreg Preg if inlist(hrn, 88007, 108005)
+
+						
+
+
+/****************************************
+*Malaria early morbidity and mortality 
+* Tables do file - last modified 5 October 2015
+*
+***************************************/
+
+
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\Users\Carl\Google Drive\MPH\Projects\Malaria project\Data\excel"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+*prepare folder for results
+local T = c(current_time)
+local T = subinstr("`T'",":","_",.)
+mkdir "table `today' `T'"
+cd "table `today' `T'"
+
+***Table 1a: Characteristics of Patients by Species(export csv for placement in maltab.xlsxs)***
+	loc dem constant AGR4 sexPreg Ethnic tgn whiteCat HbAdmGr5 pltCat MalNut Malaria_Last63Gr MalPres_cat Year Era
+/*explanatory variables*/
+	tabout `dem' Species using tables\workfiles\maltable1_Species.csv, replace  c(freq row) f(1)  ptotal(none) style(csv) 
+	
+***Table 1b: Characteristics of Patients by early outcomestatus (14 days or less) following a malaria episode (export csv for placement in maltab.xlsxs)***
+	loc group AdmNext14 DiedNext14 /*group variables*/
+	loc dem constant Species AGR4 sexPreg Ethnic tgn whiteCat HbAdmGr5 pltCat MalNut Malaria_Last63Gr MalPres_cat Year Era
+/*explanatory variables*/
+	foreach var of varlist `group' {
+	tabout `dem' `var' using tables\workfiles\maltable1_`var'.csv, replace  c(freq row) f(1)  ptotal(none) style(csv) npos(lab) 
+	}
+
+	foreach var of varlist `dem' {
+	tab `var' AdmNext14, row chi
+	}
+
+***Table 2Adm: Characteristics of Patients with early re-admission (14 days or less) following a malaria episode (export csv for placement in maltab.xlsxs)***
+	*AdmNext14==0 (not re-admitted wthin 14 days)*
+	loc cont Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	tokenize `cont'
+	local counter = 0
+	local filemethod = "replace"
+	local heading = "h1(nil) h2(nil) h3(|Count | Mean | SD | Median |Min | Max )"
+	foreach v of varlist `cont' {
+	if `counter' > 0 {
+	local filemethod = "append"
+	local heading = "h1(nil) h2(nil) h3(nil)"
+	}
+	label define dummy 1 "`1'", modify
+	label val dummy dummy
+	tabout dummy if AdmNext14==0 using tables\workfiles\table2adm0.csv, ///
+	`filemethod' c(count `v' mean `v' sd `v' median `v' min `v' max `v' ) ///
+	f(0 1c 1c 1c 1c 1c) sum `heading' ///
+	lines(none) ptotal(none) style(csv) 
+	mac shift
+	local counter = `counter' + 1
+	}
+
+	*AdmNext14==1 (re-admitted wthin 14 days)*
+	loc cont Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	tokenize `cont'
+	local counter = 0
+	local filemethod = "replace"
+	local heading = "h1(nil) h2(nil) h3(|Count | Mean | SD | Median |Min | Max )"
+	foreach v of varlist `cont' {
+	if `counter' > 0 {
+	local filemethod = "append"
+	local heading = "h1(nil) h2(nil) h3(nil)"
+	}
+	label define dummy 1 "`1'", modify
+	label val dummy dummy
+	tabout dummy if AdmNext14==1 using tables\workfiles\table2adm1.csv, ///
+	`filemethod' c(count `v' mean `v' sd `v' median `v' min `v' max `v' ) ///
+	f(0 1c 1c 1c 1c 1c) sum `heading' ///
+	lines(none) ptotal(none) style(csv) 
+	mac shift
+	local counter = `counter' + 1
+	}
+
+	*ttest vars by AdmNext14*
+	loc cont Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	loc groupv AdmNext14
+	foreach v of varlist `cont' {
+	qui ttest `v', by(`groupv')
+	di as text "`v' Mean difference by `groupv':" 
+	di %9.1f r(mu_1)-r(mu_2) as text " (95% CI" %9.1f (r(mu_1)-r(mu_2)-(1.96*r(se)))  as text"," as result %9.1f (r(mu_1)-r(mu_2)+(1.96*r(se))) as text "; {it:P-value}:" %9.3f r(p) as text")"
+	}
+	
+	*Mann-Whitney U Test 
+		loc cont PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	loc groupv AdmNext14
+	foreach v of varlist `cont' {
+	ranksum `v', by(`groupv')
+	}
+****Ask Julie for help with this - which to use with?
+
+***Table 1 Died: Characteristics of Patients by early death status (14 days or less) following a malaria episode (export csv for placement in maltab.xlsxs)***
+	loc dem constant Species AGR4 Sex pregWom Ethnic MalNut Malaria_Last63Gr  HbAdmGr5 sevThrom q5_wbcmin q5_pltmin Source Year Era TreatGr_First q5_PQmgkg_Sum 
+	tabout `dem' DiedNext14 using tables\workfiles\maltable1_Died.csv, replace  c(freq row) f(1)  ptotal(none) style(csv) npos(lab) 
+
+	foreach var of varlist `dem' {
+	tab `var' DiedNext14, row chi
+	}
+
+***Table 2 Died: Characteristics of Patients with early death (14 days or less) following a malaria episode (export csv for placement in maltab.xlsxs)***
+*DiedNext14==0 (did not die wthin 14 days)*
+	loc cont Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	tokenize `cont'
+	local counter = 0
+	local filemethod = "replace"
+	local heading = "h1(nil) h2(nil) h3(|Count | Mean | SD | Median |Min | Max )"
+	foreach v of varlist `cont' {
+	if `counter' > 0 {
+	local filemethod = "append"
+	local heading = "h1(nil) h2(nil) h3(nil)"
+	}
+	label define dummy 1 "`1'", modify
+	label val dummy dummy
+	tabout dummy if DiedNext14==0 using tables\workfiles\table2d0.csv, ///
+	`filemethod' c(count `v' mean `v' sd `v' median `v' min `v' max `v' ) ///
+	f(0 1c 1c 1c 1c 1c) sum `heading' ///
+	lines(none) ptotal(none) style(csv) 
+	mac shift
+	local counter = `counter' + 1
+	}
+
+	*DiedNext14==1 (died wthin 14 days)*
+	loc cont Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	tokenize `cont'
+	local counter = 0
+	local filemethod = "replace"
+	local heading = "h1(nil) h2(nil) h3(|Count | Mean | SD | Median |Min | Max )"
+	foreach v of varlist `cont' {
+	if `counter' > 0 {
+	local filemethod = "append"
+	local heading = "h1(nil) h2(nil) h3(nil)"
+	}
+	label define dummy 1 "`1'", modify
+	label val dummy dummy
+	tabout dummy if DiedNext14==1 using tables\workfiles\table2d1.csv, ///
+	`filemethod' c(count `v' mean `v' sd `v' median `v' min `v' max `v' ) ///
+	f(0 1c 1c 1c 1c 1c) sum `heading' ///
+	lines(none) ptotal(none) style(csv) 
+	mac shift
+	local counter = `counter' + 1
+	}
+
+	*ttest vars by DiedNext14*
+	loc cont  Age hbmin_Min PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	loc groupv DiedNext14
+	foreach v of varlist `cont' {
+	qui ttest `v', by(`groupv')
+	di as text "`v' Mean difference by `groupv':" 
+	di %9.1f r(mu_1)-r(mu_2) as text " (95% CI" %9.1f (r(mu_1)-r(mu_2)-(1.96*r(se)))  as text"," as result %9.1f (r(mu_1)-r(mu_2)+(1.96*r(se))) as text "; {it:P-value}:" %9.3f r(p) as text")"
+	}
+
+	
+	*Mann-Whitney U Test 
+		loc cont PQmgkg_Sum log2PQmgkg_Sum log10PQmgkg_Sum pltmin log2pltmin log10pltmin wbcmin log2wbcmin  log10wbcmin
+	loc groupv AdmNext14
+	foreach v of varlist `cont' {
+	ranksum `v', by(`groupv')
+	}
+
+***Graph histogram density plots for continuous variables (or is kernel density better?  pretty similar)
+	/*(hbmin_Min is normally distributed; PQmgkg_Sum has an odd distribution suggestive of two distinct treatment groupings - this is especially noticeable if restricted to AGR4==4, and has some relationship with white blood cell count (eg. second peak is more prominent in wbcmin>8000))*/
+	loc cont Age Age_log10 Age_log2 predwt hbmin_Min pltmin log10pltmin log2pltmin wbcmin log10wbcmin log2wbcmin 
+	foreach var of varlist `cont' {
+	histogram `var', normal dens name("`var'_histo_density",replace) scheme(tufte)
+	}
+	
+/***************************************
+*
+*EXTRA GRAPHS
+*
+****************************************/	
+
+*Graph of initial species by year - note both absolute increase in Pv and mixed diagnoses across study period, and relative to Pf
+use "C:\data\malaria\MalEps_v1.9.3_r9aug2015.dta", clear
+cd\data\malaria
+tempfile original
+save `original'
+
+/*Generate indicators of variables for plotting frequencies */
+g pres_pf = SpeciesX if SpeciesX==1
+g pres_pv = SpeciesX if SpeciesX==2
+g pres_all = constant
+
+g adm_pf  = SpeciesX  if AdmNext14==1 & SpeciesX==1
+g adm_pv  = SpeciesX  if AdmNext14==1 & SpeciesX==2
+g adm_all = constant
+
+g died_pf = SpeciesX  if DiedNext14==1 &SpeciesX==1
+g died_pv = SpeciesX  if DiedNext14==1 &SpeciesX==2
+g died_all = constant
+
+/*Collapse for frequencies of each variable */
+collapse (count) 	pres_pf    ///
+					pres_pv    ///
+					pres_all   ///
+					adm_pf     ///
+					adm_pv     ///
+					adm_all    ///
+					died_pf    ///
+					died_pv		///
+					died_all   ///
+					, by(YearCat)
+
+/*Colours from colorbrewer2.org */
+loc farb1 = "27 158 119"
+loc farb2 = "217 95 2"
+loc farb3 = "102 194 165"
+loc farb4 = "252 141 98"
+loc farb5 = "179 226 205"
+loc farb6 = "253 205 172"
+
+tw 		line  pres_pf Year, sort lc("`farb5'") 				 	|| ///
+		line pres_pv Year, lc("`farb6'") 						|| ///
+		line  adm_pf  Year, sort  lc("`farb3'") lpattern(dash) 	|| ///
+		line adm_pv Year, lc("`farb4'") lpattern(dash)  		|| ///
+		line died_pf  Year, sort  lc("`farb1'") lpattern(.)  	|| ///
+		line died_pv Year, lc("`farb2'") lpattern(.) 			   ///
+	legend(order(1 "{it:P.falciparum}"  2 "{it: P.vivax}{bf:  malaria episodes}"  ///
+				 3 "{it:P.falciparum}"  4 "{it: P.vivax}{bf:   early admissions}" ///
+				 5 "{it:P.falciparum}"	6 "{it: P.vivax}{bf:   early deaths}")    ///
+					col(2) pos(6) )  											  ///
+	xlab(2004(1)2013, labsize(small)) xsca(nofextend) 						  		///
+	xtitle("Year", margin(medsmall))  						  						///
+	ytitle(, margin(medsmall))  ylab(,angle(h) nogrid) 						  		///
+	graphr(color(white) lcolor(white)) plotr(color(white) ) 						///
+	title("Yearly frequency of malaria episodes, early admissions and early deaths", ///
+	size(medsmall) placement(west) margin(-8 0 0 -3 ) justification(left)) xsize(12) ysize(10)		 
+
+/
+/************************************************************************************
+* Malaria early morbidity and mortality 											*
+* Preliminary analysis  - generating tables and graphs - file last edited - 28 May 2015	*
+* - first run do files '1a. Setup', and optionally '1b stvary diagnostics'			  	*
+**************************************************************************************/
+
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\Users\Carl\Google Drive\MPH\Projects\Malaria project\Data\results"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+
+*TIES
+loc ties efron
+
+*prepare folder for results
+local T = c(current_time)
+local T = subinstr("`T'",":","_",.)
+mkdir "`ties' `today' `T'"
+cd "`ties' `today' `T'"
+mkdir figures
+cd figures
+mkdir PH
+cd ..
+
+keep obsno hrn Age Sex Ethnic AGR4 AdmNext14 DiedNext14 YearCat sexPreg hrnmal AdmFU14m DiedFU14m whiteCat tgn SpeciesX AdmFU15 DiedFU15
+
+*timer Start
+
+timer clear 1
+timer on 1
+	
+*** use "C:\Users\Carl\Google Drive\MPH\Internships\Malaria project\Data\File archive\MalariaEpisodes_vs 1.9.3.dta", clear  /*FIRST RUN SET UP */
+
+*Outcome / Failure variables
+		loc outcome Adm Died		/* list of outcomes of interest to be analysed separately */
+		loc Adm_f early admission			/* full title of 'admission' outcome for graph display */
+		loc Died_f early death			/* full title of 'death' outcome for graph display */
+
+
+*Exposures
+loc commonExp	SpeciesX			///
+				AGR4				///
+				sexPreg				///
+				Ethnic				///
+				whiteCat			///
+				tgn
+
+*Exposures
+loc iExp		i.SpeciesX		///
+				b4.AGR4 			///
+				i.sexPreg 			///
+				i.Ethnic 			///
+				i.whiteCat 			///
+				i.tgn
+		
+
+				
+*Model specifications
+loc model1 ", cluster(hrn)"
+loc model2 "i.SpeciesX b4.AGR4 i.sexPreg i.Ethnic i.whiteCat i.tgn, cluster(hrn) `ties'"
+		
+*save graph style in local macro			
+loc graph_style graphregion(fcolor(white) lcolor(white)) scheme(s2color)
+di "`graph_style'"
+
+	foreach outc of loc outcome {
+*Initiate outcome timer
+timer clear 2
+timer on 2
+
+*Copy template result sheet for each outcome
+copy ..\Template_resTable_v2.xlsx `outc'_resTable.xlsx
+ 
+*Set up for export of data to Excel results worksheet
+putexcel set "`outc'_resTable.xlsx", modify keepcellformat
+putexcel	A1  = ("Model 2: stcox `model2' ")  	/* Title for excel results sheet */ ///
+			C2 = ("`:di proper("``outc'_f'")'")				
+
+*Create macro references for excel export columns
+loc nN_Cell 		= "C"
+loc uHRCell 		= "D"
+loc uHRpvalCell 	= "E"
+loc M2_HRCell 		= "G"
+loc M2_HRpvalCell 	= "H"
+loc mfp_HRCell 		= "J"
+loc mfp_HRpvalCell 	= "K"
+
+
+
+*Start cell for input values
+loc vcell = 5
+loc varcell = `vcell'
+*Set up for survival analysis  (AdmFU14m and DiedFU14m are currently specified - recoding of follow up time through 0.5 to 14.5)
+	stset `outc'FU15, fail(`outc'Next14) id(obsno)
+	loc axismax 15
+
+
+
+* *Graph example risk set for outcome (need to fix outpoints and legend to be closed dot, not arrow)
+
+	
+	
+	loc Adm_hlstart = 72745
+	loc Adm_hlend = 72752
+	loc Died_hlstart = 72745
+	loc Died_hlend = 72752
+	loc `outc'rs = ``outc'_hlstart'+1
+	loc `outc're = ``outc'_hlend'-1
+	loc hlimit = "if hrnmal>``outc'_hlstart' & hrnmal <``outc'_hlend'"
+	loc mcols = "black"
+	loc ts = "_t0"
+	loc te = "_t"
+	loc yvar = "hrnmal"
+	loc textv = ``outc'rs' -.2
+
+	twoway	sc  `yvar' `ts' `hlimit', mc(`mcols') ms(o)	 									||	///
+			pcspike `yvar' `ts' `yvar' `te' `hlimit' & _d==0, mc(`mcols') lcolor(`mcols')	||	///
+			pcspike `yvar' `ts' `yvar' `te' `hlimit' & _d==1, lcolor(`mcols') 				||	///
+			sc `yvar' `te' `hlimit' & _d==1, mc(red) 	ms(X)								||	///
+			sc  `yvar' `te' `hlimit' & _d==0, mc(`mcols') ms(o)								  	///
+			text(72746.1 0 "(not malaria patient)", size(small) placement(e) color(gray))   	///
+			text(72748.1 0 "(not malaria patient)", size(small) placement(e) color(gray))  		///
+			text(72751.1 0 "(not malaria patient)", size(small) placement(e) color(gray))  		///
+				name("`outc'_egRiskset``outc'rs'to``outc're'",replace) 							/// 
+				title("HRN clusters (``outc'_f' riskset example)",size(medsmall)				///
+					placement(west) margin(-10 0 0 -3) justification(left))  					///
+				ylabel(72746.1(1)72751.1, 			 format(%9.0f)								///
+					nogrid angle(horizontal) labsize(small)) 									///
+				ytitle("Hospital Record Number clusters") 										///
+				xlabel(0(1)`axismax', labsize(small)) 	 yscale(rev)									///
+				xtitle("Time (days) from entry (_t0) until ``outc'_f' or censoring (_t)"		///
+					, margin(medsmall)) /*"*/ 													///
+				xline(15, lpattern(shortdash) lc(edkblue) noextend) 							///
+				text(72746 15 "End of two weeks' follow up", size(small) placement(w)) 			///
+				legend(on order(1 "entry / exit (censored)" 2 "time at risk" 4 "``outc'_f'") 	///
+				colfirst notextfirst nostack cols(6) size(small) nobox 							///
+					region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))		///
+				`graph_style' xscale(nofextend)   	
+	graph export figures/`outc'_egRiskset``outc'rs'to``outc're'.png, as(png) replace
+
+
+	
+***Loop code over explanatory variables for descriptive statistics
+
+foreach v of varlist `commonExp' {
+
+	*Export variable name
+	putexcel 	A`varcell'  = ("`: var label `v''") 	
+	
+	*Macros for key aspects (min max, n etc)
+	su `v', meanonly
+	loc vmax = r(max)
+	loc vmin = r(min)
+	loc vcat = (`vmax'-`vmin') +1 
+	if `vcat' <6 { 																				/*alternate spacing for extra categories*/
+			loc alt=""
+		}
+		else {
+			loc alt="alt"
+		}
+	loc labname	= `"`: val label `v''"' /*"*/
+	qui: levelsof `v', loc(vl) 
+	
+	*Macros for Kaplan-Meier curve and other graphs
+	loc labname		= `"`: val label `v''"' /*"*/
+	
+	tempvar `v'_S	/* generating temporary survivor function variable by explanatory variable to establish scaling */
+	sts gen ``v'_S' = s, by(`v') 		
+	tempvar `v'_F
+	gen ``v'_F' = 1 - ``v'_S'
+	su ``v'_F', meanonly
+	loc fmax = r(max)
+	loc fmin = r(min)
+	loc failmax		=round(trunc((r(max)*10))/10,.25)
+	loc gap = round(`failmax'/5,.05)
+	loc roundmax =`failmax'-`gap'
+	loc mindif = r(max)-`roundmax'
+	loc med = ""
+	loc call = ""
+	if `mindif' > .14 {
+			loc med= `roundmax'+ .1
+		}
+		
+
+
+	loc ordnum = 1
+	foreach j of loc vl {  		/*	establishing labels for value categories  */
+		local call `call' `ordnum' "`: label `labname' `j''"	
+		loc ++ordnum
+	}
+	
+	*KM survival curve (automatic y axis scaling)  
+
+	sts graph, by(`v') failure  																	///
+		 name("`outc'_`v'_KM", replace) 															///
+		title("Probability of failure: ``outc'_f', by `: var label `v''", size(medsmall) 			///
+			placement(west) margin(-8 0 0 -3 ) justification(left))  								///
+		xlab(0(1)`axismax', labsize(small)) xmtick(0(1)15) 												///
+		xtitle("Days since presentation with malaria", margin(medsmall))						///
+		ylab(minmax `fmin' `fmax' 0(`gap')`roundmax' `med',														///
+			add format(%5.3f) nogrid labsize(small) angle(horizontal)) 								///
+		legend(on order(`call') colfirst notextfirst nostack cols(6) size(small)   					///
+			nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1)) 			///
+		`graph_style'  xscale(nofextend) yscale(nofextend) 											///
+		note(" ")
+	graph export figures/`outc'_`v'_KM.png, as(png) replace
+	
+	loc adjvar = subinstr("`commonExp'", "`v'", " ", 1)
+	loc adjcall
+	foreach av of varlist `adjvar' {
+	loc adjcall `adjcall' "`:var label `av'', "
+	}
+
+	loc adjcall = subinstr(`"`adjcall'"', char(34), "", . ) 			/*"*/
+	loc adjcall = substr("`adjcall'",1,length("`adjcall'")-2)
+
+	di "Adjusting for `adjcall'"  
+	
+		
+		sts graph, by(`v') failure   adjustfor("`adjvar'")					/*"*/			///
+		 name("`outc'_`v'_KM_adj", replace) 														///
+		title("Probability of failure: ``outc'_f', by `: var label `v'', adjusted*", size(medsmall)	///
+			placement(west) margin(-8 0 0 -3 ) justification(left))  								///
+		xlab(0(1)`axismax', labsize(small)) xmtick(0(1)15) 												///
+		xtitle("Days since presentation with malaria event", margin(medsmall))						///
+		ylab(minmax `fmin' `fmax' 0(`gap')`roundmax' `med',														///
+			add format(%5.3f) nogrid labsize(small) angle(horizontal)) 								///
+		legend(on order(`call') colfirst notextfirst nostack cols(6) size(small)   					///
+			nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1)) 			///
+		`graph_style'  xscale(nofextend) yscale(nofextend) 											///
+		note("*adjusted for:`adjcall'")
+	graph export figures/`outc'_`v'_KM_adj.png, as(png) replace	
+	
+	graph combine `outc'_`v'_KM `outc'_`v'_KM_adj, name("`outc'_`v'_KM_combo", replace) xsize(20) ysize(10.4) `graph_style' 
+	
+	*Export cumulative incidence to Excel
+	tab `v' `outc'Next14, row matcell(`v'_`outc'_tab)
+	mata : st_matrix("`v'_`outc'_N", rowsum(st_matrix("`v'_`outc'_tab")))    /*sums columns for total N*/
+	loc r = 1
+	
+	foreach i of loc vl { 
+		putexcel B`varcell' = (`"`: label `labname' `i''"') /*"*/
+		putexcel `nN_Cell'`varcell' = ("`:di %6.0fc `v'_`outc'_tab[`r',2]'/`:di %6.0fc (`v'_`outc'_N[`r',1])' (`:di%-5.2f ((`v'_`outc'_tab[`r',2]/(`v'_`outc'_N[`r',1]))*100)')")
+		
+		loc ++r     /*incremements the row number in stored matrix results */
+		loc ++varcell	  /*incremements the row number for output to Excel */
+		}
+	}
+	
+***Loop code over explanatory variables - Hazard ratios	
+	loc varcell = `vcell'
+	foreach v in `iExp' {	
+		***Univariable unadjusted model  (results for each outcome output to excel worksheets per variable in folder 'Results')
+		stcox `v', `ties'
+		matrix vHR = r(table)'
+		local names: rownames vHR
+		loc r = 1
+		foreach n of loc names {
+		loc vr `=substr("`n'",1,1)'   /*"*/
+		loc br `=substr("`n'",2,1)'   /*"*/
+
+		di "`vr'"   
+		di "`br'"
+		
+		if "`br'" == "b" {
+					putexcel 			`uHRCell'`varcell' = ("1.00 (reference)") 															///
+										`uHRpvalCell'`varcell' = ("-")
+					}
+		if "`br'" == "o" {
+					putexcel 			`uHRCell'`varcell' = ("(omitted)") 															///
+										`uHRpvalCell'`varcell' = ("-")
+					} 	
+		if "`br'" == "." {
+					putexcel 			`uHRCell'`varcell' = ("`:di%3.2f vHR[`r',1]' (`:di%3.2f vHR[`r',5]', `:di%3.2f vHR[`r',6]')") 		///
+										`uHRpvalCell'`varcell' = ("`: di subinword("`: di %4.3f vHR[`r',4]'","0.000","< 0.001",1)'")
+					}			
+
+
+		loc ++r
+		loc ++varcell 
+		di "r = `r'; varcell = `varcell'"
+		}
+
+ }
+ 	
+	  /* end of univariable loop */
+
+***Plot  failure rate for Year with Era marker   
+loc `outc'_var YearCat 								/*define list of explanatory variables*/
+foreach v of varlist ``outc'_var' {
+	su `v', meanonly
+	loc vmax = r(max)
+	loc eramarker = ""
+	set varabbrev off
+	loc Adm_era_mark = 22.75
+	loc Died_era_mark = 0.55
+
+	strate `v', per(10000) graph cluster(hrn)													///
+		name("`outc'_YearEra_strate",replace) 													/// 
+		title("Rate of ``outc'_f' per 10,000 patient-days, by Year & ACT Era", 					///
+			size(medsmall) placement(west) margin(-10 0 0 -3) justification(left))  			///
+		m(o) mc(black) ciopts(lc(black) ls(p2other))											///
+		xlabel(#`vmax',valuelabel labsize(small))												///
+		xtitle(`"`: var label `v''"', margin(medsmall)) /*"*/									///
+		ylabel(, nogrid angle(horizontal) labsize(small)) ytitle("") 							///	
+		xline(3.4, lpattern(shortdash) lc(blue) noextend) 										///
+		text(``outc'_era_mark' 5.7 "ACT usage commences in April 2006", size(small) 			///
+			justification(left)) 																///
+		addplot(pcarrowi ``outc'_era_mark' 4 ``outc'_era_mark' 3.6 (3), mc(black) 				///
+			msize(medsmall) mfc(black) lc(black)) 												///
+		legend(off) 																			///
+		xscale(nofextend) yscale(nofextend) `graph_style'										
+	graph export figures/`outc'_Year-Era_strate10k.png, as(png) replace
+	}
+    
+	timer off 2
+	timer list 2
+	di "Time to process data for `outc': " r(t1)/60 "minutes"
+}  /* end of outcome loop */
+
+timer off 1
+timer list 1
+di "Time to process complete do-file: " r(t1)/60 "minutes"
+
+
+	
+	
+/************************************************************************************
+* Malaria early morbidity and mortality 											*
+* Risk of Admission as inpatient within 14 days of presentation - 9 December 2014 	*
+* - first run do files '1a...' (Setup) and '1b...' (stvary diagnostics)				*
+************************************************************************************/
+
+
+*Set up log and working directory
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\Users\Carl\Google Drive\MPH\Projects\Malaria project\Data\results"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+*local macro to establish method of Cox model ties handling
+loc ties efron
+
+* prepare folder for results
+local T = c(current_time)
+local T = subinstr("`T'",":","_",.)
+mkdir "`ties' `today' `T'"
+cd "`ties' `today' `T'"
+mkdir figures
+cd figures
+mkdir PH
+cd ..
+
+
+*timer Start
+
+timer clear 1
+timer on 1
+	
+	
+***	Admission
+*Logistic regression
+	*m1a
+	logistic ip i.SpeciesX i.Ethnic ib4.AGR4 i.sexPreg, vce(cluster hrn)
+	estimates store M1a_OR_v2																/* store model for later retrieval */
+	estimates save M1a_OR_v2
+	linktest
+
+	*m1b
+	logistic ip i.SpeciesX i.Ethnic ib4.AGR4 i.sexPreg i.whiteCat, vce(cluster hrn)
+	estimates store M1b_OR														/* store model for later retrieval */
+	estimates save M1b_OR
+	linktest
+
+	* *M1a and M1b lrtest: Doesn't work - uneven observation duh
+	* lrtest M1a_OR M1b_OR
+
+*Cox PH regression
+	stset AdmFU15, fail(AdmNext14) id(obsno)
+
+	
+	*m2a: risk of admission within 15 days in those who were not admitted immediately, and on oral or dhp
+	stcox i.SpeciesX ib4.AGR4 i.Ethnic i.sexPreg i.oral_v_dhp if ip==0, cluster(hrn) efron
+	estimates store M2a_HR															/* store model for later retrieval */
+	estimates save M2a_HR
+	linktest, cluster(hrn) efron
+	
+	*m2b: as above with wcc, limited to those with laboratory data
+	stcox i.SpeciesX ib4.AGR4 i.Ethnic i.sexPreg i.oral_v_dhp i.whiteCat if ip==0, cluster(hrn) efron
+	estimates store M2b_HR															/* store model for later retrieval */
+	estimates save M2b_HR
+	linktest, cluster(hrn) efron
+	
+	* lrtest M2a_HR M2b_HR
+	
+	*Mann-Whitney U-test
+	ranksum MalPres, by(oral_v_dhp)
+	ranksum MalPres, by(oral_v_dhp) porder
+	median MalPres, by(oral_v_dhp) exact
+
+***Death
+	stset DiedFU15, fail(DiedNext14) id(obsno)
+	
+
+	*m3a:  risk of death by day 15 in those who were not initially admitted, including oral / dhp first treatment
+	stcox i.SpeciesX ib4.AGR4 i.Ethnic i.sexPreg i.oral_v_dhp if ip==0, cluster(hrn) efron
+	estimates store M3a_HR															/* store model for later retrieval */
+	estimates save  M3a_HR
+	linktest, cluster(hrn) efron
+	
+	*m3b: with WBC count normality
+	stcox i.SpeciesX ib4.AGR4 i.Ethnic i.sexPreg i.oral_v_dhp i.whiteCat if ip==0, cluster(hrn) efron
+	estimates store M3b_HR															/* store model for later retrieval */
+	estimates save  M3b_HR
+	linktest, cluster(hrn) efron
+	
+	* m4a: risk of death by day 15 limited to those who were admitted immediately & rx'd IV treatment first
+
+	
+	stcox i.SpeciesX ib4.AGR4_4b i.Ethnic i.sexPreg i.ivArt if ip==1, cluster(hrn) efron
+	estimates store M4a_HR															/* store model for later retrieval */
+	estimates save M4a_HR
+	linktest, cluster(hrn) efron
+	
+	*m4b:  with WBC count normality
+	stcox i.SpeciesX ib4.AGR4 i.Ethnic i.sexPreg i.ivArt i.whiteCat if ip==1, cluster(hrn) efron
+	estimates store M4b_HR															/* store model for later retrieval */
+	estimates save M4b_HR
+	linktest, cluster(hrn) efron
+	
+	timer off 1
+	timer list 1
+	
+/*******************************************************
+*Multivariable Fractional Polynomial regression
+*	Drawing on do-file of Julie Simpson and Nick Douglas
+********************************************************/
+
+capture log close
+version 13.1
+set linesize 100
+set more off
+cd "C:\data\malaria\results"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+local T = c(current_time)
+local T = subinstr("`T'",":","_",.)
+
+capture: drop agegraph
+
+egen agegraph = cut (Age), at (0 (0.04) 60.04)
+sort Age agegraph
+
+*Generate variable excluding 1st and 99th percentiles 
+su Age, d
+loc agep1 r(p1)
+loc agep99 r(p99)
+gen Age99p = 1 if  Age > `agep1' & Age < `agep99'
+codebook Age99p
+su Age if Age99p==.
+
+hist Age if Age99p==.
+hist Age if Age99p==1
+
+tw hist Age if Age99p==1, freq width(1) fc("216 179 101") lc("black") lwidth(vvvthin) || hist Age if Age99p==., fc("90 180 172") lc("black")  lwidth(vvvthin) freq width(.5) xtitle(,margin(medsmall)) ytitle(,margin(medsmall)) plotr(color(white)) graphr(color(white) lc(white)) ylab(,nogrid angle(h) format(%9.0fc)) ///
+legend(order(1 "146 days {&le} Age {&le} 58 years" ///
+			2 "Age {&lt} 146 days {&union} 58 years {&lt} Age") rows(2) pos(6)) ///
+|| pcarrowi 14000 0.4  12500 0.4  "1st percentile", lc("black") lwidth(vvthin)  msymbol(i) mlabcolor(black) mc(black) mlwidth(vthin) mlabpos(1) ///
+|| pcarrowi 14000 58  1000 58  "99th percentile", lc("black") lwidth(vvthin)   msymbol(i) mlabcolor(black) mc(black)  mlwidth(vthin) mlabpos(1) ///
+name(age_histo_percentiles)
+
+
+* Admission  
+
+* MFP without age in 1st or 99th percentile
+xi: mfp logistic AdmNext14 i.SpeciesX i.EthnicX Age i.sexPreg if Age99p==1, cluster(hrn) df(2, Age: 4)
+/*check model fit*/
+linktest, cluster(hrn)
+estat gof
+/*generate predicted probability and 95% CI for plotting*/
+qui: adjust  _IEthnicX_2 _IEthnicX_3 _IsexPreg_2 _IsexPreg_3, by(agegraph SpeciesX) pr ci replace
+
+* ***Graph the results***
+twoway   (rarea ub lb agegraph if SpeciesX==4 & 	///
+	agegraph>0.019, fcolor(gray) fintensity(50) lcolor(white) 			///
+	lwidth(none)) (line pr agegraph if SpeciesX==4 & agegraph>0.019, 		///
+	lcolor(gray) lwidth(thick) lpattern(solid)) (rarea ub lb agegraph 	///
+	if SpeciesX==5 & agegraph>0.20, fcolor(dkorange) fintensity(50) 		///
+	lcolor(white) lwidth(none)) (line pr agegraph if SpeciesX==5 & 			///
+	agegraph>0.15, lcolor(dkorange) lwidth(thick) lpattern(solid)) 		///
+	(rarea ub lb agegraph if SpeciesX==1 & agegraph>0.019, 					///
+	fcolor("147 30 17") fintensity(50) lcolor(white) lwidth(none)) 		///
+	(line pr agegraph if SpeciesX==1 & agegraph>0.019, lcolor("147 30 17") 	///
+	lwidth(thick) lpattern(solid)) (rarea ub lb agegraph if SpeciesX==2 & 	///
+	agegraph>0.019, fcolor("21 155 2") fintensity(50) lcolor(white) 	///
+	lwidth(none)) (line pr agegraph if SpeciesX==2 & agegraph>0.019, 		///
+	lcolor("21 155 2") lwidth(thick) lpattern(solid)), 					///
+	ytitle(Probability of early admission) ytitle(, margin(medium))	///
+	ylabel(, nogrid) ymtick(, nogrid) xtitle(Age (years)) 				///
+	xtitle(, margin(medium)) 											///
+	title("Probability of early admission by {it:Plasmodium} species and age*", span	///
+	size(medlarge) margin(medium)) ///
+	legend(on order(4 "{it:P. vivax} (95% CI)" 2 "{it:P. falciparum} (95% CI)" 6 "{it:P. malariae} (95% CI)" 8 "Mixed (95% CI)") ///
+	colfirst notextfirst nostack cols(2) size(small) nobox 				///
+	region(fcolor(white) margin(medium) lcolor(white)) bmargin(zero) 	///
+	position(2) ring(0)) graphregion(fcolor(white) lcolor(white) 		///
+	ifcolor(white) ilcolor(white)) plotregion(fcolor(white) 			///
+	lcolor(white) ifcolor(white) ilcolor(white)) ///
+	note("*adjusted for ethnicity, sex and pregnancy status;" "Age excludes observations below 1st percentile and above 99th percentile", span) ///
+	name(fp_age_Adm_1, replace)
+	
+
+xi: mfp logistic DiedNext14 i.SpeciesX i.EthnicX Age i.sexPreg if Age99p==1, cluster(hrn) df(2, Age: 5)
+/*check model fit*/
+linktest, cluster(hrn)
+estat gof
+/*generate predicted probability and 95% CI for plotting*/
+qui: adjust  _IEthnicX_2 _IEthnicX_3 _IsexPreg_2 _IsexPreg_3, by(agegraph SpeciesX) pr ci replace
+
+
+* ***Graph the results***
+twoway   (rarea ub lb agegraph if SpeciesX==4 & 	///
+	agegraph>0.019, fcolor(gray) fintensity(50) lcolor(white) 			///
+	lwidth(none)) (line pr agegraph if SpeciesX==4 & agegraph>0.019, 		///
+	lcolor(gray) lwidth(thick) lpattern(solid)) (rarea ub lb agegraph 	///
+	if SpeciesX==5 & agegraph>0.20, fcolor(dkorange) fintensity(50) 		///
+	lcolor(white) lwidth(none)) (line pr agegraph if SpeciesX==5 & 			///
+	agegraph>0.15, lcolor(dkorange) lwidth(thick) lpattern(solid)) 		///
+	(rarea ub lb agegraph if SpeciesX==1 & agegraph>0.019, 					///
+	fcolor("147 30 17") fintensity(50) lcolor(white) lwidth(none)) 		///
+	(line pr agegraph if SpeciesX==1 & agegraph>0.019, lcolor("147 30 17") 	///
+	lwidth(thick) lpattern(solid)) (rarea ub lb agegraph if SpeciesX==2 & 	///
+	agegraph>0.019, fcolor("21 155 2") fintensity(50) lcolor(white) 	///
+	lwidth(none)) (line pr agegraph if SpeciesX==2 & agegraph>0.019, 		///
+	lcolor("21 155 2") lwidth(thick) lpattern(solid)), 					///
+	ytitle(Probability of early death) ytitle(, margin(medium))	///
+	ylabel(, nogrid) ymtick(, nogrid) xtitle(Age (years)) 				///
+	xtitle(, margin(medium)) 											///
+	title("Probability of early death by {it:Plasmodium} species and age*", span	///
+	size(medlarge) margin(medium)) ///
+	legend(on order(4 "{it:P. vivax} (95% CI)" 2 "{it:P. falciparum} (95% CI)" 6 "{it:P. malariae} (95% CI)" 8 "Mixed (95% CI)") ///
+	colfirst notextfirst nostack cols(2) size(small) nobox 				///
+	region(fcolor(white) margin(medium) lcolor(white)) bmargin(zero) 	///
+	position(2) ring(0)) graphregion(fcolor(white) lcolor(white) 		///
+	ifcolor(white) ilcolor(white)) plotregion(fcolor(white) 			///
+	lcolor(white) ifcolor(white) ilcolor(white)) ///
+	note("*adjusted for ethnicity, sex and pregnancy status;" "Age excludes observations below 1st percentile and above 99th percentile", span) ///
+	name(fp_age_Died_1, replace)	
+
+/**********************
+*
+*Model 1 regression diagnostics
+*
+***********************/
+
+*Model 1
+use "C:\data\malaria\MalEps_v1.9.3_r5oct2015.dta" 
+logistic ip i.SpeciesX i.EthnicX i.AGR4_4b i.sexPreg, cluster(hrn)
+
+
+/*diagnostics*/
+predict r if e(sample), resid  		/* predict Pearson residuals */
+
+predict dbeta if e(sample), dbeta	/* Pregibon's delta-beta  */
+
+predict phat if e(sample)			/* predicted probability */
+
+logistic ip i.SpeciesX i.EthnicX i.AGR4_4b i.sexPreg if Preg==0, cluster(hrn)
+
+predict r_np if e(sample), resid
+
+predict phat_np if e(sample)
+
+/*Colours*/
+loc farb1 "27 158 119"	
+loc farb2 "217 95 2"	
+loc farb3 "117 112 179"	
+loc farb4 "231 41 138"
+loc farb5 "102 166 30"
+
+/*Graph Pearson residual by probability, for ethnic background, sex and pregnancy status*/
+tw sc r phat if SpeciesX==1, mc("`farb1'") || sc r phat if SpeciesX==2, mc("`farb2'") || sc r phat if SpeciesX==4, mc("`farb3'") || sc r phat if SpeciesX==5, mc("`farb4'") by(EthnicX sexPreg, title(,size(small))) legend(order(1 "{it: P.falciparum}" 2 "{it: P.vivax}" 3 "{it: P.malariae}" 4 "mixed") title("{it: Plasmodium} species",size(medsmall)) rows(1)) ylab(-10(5)10,nogrid angle(h) labsize(small)) yline(0, lc(black)) yline(5, lc(red)) yline(-5,lc(red)) xtitle(,margin(medsmall)) xlab(0(.2)1,labsize(small)) graphr(color(white) lc(white)) plotr(color(white)) 
+
+
+*MFP model -  admission
+xi: mfp logistic AdmNext14 i.SpeciesX i.EthnicX Age i.sexPreg if Age99p==1, cluster(hrn) df(2, Age: 4)
+predict r_mfpA, resid
+codebook hrn
+predict phat_mfpA if e(sample)
+tw 	sc r_mfpA phat_mfpA if Species==1, mc( "27 158 119") ms(Oh) || ///
+	sc r_mfpA phat_mfpA if Species==2, mc("217 95 2") ms(Oh) ||	///
+	sc r_mfpA phat_mfpA if Species==4 , mc("117 112 179") ms(Oh) ||	///
+	sc r_mfpA phat_mfpA if Species==5 , mc("231 41 138") ms(Oh) ||	///
+	pcarrowi 9.7 0.25 9.7 0.15 (3) "341 Highland males aged 20 with falciparum infection, receiving ", mc(black)  lc(black) mlabcolor(black) text(9.4 0.26 "various courses of treatment (mostly DHP, 44.5%) and presenting" "across each year and month between 2004 and 2013", j(left) place(4) size(small)) ylab(,nogrid) yline(0,lc(black)) yline(5,lc(gray)) yline(-5,lc(gray)) graphr(color(white) lc(white)) plotr(color(white)) legend(order(1 "{it: P. falciparum}" 2 "{it: P.vivax}" 3 "{it: P.malariae}" 4 "mixed" )) xtitle("Pr(early admission), MFP model", margin(medsmall)) ytitle(Pearson's residuals, margin(medsmall)) 
+tab Ethnic AGR4  if r > 5 &r~=.
+tab Ethnic SpeciesX  if r > 5 &r~=.
+
+graph export "C:\data\malaria\Final\figures\mfpA_residualsPfPv.png", as(png) replace
+
+
+*MFP model -  Death
+xi: mfp logistic DiedNext14 i.SpeciesX i.EthnicX Age i.sexPreg if Age99p==1, cluster(hrn) df(2, Age: 4)
+linktest, cluster(hrn)    /* hat^2: z -0.39   p = 0.697 */
+estat gof				/* p = 1.000  */
+/* the above suggest adequate fit, inspite of the appearance of below */
+estimates
+predict r_mfpD, resid
+codebook hrn
+predict phat_mfpD if e(sample)
+
+
+tw 	sc r_mfpD phat_mfpD if Species==1, mc( "27 158 119") ms(Oh) || ///
+	sc r_mfpD phat_mfpD if Species==2, mc("217 95 2") ms(Oh) ||	///
+	sc r_mfpD phat_mfpD if Species==4 , mc("117 112 179") ms(Oh) ||	///
+	sc r_mfpD phat_mfpD if Species==5 , mc("231 41 138") ms(Oh) 	///
+	ylab(,nogrid) yline(0,lc(black)) yline(5,lc(gray)) ///
+	xlab(0(.005).03)															///
+	graphr(color(white) lc(white)) plotr(color(white)) 						///
+	legend(order(1 "{it: P. falciparum}" 2 "{it: P.vivax}" 3 "{it: P.malariae}" 4 "mixed" )) 				///
+	xtitle("Pr(early death), MFP model", margin(medsmall)) 					///
+	ytitle(Pearson's residuals, margin(medsmall)) 
+
+graph export "C:\data\malaria\Final\figures\mfpD_residualsPfPv.png", as(png) replace
+			
+
+*Explore extremes of the Pearson residuals amongst subgroups
+codebook hrn if r_mfpD > 5 &r_mfpD~=.  /* 1,384/182,292 episodes */
+tab EthnicX sexPreg if r_mfpD > 5 &r_mfpD~=. /*doesn't appear to differ much between nonPreg females and males*/
+bysort EthnicX: tab SpeciesX AGR4  if r > 5 &r~=.
+bysort DiedNext14: tab AGR4 SpeciesX if r>5&r~=.  /* mostly did not die; those who did mostly older (15+); it seems <1 years quite well predicted (but then again, many some excluded with no 1st percentile...) but Pv death in 1 to <5 overestimated */
+/*Poorly predicted*/
+tab Year sexPreg if r_mfpD > 10 & AGR4==2 & EthnicX==3 /* 2 female non-Papuans infants aged 1 to <5, in 2005/2006 w/ mixed infection */
+
+
+/********************************
+*
+*Proportional Hazards Assessment
+*
+*******************************/	
+
+
+
+**M2AHR
+***Model for hazard ratio of admission in outpatients on oral treatment (ie. risk of admission after first day of follow up)
+*** Variables are Species (omitting Ovale), Age group (4 categories), Ethnic group, combined sex and pregnancy status, and oral treatment
+
+use "C:\data\malaria\results\efron  8 Oct 2015 16_30_08\M2a_HR.dta", clear 
+stset AdmFU15, fail(AdmNext14)
+/*  STORED MODEL WITH GENERATED SCALED SCHOENFELD RESIDUALS
+loc model M2a_HR
+loc cond if ip==0
+stcox i.SpeciesX i.AGR4_4b i.EthnicX i.sexPreg i.oral_v_dhp `cond', allbaselevels vsquish cluster(hrn) efron cformat(%6.2f) nolog
+predict `i'*, scaledsch
+*/
+
+loc model M2a_HR
+
+***Combination Graphs		
+		*Species (SpeciesX)
+		use "C:\data\malaria\results\efron  8 Oct 2015 16_30_08\M2a_HR.dta", clear 
+
+		running sch1 _t if _d == 1,  gen(smooth_sch1 ) nodraw
+		running sch2 _t if _d == 1,  gen(smooth_sch2 ) nodraw
+		running sch3 _t if _d == 1,  gen(smooth_sch3 ) nodraw
+		running sch4 _t if _d == 1,  gen(smooth_sch4 ) nodraw
+		running sch5 _t if _d == 1,  gen(smooth_sch5 ) nodraw
+		running sch6 _t if _d == 1,  gen(smooth_sch6 ) nodraw
+		running sch7 _t if _d == 1,  gen(smooth_sch7 ) nodraw
+		running sch8 _t if _d == 1,  gen(smooth_sch8 ) nodraw
+		running sch9 _t if _d == 1,  gen(smooth_sch9 ) nodraw
+		running sch10 _t if _d == 1, gen(smooth_sch10) nodraw
+		running sch11 _t if _d == 1, gen(smooth_sch11) nodraw
+		running sch12 _t if _d == 1, gen(smooth_sch12) nodraw
+		running sch13 _t if _d == 1, gen(smooth_sch13) nodraw
+		running sch14 _t if _d == 1, gen(smooth_sch14) nodraw
+		running sch15 _t if _d == 1, gen(smooth_sch15) nodraw
+		running sch16 _t if _d == 1, gen(smooth_sch16) nodraw
+		gen smooth_esca1  = exp(smooth_sch1 )
+		gen smooth_esca2  = exp(smooth_sch2 )
+		gen smooth_esca3  = exp(smooth_sch3 )
+		gen smooth_esca4  = exp(smooth_sch4 )
+		gen smooth_esca5  = exp(smooth_sch5 )
+		gen smooth_esca6  = exp(smooth_sch6 )
+		gen smooth_esca7  = exp(smooth_sch7 )
+		gen smooth_esca8  = exp(smooth_sch8 )
+		gen smooth_esca9  = exp(smooth_sch9 )
+		gen smooth_esca10 = exp(smooth_sch10)
+		gen smooth_esca11 = exp(smooth_sch11)
+		gen smooth_esca12 = exp(smooth_sch12)
+		gen smooth_esca13 = exp(smooth_sch13)
+		gen smooth_esca14 = exp(smooth_sch14)
+		gen smooth_esca15 = exp(smooth_sch15)
+		gen smooth_esca16 = exp(smooth_sch16)
+				
+		loc model M2a_HR
+		loc var Species
+		tw 	line smooth_esca1 _t, sort lwidth(0.5) lc("27 158 119")  ||    /// 
+			line smooth_esca3 _t, sort lwidth(0.5) lc("117 112 179") ||     /// 
+			line smooth_esca4 _t, sort lwidth(0.5) lc("231 41 138")||		///
+			line smooth_esca2 _t, sort lwidth(0.5) lc("217 95 2")	    /// 
+			name(`var'_PHtest, replace) ///
+		legend(order(1 "{it: P.falciparum} (ref.)" 4 "{it: P.vivax} (p < 0.0001)" 2 "{it: P.malariae} (p = 0.458)" 3 "mixed (p = 0.044)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("exponentiated scaled Schoenfeld residuals", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`var'PHtest_`model'.png", as(png) replace width(800) height(600)
+			
+		*Age (AGR4_4b)
+		loc var Age group
+		loc vars AGR4
+		tw 	line smooth_esca6 _t, sort lwidth(0.5) lc("27 158 119") ||    /// 
+			line smooth_esca7 _t, sort lwidth(0.5) lc("217 95 2")	||    /// 
+			line smooth_esca8 _t, sort lwidth(0.5) lc("117 112 179")||    /// 
+			line smooth_esca5 _t, sort lwidth(0.5) lc("231 41 138")	      /// 
+			name(`vars'_PHtest, replace) ///
+		legend(order(1 "0 to < 1 year (p = 0.131)" 2 "1 to < 5 years (p = 0.010)" 3 "5 to <15 (p = 0.0008 )" 4 "15+ (ref.)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("  ", margin(medsmall))   subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Ethnic 
+		loc var Ethnic group
+		loc vars EthnicX
+		tw 	line smooth_esca9  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca10 _t, sort lwidth(0.5) lc("217 95 2")		||     ///
+			line smooth_esca11 _t, sort lwidth(0.5) lc("117 112 179")	       ///
+			name(`vars'_PHtest, replace) ///
+		legend(order(1 "Highland (ref.)" 2 "Lowland (p = 0.272)" 3 "non-Papuan (p < 0.0001)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("  ", margin(medsmall)) subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Sex and Pregnancy
+		loc var Sex and pregnancy status
+		loc vars sexPreg
+		tw 	line smooth_esca12  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca13  _t, sort lwidth(0.5) lc("217 95 2")		||     ///
+			line smooth_esca14  _t, sort lwidth(0.5) lc("117 112 179")	       ///
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "Female (not pregnant; ref.)" 2 "Female (pregnant; p = 0.013)" 3 "Male (p = 0.001)") pos(3) col(1) textwidth(20) forcesize)  ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("  ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Oral treatment
+		loc var Oral treatment
+		loc vars oralDHP
+		tw 	line smooth_esca15   _t, sort lwidth(0.5) lc("27 158 119") ||     ///
+			line smooth_esca16   _t, sort lwidth(0.5) lc("217 95 2")	       ///
+			name(`vars'_PHtest, replace) ///
+				legend(order(1 "oral quinine (ref.)" 2 "DHP (p = 0.378)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("  ", margin(medsmall)) subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		loc model M2a_HR	 
+		graph combine Species_PHtest AGR4_PHtest sexPreg_PHtest EthnicX_PHtest oralDHP_PHtest, col(1) graphr(color(white) lc(white)) plotr(color(white)) xcommon ysize(20) xsize(12) name(PH_`model',replace) note("Global PH test: {&chi} 133.04, df = 11, p < 0.0001", size(tiny)) iscale(0.4)
+loc model M2a_HR
+		graph export "C:\data\malaria\figures\PH test\PH_`model'.emf", as(emf) replace
+
+			
+		*Illustrative PH test with 95% CI  - following Royston Parmar in Flexible Parametric Survival Analysis (chapter 7 "Cox with model time-dependent effects")
+				***Vivax
+				use "C:\data\malaria\results\efron  8 Oct 2015 16_30_08\M2a_HR.dta", clear 
+				loc model M2a_HR
+				loc v sch2
+				loc outc Adm
+				loc v_name vivax
+				* running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw				/* generate smoothed Schoenfeld residual and associated SE */
+				* gen `v'_smooth_e = exp(`v'_smooth)													/* gen exponentiated smoothed Schoenfeld residual */
+				* gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)						/* lower 95% CI for exp. smth. Sch. residuals */
+				* gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)						/* upper 95% CI for exp. smth. Sch. residuals */
+					tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort fc("253 205 172")	lc("253 205 172")	||	///		/*Plot exp smth Sch residual CI area */
+					line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")				||	///		/* plot exp smth Sch residual estimate */
+					function y = 1, lpattern(solid) range(2 15) lc("27 158 119")				||	///		/*plot null / baseline value of 1 */
+					function y = 0.92, lpattern(shortdash) range(2 15) lc(black)			///		/* plot estimated HR  for variable */
+					name(M2_PH_Adm_vivax, replace)													///		/* graph options */
+					legend(order(2 "smoothed residuals (95 %CI)" 3 "{it: P.falciparum} (reference)" 									///
+						4 "estimated HR 0.92 (95% CI 0.85, 1.00)") colfirst notextfirst nostack cols(1) size(small)		///
+						nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))			///
+					ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))	///
+					title("Species: {it:P.vivax} relative to {it:P.falciparum}", 				///
+						size(medsmall) )				 	///
+					xtitle("Time (days) since presentation with malaria")  							///	
+					ylabel(, nogrid angle(h) labsize(small))													///
+					xlab(2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)		///
+					graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+				graph export "C:\data\malaria\figures\PH test\focusPH_`model'_pv.emf", as(emf) replace	
+				
+				**OralDHP
+				loc model M2a_HR
+				loc v sch16
+				loc outc Adm
+				loc v_name DHP
+				* running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw				/* generate smoothed Schoenfeld residual and associated SE */
+				* gen `v'_smooth_e = exp(`v'_smooth)													/* gen exponentiated smoothed Schoenfeld residual */
+				* gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)						/* lower 95% CI for exp. smth. Sch. residuals */
+				* gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)						/* upper 95% CI for exp. smth. Sch. residuals */
+					tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort fc("253 205 172")	lc("253 205 172")	||	///		/*Plot exp smth Sch residual CI area */
+					line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")		||	///		/* plot exp smth Sch residual estimate */
+					function y = 1, lpattern(solid) range(2 15) lc("27 158 119")		||	///		/*plot null / baseline value of 1 */
+					function y = 0.60, lpattern(shortdash) range(2 15) lc(black)									///		/* plot estimated HR  for variable */
+					name(M2_PH_Adm_DHP, replace)													///		/* graph options */
+					legend(order(2 "smoothed residuals (95 %CI)" 3 "oral quinine(reference)" 									///
+						4 "estimated HR 0.60  (95% CI 0.55, 0.66)") colfirst notextfirst nostack cols(1) size(small)		///
+						nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))			///
+					ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))	///
+					title("Oral treatment, DHP relative to quinine", 				///
+						size(medsmall) )				 	///
+					xtitle("Time (days) since presentation with malaria")  							///	
+					ylabel(, nogrid angle(h) labsize(small))													///
+					xlab(2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)		///
+					graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+				graph export "C:\data\malaria\figures\PH test\focusPH_`model'_DHP.emf", as(emf) replace		
+				graph combine M2_PH_Adm_vivax M2_PH_Adm_DHP, col(1) graphr(color(white) lc(white)) plotr(color(white)) ysize(20) xsize(12) name(PH_M2combo_PvDHP,replace) xcommon
+				loc model M2a_HR
+				graph export "C:\data\malaria\figures\PH test/`model'_combo_PvDHP.emf", as(emf) replace		
+		
+*M3BHR
+*** risk of death by day 15 in those who were not initially admitted, including oral / dhp first treatment
+*** Variables are Species (omitting Ovale), Age group (4 categories), Ethnic group (omitting non-Papuans), combined sex and pregnancy status, and oral treatment
+stset DiedFU15, fail(DiedNext14) id(obsno)
+
+use "C:\data\malaria\results\efron  8 Oct 2015 21_14_52\M3b_HR.dta", clear 
+
+/*  STORED MODEL WITH GENERATED SCALED SCHOENFELD RESIDUALS
+loc model M3b_HR
+stcox i.SpeciesX i.AGR4_4b i.EthnicX i.sexPreg i.oral_v_dhp if ip==0 ,  allbaselevels vsquish cluster(hrn) efron cformat(%6.2f) nolog
+predict `i'*, scaledsch
+*/
+
+loc model M3b_HR
+		running sch_`model'1 _t if _d == 1,  gen(smooth_sch1 ) nodraw
+		running sch_`model'2 _t if _d == 1,  gen(smooth_sch2 ) nodraw
+		running sch_`model'3 _t if _d == 1,  gen(smooth_sch3 ) nodraw
+		running sch_`model'4 _t if _d == 1,  gen(smooth_sch4 ) nodraw
+		running sch_`model'5 _t if _d == 1,  gen(smooth_sch5 ) nodraw
+		running sch_`model'6 _t if _d == 1,  gen(smooth_sch6 ) nodraw
+		running sch_`model'7 _t if _d == 1,  gen(smooth_sch7 ) nodraw
+		running sch_`model'8 _t if _d == 1,  gen(smooth_sch8 ) nodraw
+		running sch_`model'9 _t if _d == 1,  gen(smooth_sch9 ) nodraw
+		running sch_`model'10 _t if _d == 1, gen(smooth_sch10) nodraw
+		running sch_`model'11 _t if _d == 1, gen(smooth_sch11) nodraw
+		running sch_`model'12 _t if _d == 1, gen(smooth_sch12) nodraw
+		running sch_`model'13 _t if _d == 1, gen(smooth_sch13) nodraw
+		running sch_`model'14 _t if _d == 1, gen(smooth_sch14) nodraw
+		running sch_`model'15 _t if _d == 1, gen(smooth_sch15) nodraw
+		running sch_`model'16 _t if _d == 1, gen(smooth_sch16) nodraw
+		gen smooth_esca1  = exp(smooth_sch1 )
+		gen smooth_esca2  = exp(smooth_sch2 )
+		gen smooth_esca3  = exp(smooth_sch3 )
+		gen smooth_esca4  = exp(smooth_sch4 )
+		gen smooth_esca5  = exp(smooth_sch5 )
+		gen smooth_esca6  = exp(smooth_sch6 )
+		gen smooth_esca7  = exp(smooth_sch7 )
+		gen smooth_esca8  = exp(smooth_sch8 )
+		gen smooth_esca9  = exp(smooth_sch9 )
+		gen smooth_esca10 = exp(smooth_sch10)
+		gen smooth_esca11 = exp(smooth_sch11)
+		gen smooth_esca12 = exp(smooth_sch12)
+		gen smooth_esca13 = exp(smooth_sch13)
+		gen smooth_esca14 = exp(smooth_sch14)
+		gen smooth_esca15 = exp(smooth_sch15)
+		gen smooth_esca16 = exp(smooth_sch16)
+				
+
+
+loc model M3b_HR
+***Combinable Graphs		
+		*Species (SpeciesX)
+		loc var Species
+		tw 	line smooth_esca1 _t, sort lwidth(0.5) lc("27 158 119")  ||    /// 
+			line smooth_esca2 _t, sort lwidth(0.5) lc("217 95 2")	 ||   /// 
+			line smooth_esca3 _t, sort lwidth(0.5) lc("117 112 179") ||     /// 
+			line smooth_esca4 _t, sort lwidth(0.5) lc("231 41 138")			///
+			name(`var'_PHtest, replace) ///
+		legend(order(1 "{it: P.falciparum} (ref.)" 2 "{it: P.vivax} (p =  0.303)" 3 "{it: P.malariae}  (p = 0.424)" 4 "mixed  (p = 0.021)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("exponentiated scaled Schoenfeld residuals", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`var'PHtest_`model'.png", as(png) replace width(800) height(600)
+			
+		*Age (AGR4_4b)
+		loc var Age group
+		loc vars AGR4
+		tw 	line smooth_esca6 _t, sort lwidth(0.5) lc("27 158 119") ||    /// 
+			line smooth_esca7 _t, sort lwidth(0.5) lc("217 95 2")	||    /// 
+			line smooth_esca8 _t, sort lwidth(0.5) lc("117 112 179")||    /// 
+			line smooth_esca5 _t, sort lwidth(0.5) lc("231 41 138")	      /// 
+			name(`vars'_PHtest, replace) ///
+		legend(order(1 "0 to < 1 year  (p =  0.426)" 2 "1 to < 5 years  (p = 0.026)" 3 "5 to <15  (p =  0.452)" 4 "15+ (ref.)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Ethnic 
+		loc var Ethnic group
+		loc vars EthnicX
+		tw 	line smooth_esca9  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca10 _t, sort lwidth(0.5) lc("217 95 2")		     ///	non-Papuans exlcuded:	line smooth_esca11 _t, sort lwidth(0.5) lc("117 112 179")	      
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "Highland (ref.)" 2 "Lowland  (p =  0.345)" 3 "non-Papuan (no deaths)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Sex and Pregnancy
+		loc var Sex and pregnancy status
+		loc vars sexPreg
+		tw 	line smooth_esca12  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca13  _t, sort lwidth(0.5) lc("217 95 2")		||     ///
+			line smooth_esca14  _t, sort lwidth(0.5) lc("117 112 179")	       ///
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "Female (not pregnant; ref.)" 2 "Female (pregnant; p =  0.446)" 3 "Male  (p = 0.615)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Oral treatment
+		loc var Oral treatment
+		loc vars oralDHP
+		tw 	line smooth_esca15   _t, sort lwidth(0.5) lc("27 158 119") ||     ///
+			line smooth_esca16   _t, sort lwidth(0.5) lc("217 95 2")	       ///
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "oral quinine (ref.)" 2 "DHP  (p = 0.145)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+
+
+		loc model M3b_HR	 
+		graph combine Species_PHtest AGR4_PHtest sexPreg_PHtest EthnicX_PHtest oralDHP_PHtest, col(1) graphr(color(white) lc(white)) plotr(color(white)) xcommon ysize(20) xsize(12) name(PH_`model',replace) note("Global PH test: {&chi} 20.20, df = 10, p < 0.0274", size(tiny)) iscale(0.4)
+		loc model M3b_HR
+		graph export "C:\data\malaria\figures\PH test\PH_`model'.emf", as(emf) replace
+
+			
+		*Illustrative PH test with 95% CI  - following Royston Parmar in Flexible Parametric Survival Analysis (chapter 7 "Cox with model time-dependent effects")
+				***Vivax
+				use "C:\data\malaria\results\efron  8 Oct 2015 21_14_52\M3b_HR.dta", clear 
+				loc model M3b_HR
+				loc v sch_`model'2
+				loc outc Died
+				loc v_name vivax
+				running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw				/* generate smoothed Schoenfeld residual and associated SE */
+				gen `v'_smooth_e = exp(`v'_smooth)													/* gen exponentiated smoothed Schoenfeld residual */
+				gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)						/* lower 95% CI for exp. smth. Sch. residuals */
+				gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)						/* upper 95% CI for exp. smth. Sch. residuals */
+					tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort fc("253 205 172")	lc("253 205 172")	||	///		/*Plot exp smth Sch residual CI area */
+					line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")				||	///		/* plot exp smth Sch residual estimate */
+					function y = 1, lpattern(solid) range(_t) lc("27 158 119")				||	///		/*plot null / baseline value of 1 */
+					function y = 1.46, lpattern(shortdash) range(_t) lc(black)			///		/* plot estimated HR  for variable */
+					name(M3_PH_Died_vivax, replace)													///		/* graph options */
+					legend(order(2 "smoothed residuals (95 %CI)" 3 "{it: P.falciparum} (reference)" 									///
+						4 "estimated HR 1.46 (95% CI 0.85, 2.51)") colfirst notextfirst nostack cols(1) size(small)		///
+						nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))			///
+					ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))	///
+					title("Species: {it:P.vivax} relative to {it:P.falciparum}", 				///
+						size(medsmall) )				 	///
+					xtitle("Time (days) since presentation with malaria")  							///	
+					ylabel(10(10)36.6 0.2 "0.2" 0.5 "0.5" 1 2 3 5, add nogrid angle(h) labsize(small))			///
+					xlab(1 "0" 2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)		///
+					graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+				graph export "C:\data\malaria\figures\PH test\focusPH_`model'_pv.emf", as(emf) replace	
+				
+				**OralDHP
+				loc model M3b_HR
+				loc v sch_`model'16
+				loc outc Died
+				loc v_name DHP
+				running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw				/* generate smoothed Schoenfeld residual and associated SE */
+				gen `v'_smooth_e = exp(`v'_smooth)													/* gen exponentiated smoothed Schoenfeld residual */
+				gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)						/* lower 95% CI for exp. smth. Sch. residuals */
+				gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)						/* upper 95% CI for exp. smth. Sch. residuals */
+					tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort fc("253 205 172")	lc("253 205 172")	||	///		/*Plot exp smth Sch residual CI area */
+					line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")		||	///		/* plot exp smth Sch residual estimate */
+					function y = 1, lpattern(solid) range(_t) lc("27 158 119")		||	///		/*plot null / baseline value of 1 */
+					function y = 0.97, lpattern(shortdash) range(_t) lc(black)									///		/* plot estimated HR  for variable */
+					name(M3_PH_Died_DHP, replace)													///		/* graph options */
+					legend(order(2 "smoothed residuals (95 %CI)" 3 "oral quinine (reference)" 									///
+						4 "estimated HR 0.97  (95% CI 0.50, 1.86)") colfirst notextfirst nostack cols(1) size(small)		///
+						nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))			///
+					ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))	///
+					title("Oral treatment: DHP relative to quinine", 				///
+						size(medsmall) )				 	///
+					xtitle("Time (days) since presentation with malaria")  							///	
+					ylabel(10(10)24.7 0.003 "0.003" 0.1 "0.1" 0.5 "0.5" 1 2 3 5, add nogrid angle(h) labsize(small))		///
+					xlab(1 "0" 2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)		///
+					graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+				graph export "C:\data\malaria\figures\PH test\focusPH_`model'_DHP.emf", as(emf) replace		
+				graph combine M3_PH_Died_vivax M3_PH_Died_DHP, col(1) graphr(color(white) lc(white)) plotr(color(white)) ysize(20) xsize(12) name(PH_M3combo_PvDHP,replace) xcommon
+				loc model M3b_HR
+				graph export "C:\data\malaria\figures\PH test/`model'_combo_PvDHP.emf", as(emf) replace		
+		
+*M4AHR: 
+***risk of death by day 15 limited to those who were admitted immediately & rx'd IV treatment first
+*** Variables are Species (omitting Ovale), Age group (4 categories), Ethnic group, combined sex and pregnancy status, and IV treatment
+
+use "C:\data\malaria\results\efron  8 Oct 2015 21_14_52\M4a_HR.dta", clear 
+
+/*  STORED MODEL WITH GENERATED SCALED SCHOENFELD RESIDUALS
+loc model M4a_HR
+stcox i.SpeciesX i.AGR4_4b i.EthnicX i.sexPreg i.ivArt if ip==1 , allbaselevels vsquish cluster(hrn) efron cformat(%6.2f) nolog
+predict `i'*, scaledsch
+*/
+loc model M4a_HR
+
+		running sch_`model'1 _t if _d == 1,  gen(smooth_sch1 ) nodraw
+		running sch_`model'2 _t if _d == 1,  gen(smooth_sch2 ) nodraw
+		running sch_`model'3 _t if _d == 1,  gen(smooth_sch3 ) nodraw
+		running sch_`model'4 _t if _d == 1,  gen(smooth_sch4 ) nodraw
+		running sch_`model'5 _t if _d == 1,  gen(smooth_sch5 ) nodraw
+		running sch_`model'6 _t if _d == 1,  gen(smooth_sch6 ) nodraw
+		running sch_`model'7 _t if _d == 1,  gen(smooth_sch7 ) nodraw
+		running sch_`model'8 _t if _d == 1,  gen(smooth_sch8 ) nodraw
+		running sch_`model'9 _t if _d == 1,  gen(smooth_sch9 ) nodraw
+		running sch_`model'10 _t if _d == 1, gen(smooth_sch10) nodraw
+		running sch_`model'11 _t if _d == 1, gen(smooth_sch11) nodraw
+		running sch_`model'12 _t if _d == 1, gen(smooth_sch12) nodraw
+		running sch_`model'13 _t if _d == 1, gen(smooth_sch13) nodraw
+		running sch_`model'14 _t if _d == 1, gen(smooth_sch14) nodraw
+		running sch_`model'15 _t if _d == 1, gen(smooth_sch15) nodraw
+		running sch_`model'16 _t if _d == 1, gen(smooth_sch16) nodraw
+		gen smooth_esca1  = exp(smooth_sch1 )
+		gen smooth_esca2  = exp(smooth_sch2 )
+		gen smooth_esca3  = exp(smooth_sch3 )
+		gen smooth_esca4  = exp(smooth_sch4 )
+		gen smooth_esca5  = exp(smooth_sch5 )
+		gen smooth_esca6  = exp(smooth_sch6 )
+		gen smooth_esca7  = exp(smooth_sch7 )
+		gen smooth_esca8  = exp(smooth_sch8 )
+		gen smooth_esca9  = exp(smooth_sch9 )
+		gen smooth_esca10 = exp(smooth_sch10)
+		gen smooth_esca11 = exp(smooth_sch11)
+		gen smooth_esca12 = exp(smooth_sch12)
+		gen smooth_esca13 = exp(smooth_sch13)
+		gen smooth_esca14 = exp(smooth_sch14)
+		gen smooth_esca15 = exp(smooth_sch15)
+		gen smooth_esca16 = exp(smooth_sch16)
+				
+
+loc model M4a_HR
+
+***Combinable Graphs		
+		*Species (SpeciesX)
+		loc var Species
+		tw 	line smooth_esca1 _t, sort lwidth(0.5) lc("27 158 119")  ||    /// 
+			line smooth_esca2 _t, sort lwidth(0.5) lc("217 95 2")	 ||   /// 
+			line smooth_esca3 _t, sort lwidth(0.5) lc("117 112 179") ||     /// 
+			line smooth_esca4 _t, sort lwidth(0.5) lc("231 41 138")			///
+			name(`var'_PHtest, replace) ///
+		legend(order(1 "{it: P.falciparum} (ref.)" 2 "{it: P.vivax}  (p = 0.792)" 3 "{it: P.malariae}  (p = 0.170)" 4 "mixed (p = 0.395)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle("exponentiated scaled Schoenfeld residuals", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`var'PHtest_`model'.png", as(png) replace width(800) height(600)
+			
+		*Age (AGR4_4b)
+		loc var Age group
+		loc vars AGR4
+		tw 	line smooth_esca6 _t, sort lwidth(0.5) lc("27 158 119") ||    /// 
+			line smooth_esca7 _t, sort lwidth(0.5) lc("217 95 2")	||    /// 
+			line smooth_esca8 _t, sort lwidth(0.5) lc("117 112 179")||    /// 
+			line smooth_esca5 _t, sort lwidth(0.5) lc("231 41 138")	      /// 
+			name(`vars'_PHtest, replace) ///
+		legend(order(1 "0 to < 1 year  (p = 0.080)" 2 "1 to < 5 years  (p = 0.129)" 3 "5 to <15  (p = 0.0005)" 4 "15+ (ref.)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Ethnic 
+		loc var Ethnic group
+		loc vars EthnicX
+		tw 	line smooth_esca9  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca10 _t, sort lwidth(0.5) lc("217 95 2")		||     ///
+			line smooth_esca11 _t, sort lwidth(0.5) lc("117 112 179")	       ///    
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "Highland (ref.)" 2 "Lowland  (p = 0.517)" 3 "non-Papuan (p = 0.115)")  pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Sex and Pregnancy
+		loc var Sex and pregnancy status
+		loc vars sexPreg
+		tw 	line smooth_esca12  _t, sort lwidth(0.5) lc("27 158 119") 	||     ///
+			line smooth_esca13  _t, sort lwidth(0.5) lc("217 95 2")		||     ///
+			line smooth_esca14  _t, sort lwidth(0.5) lc("117 112 179")	       ///
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "Female (not pregnant; ref.)" 2 "Female (pregnant, p = 0.629)" 3 "Male  (p = 0.106)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+			* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+		*Oral treatment
+		loc var IV treatment
+		loc vars ivArt
+		tw 	line smooth_esca15   _t, sort lwidth(0.5) lc("27 158 119") ||     ///
+			line smooth_esca16   _t, sort lwidth(0.5) lc("217 95 2")	       ///
+			name(`vars'_PHtest, replace) ///
+			legend(order(1 "IV quinine (ref.)" 2 "IV artesunate  (p = 0.965)") pos(3) col(1) textwidth(20) forcesize) ///
+			xtitle("time (days following presentation)", margin(medsmall)) ytitle(" ", margin(medsmall))  subtitle("`var'") xmtick(2(1)15) graphr(color(white) lc(white)) plotr(color(white) lc(white)) ylab(, angle(h) labsize(medsmall) nogrid format(%9.1f)) xlab(1 "0" 2 "1" 8 "7"  15 "14", labsize(medsmall)) ysca(log) xsize(20) ysize(12) xsca(nofextend)  ylab(1, add)
+			
+				* graph export "C:\data\malaria\figures\PH test/`vars'PHtest_`model'.png", as(png) replace width(800) height(600)
+loc model M4a_HR	 
+		graph combine Species_PHtest AGR4_PHtest sexPreg_PHtest EthnicX_PHtest ivArt_PHtest, col(1) graphr(color(white) lc(white)) plotr(color(white)) xcommon ysize(20) xsize(12) name(PH_`model',replace) note("Global PH test: {&chi} 24.48, df = 11, p < 0.0108", size(tiny)) iscale(0.4)
+		loc model M4a_HR
+		graph export "C:\data\malaria\figures\PH test\PH_`model'.emf", as(emf) replace
+
+*Illustrative PH test with 95% CI  - following Royston Parmar in Flexible Parametric Survival Analysis (chapter 7 "Cox with model time-dependent effects")
+***Vivax
+use "C:\data\malaria\results\efron  8 Oct 2015 21_14_52\M4a_HR.dta", clear 
+loc model M4a_HR
+loc v sch_`model'2
+loc outc Adm
+loc v_name vivax
+running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw /* gen smoothed Schoenfeld residual and associated SE */
+gen `v'_smooth_e = exp(`v'_smooth)									 /* gen exponentiated smoothed Schoenfeld residual */
+gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)		 /* lower 95% CI for exp. smth. Sch. residuals */
+gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)		 /* upper 95% CI for exp. smth. Sch. residuals */
+	tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort fc("253 205 172")	lc("253 205 172")	||	///		/*Plot exp smth Sch residual CI area */
+	line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")				||	///		/* plot exp smth Sch residual estimate */
+	function y = 1, lpattern(solid) range(_t) lc("27 158 119")				||	///		/*plot null / baseline value of 1 */
+	function y = 1.26, lpattern(shortdash) range(_t) lc(black)			///		/* plot estimated HR  for variable */
+	name(M4_PH_Died_vivax, replace)													///		/* graph options */
+	legend(order(2 "smoothed residuals (95 %CI)" 3 "{it: P.falciparum} (reference)" 									///
+		4 "estimated HR 1.26 (95% CI 0.97,  1.64)") colfirst notextfirst nostack cols(1) size(small)		///
+		nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1))			///
+	ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))	///
+	title("Species: {it:P.vivax} relative to {it:P.falciparum}", 				///
+		size(medsmall) )				 	///
+	xtitle("Time (days) since presentation with malaria")  							///	
+	ylabel(2(2)6 0.4 "0.4" 1, nogrid angle(h) labsize(small))													///
+	xlab(1 "0" 2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)		///
+	graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+graph export "C:\data\malaria\figures\PH test\focusPH_`model'_pv.emf", as(emf) replace	
+
+**ivArt
+loc model M4a_HR
+loc v sch_`model'16
+loc outc Died
+loc v_name ivArt
+running `v' _t if _d==1, gen(`v'_smooth) gense(`v'_smooth_se) nodraw /* gen smoothed Schoenfeld residual and associated SE */
+gen `v'_smooth_e = exp(`v'_smooth)									 /* gen exponentiated smoothed Schoenfeld residual */
+gen `v'_smooth_e_lci = exp(`v'_smooth - 1.96*`v'_smooth_se)				/* lower 95% CI for exp. smth. Sch. residuals */
+gen `v'_smooth_e_uci = exp(`v'_smooth + 1.96*`v'_smooth_se)				/* upper 95% CI for exp. smth. Sch. residuals */
+tw rarea `v'_smooth_e_lci `v'_smooth_e_uci _t, pstyle(ci) sort			///
+		fc("253 205 172")	lc("253 205 172")	||						///		/*Plot exp smth Sch residual CI area */
+	line `v'_smooth_e _t, sort clpattern(solid) lc("217 95 2")		||	///		/* plot exp smth Sch residual estimate */
+	function y = 1, lpattern(solid) range(_t) lc("27 158 119")		||	///		/*plot null / baseline value of 1 */
+	function y = 2.64, lpattern(shortdash) range(_t) lc(black)			///		/* plot estimated HR  for variable */
+	name(M4_PH_Died_ivArt, replace)										///		/* graph options */
+	legend(order(2 "smoothed residuals (95 %CI)" 3 "IV quinine (reference)" 					///
+		4 "estimated HR 2.64  (95% CI 1.83, 3.82)") colfirst notextfirst nostack cols(1) 		/// 
+		size(small)	nobox region(fcolor(white) margin(zero) lcolor(white)) position(12) ring(1)) ///
+	ytitle("Exponentiated scaled Schoenfeld residuals", margin(medsmall))						///
+	title("Intravenous treatment: artesunate relative to quinine", 								///
+		size(medsmall) )				 														///
+	xtitle("Time (days) since presentation with malaria")  										///	
+	ylabel(2(2)10 0.5 "0.5" 1 15, nogrid angle(h) labsize(small))								///
+	xlab(1 "0" 2 "1" 8 "7"  15 "14") xmtick(1(1)15)  xscale(nofextend)	 yscale(log)			///
+	graphr(color(white) lc(white)) plotr(color(white) lc(white))														
+graph export "C:\data\malaria\figures\PH test\focusPH_`model'_ivArt.emf", as(emf) replace		
+graph combine M4_PH_Died_vivax M4_PH_Died_ivArt, col(1) graphr(color(white) lc(white)) 			///
+		plotr(color(white)) ysize(20) xsize(12) name(PH_M4combo_PvArt,replace) xcommon
+loc model M4a_HR
+graph export "C:\data\malaria\figures\PH test/`model'_combo_PvArt.emf", as(emf) replace		
+
+		
+		
+/*******************************************************************
+*
+*Incorporation of time-varying coefficients into models 2, 3 and 4
+*
+********************************************************************/
+*Set up log and working directory
+capture log close
+version 13.1
+set linesize 100
+set more off
+
+cd "C:\data\malaria\results"
+loc today = c(current_date)
+log using "malariaproject_log_`today'.txt", append text
+
+*cox model ties handling
+loc ties efron
+
+* prepare folder for results
+local T = c(current_time)
+local T = subinstr("`T'",":","_",.)
+mkdir "`ties' `today' `T'"
+cd "`ties' `today' `T'"
+
+****note '3' and '7' refer to days following presentation (ie. _t = 4 and _t = 8, respectively)
+
+*Model 2
+/*load data*/
+use "C:\data\malaria\MalEps_v1.9.3_r5oct2015.dta", clear
+/*create indicator variables*/
+xi i.SpeciesX i.EthnicX i.AGR4_4b i.sexPreg i.oral_v_dhp
+stset AdmFU15, fail(AdmNext14) id(obsno)
+/*split time*/
+stsplit new, at(4 8)  /* Splitting time (see note aboe about t4 and t8 above) */
+
+
+loc varlist _ISpeciesX_2	///  /*List of variables to split */
+			_ISpeciesX_4    ///
+			_ISpeciesX_5    ///
+			_IEthnicX_2     ///
+			_IEthnicX_3     ///
+			_IAGR4_4b_1       ///
+			_IAGR4_4b_2       ///
+			_IAGR4_4b_3       ///
+			_IsexPreg_2     ///
+			_IsexPreg_3     ///
+			_Ioral_v_dh_1
+
+/*generate interaction term*/		
+foreach i of varlist `varlist' {
+gen tv3`i' = `i' * (new==4)
+gen tv7`i' = `i' * (new==8)
+}
+
+/*List of variables for model including interactions with time */
+loc varlist _ISpeciesX_2	tv3_ISpeciesX_2 	tv7_ISpeciesX_2 	///
+			_ISpeciesX_4   											///
+			_ISpeciesX_5   											///
+			_IEthnicX_2    										  	///
+			_IEthnicX_3    tv3_IEthnicX_3		tv7_IEthnicX_3		///
+			_IAGR4_4b_1    										   	///
+			_IAGR4_4b_2     tv3_IAGR4_4b_2 		 tv7_IAGR4_4b_2   	///
+			_IAGR4_4b_3     					tv7_IAGR4_4b_3   	///
+			_IsexPreg_2    						tv7_IsexPreg_2  	///
+			_IsexPreg_3     tv3_IsexPreg_3 		tv7_IsexPreg_3 		///
+			_Ioral_v_dh_1											
+
+			
+stcox `varlist' if ip==0, efron allbaselevels vsquish cluster(hrn) cformat(%6.2f) 
+
+/*save and store estimates and scaled Schoenfeld residuals for later access*/
+estimates
+estimates store M2aTV37_24oct2015
+estimates save M2aTV37_24oct2015
+predict sch_M2aTV37*, sca
+save MalEps_v1.9.3_M2a_TV37.dta
+linktest, cluster(hrn) efron
+estat phtest, d
+
+lincom _b[_ISpeciesX_2]+_b[tv3_ISpeciesX_2]+ _b[tv7_ISpeciesX_2], eform
+lincom _b[_ISpeciesX_2]+_b[tv3_ISpeciesX_2], eform
+
+*Model 3
+set more off
+*load data
+use "C:\data\malaria\MalEps_v1.9.3_r5oct2015.dta", clear
+/*create indicator variables*/
+xi i.SpeciesX i.EthnicX i.AGR4_4b i.sexPreg i.oral_v_dhp
+stset DiedFU15, fail(DiedNext14) id(obsno)
+/*split time*/
+stsplit new, at(4 8)
+
+loc varlist _ISpeciesX_2	///
+			_ISpeciesX_4    ///
+			_ISpeciesX_5    ///
+			_IEthnicX_2     ///
+			_IEthnicX_3     ///
+			_IAGR4_4b_1       ///
+			_IAGR4_4b_2       ///
+			_IAGR4_4b_3       ///
+			_IsexPreg_2     ///
+			_IsexPreg_3     ///
+			_Ioral_v_dh_1
+
+			
+foreach i of varlist `varlist' {
+gen tv3`i' = `i' * (new==4)
+gen tv7`i' = `i' * (new==8)
+}
+
+
+
+/*List of variables for model including interactions with time */
+loc varlist _ISpeciesX_2								///
+			_ISpeciesX_4   										 	///
+			_ISpeciesX_5 	tv3_ISpeciesX_5		tv7_ISpeciesX_5			///
+			_IEthnicX_2    										  	///
+			_IEthnicX_3   											///
+			_IAGR4_4b_1    										   	///
+			_IAGR4_4b_2  	tv3_IAGR4_4b_2 		 tv7_IAGR4_4b_2   	///
+			_IAGR4_4b_3     										///
+			_IsexPreg_2    						 					///
+			_IsexPreg_3     										///
+			_Ioral_v_dh_1									
+
+/*run model*/			
+stcox `varlist' if ip==0 , efron  allbaselevels vsquish cluster(hrn) cformat(%6.2f) nolog
+
+/*save and store estimates and scaled Schoenfeld residuals for later access*/
+estimates
+estimates store M3bTV37_24oct2015
+estimates save  M3bTV37_24oct2015
+predict sch_M3bTV37*, sca
+save MalEps_v1.9.3_M3b_TV37.dta
+linktest, cluster(hrn) efron
+estat phtest, d
+
+*Model 4
+/*load data*/
+use "C:\data\malaria\MalEps_v1.9.3_r5oct2015.dta", clear
+/*create indicator variables*/
+xi i.SpeciesX i.EthnicX i.AGR4_4b i.sexPreg i.ivArt
+/*declare survival time*/
+stset DiedFU15, fail(DiedNext14) id(obsno)
+/*split time*/
+stsplit new, at(8)
+/*list of variables to create potential splits for*/
+loc varlist _ISpeciesX_2	///
+			_ISpeciesX_4    ///
+			_ISpeciesX_5    ///
+			_IEthnicX_2     ///
+			_IEthnicX_3     ///
+			_IAGR4_4b_1       ///
+			_IAGR4_4b_2       ///
+			_IAGR4_4b_3       ///
+			_IsexPreg_2     ///
+			_IsexPreg_3     ///
+			_IivArt_1
+
+			
+foreach i of varlist `varlist' {
+gen tv7`i' = `i' * (new==8)
+}
+
+
+/*list of variables including TVCs*/
+loc varlist _ISpeciesX_2						///
+			_ISpeciesX_4						///
+			_ISpeciesX_5						///
+			_IEthnicX_2 						///
+			_IEthnicX_3 						///
+			_IAGR4_4b_1 	tv7_IAGR4_4b_1    	///
+			_IAGR4_4b_2 						///
+			_IAGR4_4b_3 	tv7_IAGR4_4b_3   	///
+			_IsexPreg_2 						///
+			_IsexPreg_3 						///
+			_IivArt_1																		
+
+*run Cox model	with TVCs					
+stcox `varlist' if ip==1 , efron allbaselevels vsquish cluster(hrn)  cformat(%6.2f) nolog
+*store results for later access
+estimates
+estimates store M4aTV37_24oct2015
+estimates save  M4aTV37_24oct2015
+
+predict sch_M4aTV37*, sca
+
+save MalEps_v1.9.3_M4a_TV37.dta
+
+linktest, cluster(hrn) efron
+estat phtest, d
+
+
+
+
+****Coefficient plots
+*Model 2
+cd "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\"
+use "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\MalEps_v1.9.3_M2a_TV37.dta", clear
+estimates use M2aTV37_24oct2015.ster
+
+estimates esample: ///
+   _ISpeciesX_2 ///
+tv3_ISpeciesX_2 ///
+tv7_ISpeciesX_2 ///
+   _ISpeciesX_4 ///
+   _ISpeciesX_5 ///
+    _IEthnicX_2 ///
+    _IEthnicX_3 ///
+ tv3_IEthnicX_3 ///
+ tv7_IEthnicX_3 ///
+    _IAGR4_4b_1 ///
+    _IAGR4_4b_2 ///
+ tv3_IAGR4_4b_2 ///
+ tv7_IAGR4_4b_2 ///
+    _IAGR4_4b_3 ///
+ tv7_IAGR4_4b_3 ///
+    _IsexPreg_2 ///
+ tv7_IsexPreg_2 ///
+    _IsexPreg_3 ///
+ tv3_IsexPreg_3 ///
+ tv7_IsexPreg_3 ///
+  _Ioral_v_dh_1 
+  
+  estimates
+
+  
+  label variable  _ISpeciesX_2  "{it:P.vivax}"
+  label variable  _ISpeciesX_4  "{it:P.malariae}"
+  label variable  _ISpeciesX_5  "mixed"
+  label variable  _IEthnicX_2   "Lowland"
+  label variable  _IEthnicX_3   "non-Papuan"
+  label variable  _IAGR4_4b_1   "0 to {&lt} 1"
+  label variable  _IAGR4_4b_2   "1 to {&lt} 5 "
+  label variable  _IAGR4_4b_3   "5 to {&lt} 15"
+  label variable  _IsexPreg_2   "female (pregnant)"
+  label variable  _IsexPreg_3   "male"
+  label variable  _Ioral_v_dh_1 "DHP"
+
+  label variable  tv3_ISpeciesX_2  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_ISpeciesX_4  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_ISpeciesX_5  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IEthnicX_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IEthnicX_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_1   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IsexPreg_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IsexPreg_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_Ioral_v_dh_1 "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+
+  label variable  tv7_ISpeciesX_2  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_4  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_5  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_1   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_Ioral_v_dh_1 "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+
+
+coefplot 	(M2a_24oct2015, 	mc("241 163 64")  ciopts(lc("241 163 64"))                          ///
+					label(multivariable model 2) )                                                  ///
+			(M2aTV37_24oct2015, mc("153 142 195") ciopts(lc("153 142 195"))                         ///
+					label("model 2 with time interaction"))                                         ///
+			, eform baselevels xline(1, lc("27 158 119"))                                           ///
+		order(    _ISpeciesX_2 tv3_ISpeciesX_2 tv7_ISpeciesX_2 _ISpeciesX_4 _ISpeciesX_5            ///
+				. _IEthnicX_2 _IEthnicX_3 tv3_IEthnicX_3 tv7_IEthnicX_3                             ///
+				. _IAGR4_4b_1 _IAGR4_4b_2 tv3_IAGR4_4b_2 tv7_IAGR4_4b_2 _IAGR4_4b_3 tv7_IAGR4_4b_3 	///
+				. _IsexPreg_2 tv7_IsexPreg_2 _IsexPreg_3 tv3_IsexPreg_3 tv7_IsexPreg_3 				///
+				. _Ioral_v_dh_1) 																	///
+		headings(_ISpeciesX_2 = "{it:P.falciparum} (reference)" 									///
+			_IEthnicX_2 = "Highland (reference)" 													///
+			_IAGR4_4b_1 = " {&ge} 15 (reference)"													///
+			_IsexPreg_2 = "female, pregnant (reference)" 											///
+			_Ioral_v_dh_1 = "oral quinine (reference)")  											///
+			coeflabels(,labsize(small)) legend(cols(1))												///
+			graphr(color(white) lc(white) margin(2 2 0 0)) plotr(color(white) lc(white))				///
+			grid(within glwidth(thin)) ysize(20) xsize(15)											///
+		xtitle("Hazard Ratio", margin(medsmall))	xlab(,labsize(small)) 							///
+		xmlab(1 "reference",add tlcolor("27 158 119") labcolor("27 158 119"))						///
+		subtitle("Early admission in outpatients on oral treatment", 			 					///
+		size(medium) margin(-30 0 2 0))					///
+	note("Note: {it:t} refers to analysis time in days since presentation with a malaria episode; "	///
+	"           i.e. time is split at day 3 and/or day 7 following presentation, where specified."	///
+	, margin(-37 0 0 2) size(vsmall) )
+	
+	graph export "C:\data\malaria\figures\Model2_compare24oct2015.emf", as(emf) replace	
+
+**Graph piece-wise regression of model 2 incorporating split at days 3 and 7 following the day of presentation	
+estimates
+matrix M2tv = r(table)'
+di "Day 0 to Day 3: HR"  %9.2f M2tv[1,1] %9.2f M2tv[1,5] %9.2f M2tv[1,6]
+di "Day 3 to Day 7: HR"  %9.2f M2tv[2,1] %9.2f M2tv[2,5] %9.2f M2tv[2,6]
+di "Day 7 to Day 14: HR" %9.2f M2tv[3,1] %9.2f M2tv[3,5] %9.2f M2tv[3,6]
+local hr1 = M2tv[1,1]
+local hr2 = M2tv[2,1]
+local hr3 = M2tv[3,1]
+local hr1_lci = M2tv[1,5]
+local hr1_uci = M2tv[1,6]
+local hr2_lci = M2tv[2,5]
+local hr2_uci = M2tv[2,6]
+local hr3_lci = M2tv[3,5]
+local hr3_uci = M2tv[3,6]
+di "Day 0 to Day 3: " %9.2f `hr1' %9.2f `hr1_lci' %9.2f `hr1_uci'
+di "Day 3 to Day 7: " %9.2f `hr2' %9.2f `hr2_lci' %9.2f `hr2_uci'
+di "Day 7 to Day 14:" %9.2f `hr3' %9.2f `hr3_lci' %9.2f `hr3_uci'
+twoway		function y = `hr1', range(2  4) lwidth(thick) lpattern(solid) lc("217 95 2")	||	///
+			function y = `hr2', range(4  8) lwidth(thick) lpattern(solid) lc("217 95 2")	||	///
+			function y = `hr3', range(8 15) lwidth(thick) lpattern(solid) lc("217 95 2")	||	///
+			function y = `hr1_lci', range(2  4) lpattern(dash) lc("253 205 172") 			||	///
+			function y = `hr2_lci', range(4  8) lpattern(dash) lc("253 205 172") 			||	///
+			function y = `hr3_lci', range(8 15) lpattern(dash) lc("253 205 172") 			||	///
+			function y = `hr1_uci', range(2  4) lpattern(dash) lc("253 205 172") 			||	///
+			function y = `hr2_uci', range(4  8) lpattern(dash) lc("253 205 172") 			||	///
+			function y = `hr3_uci', range(8 15) lpattern(dash) lc("253 205 172") 			||	///
+			function y = 1, lwidth(thick) lpattern(solid) range(2 15) lc("27 158 119")		||	///
+			function y = 0.92, lpattern(solid) range(2 15) lc("247 247 247") lwidth(thick)		///
+			legend(order(10 "{it:P.falciparum} (reference)" 									///
+						 11 "{it:P.vivax} multivariable model 2, HR 0.92"	///
+						  1 "{it:P.vivax} model 2 with time interaction, HR (95% CI)")			///
+						pos(6) col(1)) 																	///
+			xtitle("Time (days) since presentation with malaria", margin(medsmall)) 		 	///	
+			ytitle("Hazard Ratio", margin(medsmall))											///
+			ylab(`hr1' `hr2' `hr3' 0.65	1 2, nogrid angle(h) labsize(small) format(%9.2f))		///
+			xlab(2 "1" 4 "3" 8 "7"  15 "14", labsize(small)) xmtick(1(1)15)  					///
+			xscale(nofextend)	 yscale(log fextend)									///
+			graphr(color(white) lc(white)) plotr(color(white) lc(white))
+		
+
+*Model 3
+cd "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\"
+use "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\MalEps_v1.9.3_M3b_TV37.dta", clear
+estimates use M3bTV37_24oct2015.ster
+
+estimates esample: ///
+   _ISpeciesX_2 ///
+   _ISpeciesX_4 ///
+   _ISpeciesX_5 ///
+   tv3_ISpeciesX_5 ///
+   tv7_ISpeciesX_5 ///
+    _IEthnicX_2 ///
+    _IEthnicX_3 ///
+    _IAGR4_4b_1 ///
+    _IAGR4_4b_2 ///
+ tv3_IAGR4_4b_2 ///
+ tv7_IAGR4_4b_2 ///
+    _IAGR4_4b_3 ///
+    _IsexPreg_2 ///
+    _IsexPreg_3 ///
+  _Ioral_v_dh_1 
+  
+  estimates
+ 
+  
+  label variable  _ISpeciesX_2  "{it:P.vivax}"
+  label variable  _ISpeciesX_4  "{it:P.malariae}"
+  label variable  _ISpeciesX_5  "mixed"
+  label variable  _IEthnicX_2   "Lowland"
+  label variable  _IEthnicX_3   "non-Papuan"
+  label variable  _IAGR4_4b_1   "0 to {&lt} 1"
+  label variable  _IAGR4_4b_2   "1 to {&lt} 5 "
+  label variable  _IAGR4_4b_3   "5 to {&lt} 15"
+  label variable  _IsexPreg_2   "female (pregnant)"
+  label variable  _IsexPreg_3   "male"
+  label variable  _Ioral_v_dh_1 "DHP"
+  
+  
+  label variable  tv3_ISpeciesX_2  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_ISpeciesX_4  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_ISpeciesX_5  "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IEthnicX_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IEthnicX_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_1   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IAGR4_4b_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IsexPreg_2   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_IsexPreg_3   "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+  label variable  tv3_Ioral_v_dh_1 "{it:t}{sub:3}{&rarr}{it:t}{sub:7} "
+
+  label variable  tv7_ISpeciesX_2  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_4  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_5  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_1   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_Ioral_v_dh_1 "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+
+
+coefplot 	(M3b_24oct2015, 	mc("241 163 64")  ciopts(lc("241 163 64"))                          ///
+					label(multivariable model 3) )                                                  ///
+			(M3bTV37_24oct2015, mc("153 142 195") ciopts(lc("153 142 195"))                         ///
+					label("model 3 with time interaction"))                                         ///
+			, eform baselevels xline(1, lc("27 158 119"))                                           ///
+		order(    _ISpeciesX_2 _ISpeciesX_4 _ISpeciesX_5 tv3_ISpeciesX_5 tv7_ISpeciesX_5            ///
+				. _IEthnicX_2 _IEthnicX_3 															///
+				. _IAGR4_4b_1 _IAGR4_4b_2 tv3_IAGR4_4b_2 tv7_IAGR4_4b_2 _IAGR4_4b_3 			 	///
+				. _IsexPreg_2 _IsexPreg_3															///
+				. _Ioral_v_dh_1) 																	///
+		headings(_ISpeciesX_2 = "{it:P.falciparum} (reference)" 									///
+			_IEthnicX_2 = "Highland (reference)" 													///
+			_IAGR4_4b_1 = " {&ge} 15 (reference)"													///
+			_IsexPreg_2 = "female, pregnant (reference)" 											///
+			_Ioral_v_dh_1 = "oral quinine (reference)")  											///
+			coeflabels(,labsize(small)) legend(cols(1))												///
+			graphr(color(white) lc(white) margin(2 2 0 0)) plotr(color(white) lc(white))				///
+			grid(within glwidth(thin)) ysize(20) xsize(15)											///
+		xtitle("Hazard Ratio", margin(medsmall))	xlab(,labsize(small)) 							///
+		xmlab(1 "reference",add tlcolor("27 158 119") tlength(*8) labcolor("27 158 119") tlwidth(medium))	///
+		subtitle("Early death in outpatients on oral treatment", 			 					///
+		size(medium) margin(-30 0 2 0))					///
+	note("Note: {it:t} refers to analysis time in days since presentation with a malaria episode; "	///
+	"           i.e. time is split at day 3 and/or day 7 following presentation, where specified."	///
+	, margin(-37 0 0 2) size(vsmall) )
+	
+	graph export "C:\data\malaria\figures\Model3_compare24oct2015.emf", as(emf) replace	
+			
+*Model 4 comparison of with and without time split
+cd "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\"
+use "C:\data\malaria\results\efron 24 Oct 2015 10_47_59\MalEps_v1.9.3_M4a_TV37.dta", clear
+estimates use M4aTV37_24oct2015.ster
+
+estimates esample: ///
+   _ISpeciesX_2 ///
+   _ISpeciesX_4 ///
+   _ISpeciesX_5 ///
+    _IEthnicX_2 ///
+    _IEthnicX_3 ///
+    _IAGR4_4b_1 ///
+ tv7_IAGR4_4b_1 ///
+    _IAGR4_4b_2 ///
+    _IAGR4_4b_3 ///
+ tv7_IAGR4_4b_3 ///
+    _IsexPreg_2 ///
+    _IsexPreg_3 ///
+  _IivArt_1 
+ 
+  estimates
+
+  label variable  _ISpeciesX_2  "{it:P.vivax}"
+  label variable  _ISpeciesX_4  "{it:P.malariae}"
+  label variable  _ISpeciesX_5  "mixed"
+  label variable  _IEthnicX_2   "Lowland"
+  label variable  _IEthnicX_3   "non-Papuan"
+  label variable  _IAGR4_4b_1   "0 to {&lt} 1"
+  label variable  _IAGR4_4b_2   "1 to {&lt} 5 "
+  label variable  _IAGR4_4b_3   "5 to {&lt} 15"
+  label variable  _IsexPreg_2   "female (pregnant)"
+  label variable  _IsexPreg_3   "male"
+  * label variable  _Ioral_v_dh_1 "DHP"
+  label variable  _IivArt_1     "artesunate"
+  
+  label variable  tv7_ISpeciesX_2  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_4  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_ISpeciesX_5  "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IEthnicX_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_1   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IAGR4_4b_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_2   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IsexPreg_3   "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  * label variable  tv7_Ioral_v_dh_1 "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+  label variable  tv7_IivArt_1        "{it:t}{sub:7}{&rarr}{it:t}{sub:14}"
+
+***Graph 
+coefplot 	(M4a_24oct2015, 	mc("241 163 64")  ciopts(lc("241 163 64")) 					///
+					label(multivariable model 4) ) 											///
+			(M4aTV37_24oct2015, mc("153 142 195") ciopts(lc("153 142 195"))  			    ///
+					label("model 4 with time interaction"))                                 ///
+			, eform baselevels xline(1, lc("27 158 119"))                                   ///
+		order(    _ISpeciesX_2 _ISpeciesX_4 _ISpeciesX_5                                    ///
+				. _IEthnicX_2 _IEthnicX_3                                                   ///
+				. _IAGR4_4b_1   tv7_IAGR4_4b_1   _IAGR4_4b_2  _IAGR4_4b_3 tv7_IAGR4_4b_3    ///
+				. _IsexPreg_2 _IsexPreg_3                                                   ///
+				. _IivArt_1) 																///	
+		headings(_ISpeciesX_2 = "{it:P.falciparum} (reference)"                             ///
+			_IEthnicX_2 = "Highland (reference)"                                            ///
+			_IAGR4_4b_1 = " {&ge} 15 (reference)"                                           ///
+			_IsexPreg_2 = "female, pregnant (reference)"                                    ///
+			_IivArt_1 = "IV quinine (reference)")  											///
+			coeflabels(,labsize(small)) legend(cols(1))                                     ///
+			graphr(color(white) lc(white) margin(2 2 0 0)) plotr(color(white) lc(white))    ///
+			grid(within glwidth(thin)) ysize(20) xsize(15)                                  ///
+		xtitle("Hazard Ratio", margin(medsmall))	xlab(,labsize(small))                   ///
+		xmlab(1 "reference",add tlcolor("27 158 119") 										///
+		tlength(*8) labcolor("27 158 119")  tlwidth(medium))								///
+		subtitle("Early death in outpatients on intravenous treatment",                     ///
+		size(medium) margin(-30 0 2 0))					                                    ///
+	note("Note: {it:t} refers to analysis time in days since presentation with a malaria episode; "	///
+	"           i.e. time is split at day 3 and/or day 7 following presentation, where specified."	///
+	, margin(-37 0 0 2) size(vsmall) )
+	
+	graph export "C:\data\malaria\figures\Model3_compare24oct2015.emf", as(emf) replace	
+
+/*******************************************************************
+*
+*Cox-Snell residual examination
+*
+********************************************************************/
+
+***Model 2
+/*load model*/
+loc model M2a_HR
+cd "C:\data\malaria\results\efron  8 Oct 2015 16_30_08\"
+use `model'.dta, clear
+estimates use M2a_HR
+estimates esample: SpeciesX AGR4_4b EthnicX sexPreg oral_v_dhp if ip==0
+/*generate Cox-Snell residuals*/
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell\M2aHR_coxsnell.dta"
+* use "C:\data\malaria\results\26octCoxSnell\M2aHR_coxsnell.dta", clear
+stset cs, fail(AdmNext14)
+/*generate Nelson-Aalen cumulative hazard estimate*/
+sts gen H = na
+save "C:\data\malaria\results\26octCoxSnell\M2aHR_coxsnell.dta", replace
+ loc model M2a_HR
+ /*load symbol for degree into a macro (no smcl character)*/
+loc deg =  char(176)
+/*plot residuals*/
+line H cs cs, sort graphr(color(white) lc(white)) plotr(color(white)) ylab(,nogrid) lpattern(solid dash) lc("153 142 195" "27 158 119") lwidth(thick medium) legend(order(1 "Nelson-Aalen cumulative hazard" 2 "Cox-Snell residual (45`deg' reference line)") size(small) cols(1)  margin(0 15 0 0)) xtitle(,margin(medsmall)) name(rCS_`model', replace) xsize(10) ysize(10)
+/*export*/
+graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.emf", as(emf) replace 
+
+
+***Model 3 
+/*load model*/
+loc model M3b_HR
+cd "C:\data\malaria\results\efron  8 Oct 2015 21_14_52"
+use `model'.dta, clear
+estimates use `model'
+estimates esample: SpeciesX AGR4_4b EthnicX sexPreg oral_v_dhp if ip==0
+/*generate Cox-Snell residuals*/
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta"
+
+stset cs, fail(DiedNext14)
+
+/*generate Nelson-Aalen cumulative hazard estimate*/
+sts gen H = na
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta", replace
+/*load symbol for degree into a macro (no smcl character)*/
+loc deg =  char(176)
+
+/*plot residuals*/
+line H cs cs, sort graphr(color(white) lc(white)) plotr(color(white)) ylab(,nogrid) lpattern(solid dash) lc("153 142 195" "27 158 119") lwidth(thick medium) legend(order(1 "Nelson-Aalen cumulative hazard" 2 "Cox-Snell residual (45`deg' reference line)") size(small) cols(1)  margin(0 15 0 0)) xtitle(,margin(medsmall)) name(rCS_`model', replace) xsize(10) ysize(10)
+/*export*/
+graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.emf", as(emf) replace 
+
+***Model 4
+loc model M4a_HR
+cd "C:\data\malaria\results\efron  8 Oct 2015 21_14_52"
+use `model'.dta, clear
+estimates use `model' 
+estimates esample: SpeciesX AGR4_4b EthnicX sexPreg ivArt if ip==1
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta"
+
+stset cs, fail(DiedNext14)
+/*generate Nelson-Aalen cumulative hazard estimate*/
+sts gen H = na
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta", replace
+/*load symbol for degree into a macro (no smcl character)*/
+loc deg =  char(176)
+/*plot residuals*/
+line H cs cs, sort graphr(color(white) lc(white)) plotr(color(white)) ylab(,nogrid) lpattern(solid dash) lc("153 142 195" "27 158 119") lwidth(thick medium) legend(order(1 "Nelson-Aalen cumulative hazard" 2 "Cox-Snell residual (45`deg' reference line)") size(small) cols(1)  margin(0 15 0 0)) xtitle(,margin(medsmall)) name(rCS_`model', replace) xsize(10) ysize(10)
+/*export*/
+graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.emf", as(emf) replace 
+
+
+***TVC models
+cd "C:\data\malaria\results\efron 24 Oct 2015 10_47_59"
+
+*Model 2 tv37
+loc model M2aTV37_24oct2015
+use "MalEps_v1.9.3_M2a_TV37.dta", clear
+estimates use `model'
+loc varlist _ISpeciesX_2	tv3_ISpeciesX_2 	tv7_ISpeciesX_2 	///
+			_ISpeciesX_4   							///
+			_ISpeciesX_5   							///
+			_IEthnicX_2    										  	///
+			_IEthnicX_3    tv3_IEthnicX_3		tv7_IEthnicX_3		///
+			_IAGR4_4b_1    										   	///
+			_IAGR4_4b_2     tv3_IAGR4_4b_2 		 tv7_IAGR4_4b_2   	///
+			_IAGR4_4b_3     					tv7_IAGR4_4b_3   	///
+			_IsexPreg_2    						tv7_IsexPreg_2  	///
+			_IsexPreg_3     tv3_IsexPreg_3 		tv7_IsexPreg_3 		///
+			_Ioral_v_dh_1
+estimates esample: `varlist' if ip==0
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta"
+
+stset cs, fail(AdmNext14)
+/*generate Nelson-Aalen cumulative hazard estimate*/
+sts gen H = na
+rename H H_37
+rename cs cs_37
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta", replace
+/*import model2a CS prediction*/
+append using "C:\data\malaria\results\26octCoxSnell\M2aHR_coxsnell.dta", keep(cs H)
+
+/*compare models*/
+	*M2 comparison
+	loc model m2_coxsnell_AC
+	*Regress Nelson Aalen cumulative hazard and Cox-Snell residual: slope should be 1 (store estimates for plot)
+	qui: reg cs H		/* Model 2A */
+	loc M2a = `:di %9.2f _b[H]'
+	
+	qui: reg cs_37 H_37 /* Model 2B */
+	loc M2c = `:di %9.2f _b[H_37]'
+
+	qui: su cs_37
+	loc ypos `r(max)'
+	
+	loc deg =  char(176)
+	tw	line H cs cs, sort lc("27 158 119" none) lwidth(thick none) lpattern(dash)  || ///
+		line H_37 cs_37 cs_37, sort lpattern(solid solid) ///
+			lc("153 142 195" black) lwidth(thick thin) ///
+		legend(ring(0) pos(11) lwidth(none) ///
+			nobox fc(none) bc(none) lpattern(blank) region(style(none)) ///
+			order( ///
+					1 "Model 2a Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M2a'{it:r}{sub:cs}" ///
+					3 "Model 2c Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M2c'{it:r}{sub:cs}" ///
+					4 "Cox-Snell residual (45`deg' reference line)") ///
+						size(vsmall) cols(1) symysize(*.5)  ) ///
+				xtitle("Cox-Snell residuals from early admission models 2a and 2c", ///
+				margin(medsmall)) name("rCS_`model'", replace) xsize(20) ysize(20) ///
+				graphr(color(white) lc(white)) plotr(color(white)) ///
+				ylab(,nogrid angle(h) format(%9.2f) labsize(small)) ///
+				xlab(,format(%9.2f) labsize(small)) 
+	
+	graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.png", as(png) width(1000) height(1000) replace 	
+	
+	
+*Model 3 tv37
+loc model M3bTV37_24oct2015
+use "MalEps_v1.9.3_M3b_TV37.dta", clear
+estimates use `model'
+loc varlist _ISpeciesX_2								///
+			_ISpeciesX_4   										 	///
+			_ISpeciesX_5 	tv3_ISpeciesX_5		tv7_ISpeciesX_5			///
+			_IEthnicX_2    										  	///
+			_IEthnicX_3   											///
+			_IAGR4_4b_1    										   	///
+			_IAGR4_4b_2  	tv3_IAGR4_4b_2 		 tv7_IAGR4_4b_2   	///
+			_IAGR4_4b_3     										///
+			_IsexPreg_2    						 					///
+			_IsexPreg_3     										///
+			_Ioral_v_dh_1		
+estimates esample: `varlist' if ip==0
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta"
+
+stset cs, fail(DiedNext14)
+sts gen H = na
+rename H H_37
+rename cs cs_37
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta", replace
+loc model M3bTV37_24oct2015
+append using "C:\data\malaria\results\26octCoxSnell/M3b_HR_coxsnell.dta", keep(cs H)
+
+/*compare models*/
+	*M3 comparison
+	loc model m3_coxsnell_AB
+	*Regress Nelson Aalen cumulative hazard and Cox-Snell residual: slope should be 1 (store estimates for plot)
+	qui: reg cs H		/* Model 3a */
+	loc M3a = `:di %9.2f _b[H]'
+	
+	qui: reg cs_37 H_37 /* Model 3c */
+	* loc M3c = `:di %9.2f _b[H_37]'  /* manual entry as this displays with odd decimal place */
+	loc M3c .93
+	* di "0`M3a'x and 0`M3c'x"
+	qui: su cs_37
+	loc ypos `r(max)'
+	
+	loc deg =  char(176)
+	tw	line H cs cs, sort lc("27 158 119" none) lwidth(thick none) lpattern(dash)  || ///
+		line H_37 cs_37 cs_37, sort lpattern(solid solid) ///
+			lc("153 142 195" black) lwidth(thick thin) ///
+		legend(ring(0) pos(11) lwidth(none) ///
+			nobox fc(none) bc(none) lpattern(blank) region(style(none)) ///
+			order( ///
+					1 "Model 3a Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M3a'{it:r}{sub:cs}" ///
+					3 "Model 3c Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M3c'{it:r}{sub:cs}" ///
+					4 "Cox-Snell residual (45`deg' reference line)") ///
+						size(vsmall) cols(1) symysize(*.5)  ) ///
+				xtitle("Cox-Snell residuals from early death models 3a and 3c", ///
+				margin(medsmall)) name("rCS_`model'", replace) xsize(20) ysize(20) ///
+				graphr(color(white) lc(white)) plotr(color(white)) ///
+				ylab(,nogrid angle(h) format(%9.3f) labsize(small)) ///
+				xlab(,format(%9.3f) labsize(small)) 
+				
+
+	graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.png", as(png) width(1000) height(1000) replace 
+* * Model 3a solograph
+* loc deg =  char(176)
+* line H cs cs, sort graphr(color(white) lc(white)) plotr(color(white)) ylab(,nogrid) lpattern(solid dash) lc("153 142 195" "27 158 119") lwidth(thick medium) legend(order(1 "Nelson-Aalen cumulative hazard" 2 "Cox-Snell residual (45`deg' reference line)") size(small) cols(1)  margin(0 15 0 0)) xtitle(,margin(medsmall)) name("rCS_`model'", replace) xsize(10) ysize(10)
+
+* graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.emf", as(emf) replace 
+
+*Model 4 tv37
+loc model M4aTV37_24oct2015
+use "MalEps_v1.9.3_M4a_TV37.dta", clear
+estimates use `model'
+loc varlist _ISpeciesX_2									///
+			_ISpeciesX_4    								///
+			_ISpeciesX_5   									///
+			_IEthnicX_2    									///
+			_IEthnicX_3    									///
+			_IAGR4_4b_1    				tv7_IAGR4_4b_1    	///
+			_IAGR4_4b_2    									///
+			_IAGR4_4b_3    				tv7_IAGR4_4b_3   	///
+			_IsexPreg_2    									///
+			_IsexPreg_3    									///
+			_IivArt_1	
+estimates esample: `varlist' if ip==1
+predict mgale, mgale
+predict cs, csnell
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta"
+
+stset cs, fail(DiedNext14) id(obsno)
+sts gen H = na
+
+rename H H_37
+rename cs cs_37
+save "C:\data\malaria\results\26octCoxSnell/`model'_coxsnell.dta", replace
+loc model M4aTV37_24oct2015
+append using "C:\data\malaria\results\26octCoxSnell/M4a_HR_coxsnell.dta", keep(cs H)
+
+/*compare models*/
+	*M4 comparison
+	loc model m4_coxsnell_AB
+	*correlation between Nelson Aalen cumulative hazard and Cox-Snell residual (should be 1)
+	reg cs H		/* Model 3a */
+	loc M4a = `:di %9.2f _b[H]'
+	
+	reg cs_37 H_37 /* Model 3c */
+	loc M4c = `:di %9.2f _b[H_37]'
+	* di "0`M3a'x and 0`M3c'x"
+	qui: su cs_37
+	loc ypos `r(max)'
+	
+	loc deg =  char(176)
+	tw	line H_37 cs_37 cs_37, sort lc("153 142 195" none) ///
+		lwidth(thick none) lpattern(solid)  || ///
+		line H cs cs, sort lpattern(dash solid) ///
+			lc("27 158 119" black) lwidth(vthick thin) ///
+		legend(ring(0) pos(11) lwidth(none) ///
+			nobox fc(none) bc(none) lpattern(blank) region(style(none)) ///
+			order( ///
+					3 "Model 4a Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M4a'{it:r}{sub:cs}" ///
+					1 "Model 4c Nelson-Aalen cumulative hazard {it:H}({it:r}{sub:cs})= 0 + 0`M4c'{it:r}{sub:cs}" ///
+					4 "Cox-Snell residual (45`deg' reference line)") ///
+						size(vsmall) cols(1) symysize(*.5)  ) ///
+				xtitle("Cox-Snell residuals from early death models 4a and 4c", ///
+				margin(medsmall)) name("rCS_`model'", replace) xsize(20) ysize(20) ///
+				graphr(color(white) lc(white)) plotr(color(white)) ///
+				ylab(,nogrid angle(h) format(%9.2f) labsize(small)) ///
+				xlab(,format(%9.2f) labsize(small)) 
+				
+	graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.png", as(png) width(1000) height(1000) replace 
+	
+* *Model 4a tv37 solo graph
+* loc deg =  char(176)
+* line H cs cs, sort graphr(color(white) lc(white)) plotr(color(white)) ylab(,nogrid) lpattern(solid dash) lc("153 142 195" "27 158 119") lwidth(thick medium) legend(order(1 "Nelson-Aalen cumulative hazard" 2 "Cox-Snell residual (45`deg' reference line)") size(small) cols(1)  margin(0 15 0 0)) xtitle(,margin(medsmall)) name("rCS_`model'", replace) xsize(10) ysize(10)
+
+* graph export "C:\data\malaria\figures\residuals/`model'_coxsnell.emf", as(emf) replace 			
+	
+
+		

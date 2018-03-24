@@ -1,0 +1,152 @@
+
+\documentclass[12pt,a4paper,titlepage,twoside,openright]{article}
+%%%Reference loader
+% A4 paper
+\paperwidth 210mm
+\paperheight 297mm
+\pdfpagewidth=\paperwidth
+\pdfpageheight=\paperheight
+
+%Remove Springer Logo
+\usepackage{xpatch}
+
+\makeatletter
+\xpatchcmd{\@maketitle}{{\Large Springer\par}}{}{}{}
+\makeatother
+
+%extra url help
+
+%Headers and Footers
+	% \usepackage{fancyhdr}
+	% \pagestyle{fancy}
+	% \fancyhf{}
+	% \renewcommand{\headrulewidth}{0pt}    %remove top horizontal bar
+	% %\fancyheadoffset{0\textwidth}        % center place top horizontal bar?
+	% \renewcommand{\footrulewidth}{0pt}    %remove bottom horizontal bar
+	% \usepackage{lastpage}
+	\rightmark
+	 % % \rhead{Student 659810}
+	 % % \lhead{}
+	% \cfoot{Page \thepage}
+	% % \cfoot{Page \thepage\ of \pageref{LastPage}}
+
+	
+
+% Links and colours
+	\usepackage[pdftex]{hyperref}
+	\usepackage{xcolor}
+	\hypersetup{
+		colorlinks,
+		linkcolor={black},
+		citecolor={black},
+		urlcolor=[RGB]{56 108 176}
+	}
+
+% Bibliography
+	% \usepackage{natbib,har2nat} 
+	% \setcitestyle{authoryear,open={(},close={)}}
+	\usepackage[numbers]{natbib}
+	% \bibliographystyle{spbasic2} 
+	\bibliographystyle{unsrt_spbasic} 
+	
+	
+% Lists, symbols nad matrices
+	\usepackage{enumitem}
+	\usepackage{amsmath}
+	\usepackage{graphicx}
+	\usepackage[retainorgcmds]{IEEEtrantools}
+	\usepackage{multirow}
+	\usepackage{rotating}
+	\usepackage{changepage}
+	\usepackage{dcolumn}
+	\usepackage{booktabs}
+	\usepackage{longtable}
+	\usepackage[
+	  outer=25mm,
+	  inner=35mm,
+	  vmargin=20mm,
+	  includehead,
+	  includefoot,
+	  headheight=15pt,
+	]{geometry}
+	\usepackage{pdflscape}
+	
+%formatting miscellanies
+	\renewcommand\thepart{\Alph{part}}
+	\usepackage{capt-of}
+	% \addtolength{\hoffset}{-0.5cm}
+	% \addtolength{\textwidth}{1cm}
+
+	\usepackage{setspace} %For double spacing
+
+
+	\usepackage{todonotes} %For to do notes
+
+\usepackage{mathptmx}
+\usepackage{helvet}
+\usepackage{courier}
+%
+\usepackage{type1cm}         
+
+\usepackage{makeidx}         % allows index generation
+
+\usepackage{multicol}        % used for the two-column index
+\usepackage[bottom]{footmisc}% places footnotes at page bottom
+
+
+
+	% \setlength{\parindent}{4em}  %remove all indenting of paragrapgs
+	% \setlength{\parskip}{1em} 
+	\usepackage{pdfpages} 
+	\usepackage{upgreek}
+
+
+	
+%Not sure what this is
+		% \makeatletter
+		% \newcommand*{\gmshow@textheight}{\textheight}
+		% \newdimen\gmshow@@textheight
+		% \g@addto@macro\landscape{%
+		  % \gmshow@@textheight=\hsize
+		  % \renewcommand*{\gmshow@textheight}{\gmshow@@textheight}%
+		% }
+		% \def\Gm@vrule{%
+		  % \vrule width 0.2pt height\gmshow@textheight depth\z@
+		% }%
+		\makeatother
+		% \setlength{\parindent}{0pt}
+
+	
+%Custom commands
+	% \newcommand{\plas}{\emph{Plasmodium}}
+
+	\newcommand{\tdn}{\todo[inline, color=green!40]}
+
+% Custom Colours
+	\definecolor{farb1}{rgb}{27	 158 119 }
+	\definecolor{farb2}{rgb}{217 95	 2   }
+	\definecolor{farb3}{rgb}{117 112 179 }
+	\definecolor{farb4}{rgb}{231 41	 138 }
+	\definecolor{farb5}{rgb}{102 166 30  }
+	\definecolor{farb6}{rgb}{230 171 2   }
+	\definecolor{farb7}{rgb}{166 118 29  }
+	\definecolor{farb8}{rgb}{102 102 102 }
+
+
+
+\begin{document}
+
+
+\input{background}
+\input{methods}
+\input{results}
+\input{discussion}
+\input{conclusion}
+\input{glossary}
+
+
+
+\bibliography{malEps_bib2}   
+
+
+\end{document}

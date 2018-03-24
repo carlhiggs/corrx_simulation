@@ -1,0 +1,19 @@
+
+\documentclass[12pt,a4paper,titlepage,twoside,openright]{article}
+%%%Reference loader
+
+	\usepackage{natbib,har2nat} 
+	\setcitestyle{authoryear,open={(},close={)}}
+	
+	\begin{filecontents}{publication.bib}	  
+
+	\end{filecontents}
+	
+\begin{document}
+Words \citep{Barber2013}.
+
+\bibliographystyle{kluwer}
+\bibliography{publication}  
+
+
+\end{document}
