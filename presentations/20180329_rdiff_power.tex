@@ -1,0 +1,136 @@
+\documentclass{beamer}
+
+\usepackage[english]{babel}
+\usepackage[backend=biber,style=numeric-comp,sorting=none]{biblatex}
+\addbibresource{../bibliography.bib}
+
+
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\DeclareMathOperator\arctanh{arctanh}
+\DeclareMathOperator\tanh{tanh}
+\DeclareMathOperator\ci{CI}
+\DeclareMathOperator\power{power}
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+
+% turn off mavigation 
+\setbeamertemplate{navigation symbols}{}
+
+\title{Power to detect a difference in correlations}
+\subtitle{Applications for twin studies}
+\author{C.~Higgs\inst{1}}
+\institute[Affiliation] % (optional)
+{
+  \inst{1}%
+  Centre for Epidemiology and Biostatistics\\
+  School of Population and Global Health\\
+  University of Melbourne
+}
+\date[March 2018] % (optional)
+{Supervision meeting}
+\subject{Biostatistics Research Project}
+
+
+\begin{document}
+  \frame{\titlepage}
+  
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+
+  \begin{frame}
+    \frametitle{Context: Twin studies}
+  \end{frame}
+  
+  \begin{frame}
+    \frametitle{Key terms}
+    \[y \sim N(\mu,\sigma)\] \\
+    \[x \sim N(\mu,\sigma)\] \\
+    The population correlation, an index of linear change in y as x varies is formed of the (assumed) bivariate normal distribution of the respective variables \footfullcite{David1938} \\
+    \[\rho = \frac{\Cov(x,y)}{\sigma_x \sigma_y} \]
+    and is estimated by \(r\)
+  \end{frame}  
+  
+  \begin{frame}
+    \frametitle{Key terms}
+    \[r = \frac{\sum_{i=1}^{n} (x_i - \bar{x})^2(y_i - \bar{y})^2}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}\]
+  \end{frame}
+  
+  \begin{frame}
+    \frametitle{The distribution of \(r\) for any \(n\) and \(\rho\)  \footfullcite{David1938}} 
+    \[p(r | n, \rho) = \frac{(1-\rho^2)^{\frac{n-1}{2}}}{(\pi (n-3)!)} (1-r^2)^\frac{n-4}{2}\frac{d^{n-2}}{d(r\rho)^(n-2)}\bigg(\frac{\arccos(-\rho r)}{ \sqrt{1-\rho^2 r^2}}\bigg)\] 
+  which is not so tracactable for statistical inference as,
+  
+  \end{frame}
+  
+  \begin{frame}
+    \frametitle{Map \(r\) from \((-1,+1)\) to \((-\infty,+\infty)\) as Fisher's \(z\) \footfullcite{Fisher1915}}
+    \[z     = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r} \]
+    \begin{center}
+      \includegraphics{../figs/r_to_z.pdf}
+    \end{center}
+  \end{frame}
+
+  \begin{frame}
+    \frametitle{Type 1 and Type 2 error \footfullcite{Cohen1988}}  
+    \[\alpha\]
+    \begin{itemize}
+      \item expected proportion of null hypotheses to be rejected when true 
+      \item type 1 error
+      \item the classic '0.05' (5\%)\; but 0.1 or any other number may also be chosen 
+    \end{itemize}
+    
+    \(\beta\): rate of failing to reject the null hypothesis when false (Type 2 error)
+    \begin{itemize}
+      \item expected proportion of null hypotheses not rejected when false 
+      \item type 2 error
+      \item 0.2 (20\%) is a classic choice; gunning for power of \(1 - \beta = 80\)
+    \end{itemize}
+  \end{frame} 
+  
+  \begin{frame}
+    \frametitle{Hypothesis test for difference in correlations  \footfullcite{Cohen1988, Aberson2010}}
+    \[\theta     = \arctanh(r_1) - \arctanh(r_2)          \]
+    \[se_\theta  = \sqrt{\frac{1}{n_1-3}+\frac{1}{n_2-3}} \]
+    \[c_\theta   = q / se_q                               \] 
+    \[p(\theta)  =  \Phi_{c_\theta/2}^{-1}                \]
+      - note: two sided p value; fill in rest here...
+  \end{frame}   
+
+  \begin{frame}
+    \frametitle{Confidence interval for difference in correlations}  
+    In the scale of \(z\):
+    \[\ci_{100(1-\alpha)\%} =\tanh \bigg( \theta \pm c_0 \times se_\theta \bigg) \] 
+    or back in the scale of \(r\):
+    \[\ci_{100(1-\alpha)\%} =\tanh \bigg( \theta \pm c_0 \times se_\theta \bigg) \] 
+  \end{frame}    
+  
+  \begin{frame}
+    \frametitle{Power for difference in correlations \footfullcite{Cohen1988, Aberson2010}}  
+    \[\theta     = \arctanh(r_1) - \arctanh(r_2)            \]
+    \[se_\theta    = \sqrt{\frac{1}{n_1-3}+\frac{1}{n_2-3}} \]
+    \[c_\theta     = q / se_q                               \] 
+    \[c_0   =  \Phi_{\alpha/2}^{-1}                         \]
+    \[\beta = \Phi \bigg( c_0 - c_\theta \bigg)             \]
+    and
+    \[ \power(\theta) = 1 - \beta                           \]
+  \end{frame}
+  
+  \begin{frame}
+    \frametitle{Power for difference in correlations}  
+
+    \[ \power = 1- \Phi \bigg(\Phi_{\alpha/2}^{-1} - \frac{\arctanh(r_1) - \arctanh(r_2)}{\sqrt{(n_1-3)^{-1} + (n_2-3)^{-1}}} \bigg) \]
+  \end{frame}
+
+
+  \begin{frame}
+    \frametitle{Bibliography}
+    \printbibliography
+
+  \end{frame}
+  
+\end{document}

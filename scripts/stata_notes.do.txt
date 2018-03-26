@@ -356,7 +356,63 @@ k_tau_b
 end
 
 
+/* Plots of r */
+global theme graphr(color(white) lw(medium) lc(black) ilc(white)) plotr(color(white) lw(medium) lc(white) ) scheme(s2gcolor)
+global ystyle ylab(,axis(1) angle(h) nogrid labsize(small) tstyle(minor)) ytitle(,axis(1) margin(medsmall)) ysca(axis(1) extend)
+global xstyle xlab(,axis(1) labsize(small) tstyle(minor)) xtitle(,axis(1) margin(medsmall)) xsca(axis(1) extend)
+global mstyle msize(medium) mlwidth(vvthin)
+global box_style  ${theme} ${ystyle} 
+global tw_style   ${theme} ${ystyle} ${xstyle}  yaxis(1 2) xaxis(1 2) ysca(axis(2) on  line) xsca(axis(2) on  line) ylab(none,axis(2) )  xlab(none,axis(2)) ytitle("",axis(2)) xtitle("",axis(2))
+global tw_style_alt   ${theme} ${ystyle} ${xstyle}  yaxis(1 2) xaxis(1 2) ysca(axis(2) on  line) xsca(axis(2) on  line) ylab(none,axis(1) )  xlab(none,axis(1))  ytitle(,axis(2) margin(medsmall)) xtitle(,axis(2) margin(medsmall)) ytitle("",axis(1) margin(medsmall)) xtitle("",axis(1) margin(medsmall))
 
 
+global green  = "27 158 119"
+global orange = "217 95 2" 
+global purple = "117 112 179"
+global pink   = "231 41 138"
+
+tw function y = atanh(x), range(-1.01 1.01)   n(900)  $theme ///
+   text(3.65 0.98 "{it:z} towards +{&infinity}", placement(w)) ///
+   text(-3.65 -0.98 "{it:z} towards -{&infinity}", placement(e)) ///
+   xtitle({it:r}, margin(medsmall)) ///
+   ytitle({it:z} = arctanh({it:r}), margin(medsmall)) ///
+   ylab(-3 0 3,angle(h))
+   
+
+su sbp if mz==1
+scalar n1 = r(N)
+scalar x1_m = r(mean)
+scalar x1_s = r(sd)
+
+su bmi if mz==1  
+scalar y1_m = r(mean)
+scalar y1_s = r(sd)
+
+su sbp if dz1==1
+scalar n2 = r(N)
+scalar x2_m = r(mean)
+scalar x2_s = r(sd)
+
+su bmi if dz1==1  
+scalar y2_m = r(mean)
+scalar y2_s = r(sd)
+
+
+scalar new_obs = n1 + n2
+
+clear
+loc new_obs = new_obs
+loc n1 = n1
+loc n2 = n2
+loc start2 = `n1'+1
+
+set obs `new_obs'
+capture gen group = .
+replace group = 0 in 1/`n1'
+replace group = 1 in `start2'/`new_obs'
+gen x = rnormal(x1_m, x1_s) if group==0
+gen y = rnormal(y1_m, y1_s) if group==0
+replace x = rnormal(x2_m, x2_s) if group==1
+replace y = rnormal(y2_m, y2_s) if group==1
 
   
