@@ -3,13 +3,11 @@
 \usepackage[english]{babel}
 \usepackage[backend=biber,style=numeric-comp,sorting=none]{biblatex}
 \addbibresource{../bibliography.bib}
-
-
-
+\usepackage{csquotes}
+\usepackage{lmodern}% http://ctan.org/pkg/lm
 \usepackage{graphicx}
 \usepackage{amsmath}
 \DeclareMathOperator\arctanh{arctanh}
-\DeclareMathOperator\tanh{tanh}
 \DeclareMathOperator\ci{CI}
 \DeclareMathOperator\power{power}
 \newcommand{\E}{\mathrm{E}}
@@ -21,7 +19,7 @@
 
 \title{Power to detect a difference in correlations}
 \subtitle{Applications for twin studies}
-\author{C.~Higgs\inst{1}}
+\author{Carl~Higgs\inst{1}}
 \institute[Affiliation] % (optional)
 {
   \inst{1}%
@@ -30,24 +28,19 @@
   University of Melbourne
 }
 \date[March 2018] % (optional)
-{Supervision meeting}
-\subject{Biostatistics Research Project}
 
 
 \begin{document}
   \frame{\titlepage}
   
-  \begin{frame}
-    \frametitle{Table of Contents}
-    \tableofcontents[currentsection]
-  \end{frame}
+   \begin{frame}
+       \frametitle{Outline}
+       \tableofcontents[currentsection,currentsubsection]
+   \end{frame}
 
+  \section{Pearson product-moment correlation coefficient}
   \begin{frame}
-    \frametitle{Context: Twin studies}
-  \end{frame}
-  
-  \begin{frame}
-    \frametitle{Key terms}
+    \frametitle{Pearson correlation coefficient}
     \[y \sim N(\mu,\sigma)\] \\
     \[x \sim N(\mu,\sigma)\] \\
     The population correlation, an index of linear change in y as x varies is formed of the (assumed) bivariate normal distribution of the respective variables \footfullcite{David1938} \\
@@ -56,17 +49,11 @@
   \end{frame}  
   
   \begin{frame}
-    \frametitle{Key terms}
-    \[r = \frac{\sum_{i=1}^{n} (x_i - \bar{x})^2(y_i - \bar{y})^2}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}\]
+    \frametitle{Pearson correlation coefficient}
+    \[r = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}\]
   \end{frame}
-  
-  \begin{frame}
-    \frametitle{The distribution of \(r\) for any \(n\) and \(\rho\)  \footfullcite{David1938}} 
-    \[p(r | n, \rho) = \frac{(1-\rho^2)^{\frac{n-1}{2}}}{(\pi (n-3)!)} (1-r^2)^\frac{n-4}{2}\frac{d^{n-2}}{d(r\rho)^(n-2)}\bigg(\frac{\arccos(-\rho r)}{ \sqrt{1-\rho^2 r^2}}\bigg)\] 
-  which is not so tracactable for statistical inference as,
-  
-  \end{frame}
-  
+
+  \subsection{Map \it{r} to \it{z}} 
   \begin{frame}
     \frametitle{Map \(r\) from \((-1,+1)\) to \((-\infty,+\infty)\) as Fisher's \(z\) \footfullcite{Fisher1915}}
     \[z     = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r} \]
@@ -75,40 +62,45 @@
     \end{center}
   \end{frame}
 
+  \subsection{Type 1 and Type 2 error}
   \begin{frame}
     \frametitle{Type 1 and Type 2 error \footfullcite{Cohen1988}}  
-    \[\alpha\]
+    \(\alpha\)
     \begin{itemize}
       \item expected proportion of null hypotheses to be rejected when true 
       \item type 1 error
       \item the classic '0.05' (5\%)\; but 0.1 or any other number may also be chosen 
     \end{itemize}
     
-    \(\beta\): rate of failing to reject the null hypothesis when false (Type 2 error)
+    \(\beta\)
     \begin{itemize}
       \item expected proportion of null hypotheses not rejected when false 
       \item type 2 error
       \item 0.2 (20\%) is a classic choice; gunning for power of \(1 - \beta = 80\)
     \end{itemize}
   \end{frame} 
-  
+
+  \subsection{Hypothesis test for difference in \it{r}}  
   \begin{frame}
     \frametitle{Hypothesis test for difference in correlations  \footfullcite{Cohen1988, Aberson2010}}
     \[\theta     = \arctanh(r_1) - \arctanh(r_2)          \]
     \[se_\theta  = \sqrt{\frac{1}{n_1-3}+\frac{1}{n_2-3}} \]
     \[c_\theta   = q / se_q                               \] 
+    Under the null hypothesis, we evaluate \(c_\theta\) against the standard normal distribution for the probability of observing an effect size of such mangitude:
     \[p(\theta)  =  \Phi_{c_\theta/2}^{-1}                \]
-      - note: two sided p value; fill in rest here...
+      - note: two sided p value; could be onesided
   \end{frame}   
 
+  \subsection{Confidence interval for difference in \it{r}}   
   \begin{frame}
     \frametitle{Confidence interval for difference in correlations}  
     In the scale of \(z\):
-    \[\ci_{100(1-\alpha)\%} =\tanh \bigg( \theta \pm c_0 \times se_\theta \bigg) \] 
+    \[\ci_{100(1-\alpha)\%} =\theta \pm c_0 \times se_\theta \] 
     or back in the scale of \(r\):
     \[\ci_{100(1-\alpha)\%} =\tanh \bigg( \theta \pm c_0 \times se_\theta \bigg) \] 
   \end{frame}    
   
+  \subsection{Power for difference in correlations}   
   \begin{frame}
     \frametitle{Power for difference in correlations \footfullcite{Cohen1988, Aberson2010}}  
     \[\theta     = \arctanh(r_1) - \arctanh(r_2)            \]
@@ -122,15 +114,78 @@
   
   \begin{frame}
     \frametitle{Power for difference in correlations}  
-
     \[ \power = 1- \Phi \bigg(\Phi_{\alpha/2}^{-1} - \frac{\arctanh(r_1) - \arctanh(r_2)}{\sqrt{(n_1-3)^{-1} + (n_2-3)^{-1}}} \bigg) \]
   \end{frame}
 
-
   \begin{frame}
+    \frametitle{Judging magnitude}  
+      \begin{itemize}         
+				\item \(r^2\) is the proportion of variance of one variable which can be explained by that of the other.
+	      \item \(r^2 \times 100\%\) of the variance in \(y\) is attributable to magnitude of \(x\)    
+ 	      \item \(\tanh(\theta)^2 \times 100\%\) is the magnitude of difference in variance explained by one group compared with the other.  Although, by squaring we lose the sign indicating direction of effect; this could be restored.
+        \item Cohen \footfullcite{Cohen1988} recommends use of \(r^2\) to inform choice of effect size for detection in power calculations (with subject matter knowledge from literature).
+      \end{itemize}
+  \end{frame}
+  
+  \section{Spearman correlation coefficient}
+  \begin{frame}
+    \frametitle{Spearman correlation coefficient}
+    The Spearman correlation coefficient is calculated using the rank ordered variables for each group; subsequent steps are as per the Pearons correlation coefficient.
+  \end{frame}    
+  
+  \section{Other approaches to NHST}
+  \subsection{Permutation test}
+  \begin{frame}
+    \frametitle{Permutation test \footfullcite{Efron1993}}  
+    \begin{itemize}
+		  \item take order statistic (ranked, no ties) representation of combined group correlations \(r_1\) and \(r_2\) 
+	  	\item break ties using a Bernoulli trial
+	  	\item two vectors:
+      \begin{itemize}
+				\item \(v\) is vector of order statistics: \(v = \{v_1, v_2,\ldots, v_N\}\)
+			  \item \(v\) is corresponding ordered vector of group membership: \(g = \{g_1, g_2,\ldots, g_N\}\)
+      \end{itemize}
+    \end{itemize}
+  \end{frame} 
+  
+  \begin{frame}
+    \frametitle{Permutation test \footfullcite{Efron1993}}  
+    \begin{itemize}
+	  	\item Permutation lemma: \it{"Under \(H_0: \rho_1 = \rho_2\), the vector g has probability \(1/\binom{N}{n}\) of equaling any one of its possible values"}
+      \item so, assuming \(H_0\) of no difference, all permuations of \(z_1\) and \(z_2\) are equally likely
+  		\item combine \(n_1 + n_2\) observations from two groups together
+      \begin{itemize}
+        \item reduces the two sample situation to a single distribution assumed true under \(H_0\).
+	    	\item if no difference, should be no discernible pattern of this difference in distributions when re-sampled a sufficiently large number of times
+      \end{itemize}
+    \end{itemize}
+  \end{frame} 
+      
+  \begin{frame}
+    \frametitle{Permutation test \footfullcite{Efron1993}}  
+    \begin{itemize}
+  		\item without replacement, take sample of size \(n_1\) to represent first group, 
+  		\item remaining sample of size \(n_2\) represents second group
+	  	\item take difference in means
+		  \item repeat a large number of times
+		  \item Evaluate: \it{does the original difference lie outside the middle \(100\times(1-\alpha)\)\%  of the re-sampled distribution?} If yes, reject \(H_0\). 
+  		\item Permutation \(\alpha\) is probability that the permutation replication \(\hat{\theta}^{\*} \geq \hat{\theta}\) the sample difference, and is evaluated as the proportion of occurances relative to total number of possible permutations
+		\item often approximated using Monte Carlo methods
+    \end{itemize}
+  \end{frame}  
+
+  \subsection{Approach taken by R package cocor} 
+  \begin{frame}
+    \frametitle{Approach taken by R package cocor}
+    cocor \footfullcite{Diedenhofen2015} is a recent implementation of a flexible calculator for inferences on differences in \(r\)
+    \begin{center}
+      \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{../figs/Diedenfohen_Musch_cocor_flowchart_2015.pdf}
+    \end{center}
+  \end{frame}  
+
+  \begin{frame}[allowframebreaks]
     \frametitle{Bibliography}
     \printbibliography
-
   \end{frame}
   
 \end{document}
