@@ -1,0 +1,71 @@
+The classic twin study can be used to estimate variation in traits attributable genetics, or heritability.  The estimates of heritability are conditional on key assumptions.  This chapter will define key genetic concepts, how these are exploited by the classic twin study to estimate the role of heridity for particular traits, and the assumptions which are relied upon in order to make such inferences.
+
+(cite Elston et al?)
+Historical genetics and statistics linkage
+
+Modern genomics
+  genome, 
+    conceptualised as sequence of nucleotide basepairs
+      (chromosomes? maybe no need to discuss?)
+       loci (positions along the genome where genes are
+       gene (a sequence of DNA performing some kind of role, and identified by virtue of its expression)
+       alleles (variant forms of a gene co-occuring at that particular locus in the genome)
+          genotype refers to the allelic combination at a particular locus
+              phenotype refers to characteristics exhibited by particular genotypes
+                 The interaction of particular alleles in a genotype can be described in terms of dominance (where presence of one allele determines expression of a phenotype, irrespective of the other which is termed recessive).  
+                 Co-dominance refers to cases where the expression of both alleles in some combination define the phenotype.  
+                 Epistasis is said to occur when a phenotype arises due to genotype expression at differing loci.
+                 
+                 Phenotypic variance
+                 
+                 The term 'additive' is a special case of co-dominance, used to describe phenotypic variance arising from the sum of allelic variation at multiple genetic loci (??????! isn't that then epistatic, which the ACE model assumes is not at play?!?!!?)
+                 
+                 Phenotypic variation which arises due to alleles at different loci is said to be epistatic.
+                 
+                 
+                    Through comparison of correlation in traits between samples of Mz and Dz twin pairs we can infer contribution of genetics to variation in the phenotype expression (Table XXX), under certain assumptions. 
+                    Phenotype...                                 r_Mz(y_1,y_2)   r_Dz(y_1,y_2)
+                       wholly determined by genetics                  1               0.5    
+                       wholly determined by shared environment        1               1    
+                       wholly determined by individual environment    0               0
+                       combination                                  0<r<1           0<r<1
+                    
+                    Equivalences (assuming variance standardised such that A+C+E = 1)
+                       r_Mz = \sigma^2_A + \sigma^2_C    
+                       r_Dz = 0.5\sigma^2_A +\sigma^2_C
+                       A = 2(r_Mz - r_Dz)
+                       C = 2r_Dz - r_Mz
+                       E = 1 - r_Mz
+
+                    
+                    Assumptions
+                    (from Genetic Epi course, and Rabe-Hesketh presentation 2010)
+ - the mz and dz twins have been sourced from populations with equivalent environments, such that the between twin shared environment effects are assumed equal.
+      - this allows us to make the further assumption upon observing high correlation in mz twin observations that this is due to their genetic similarity
+            - Being an identical twin may influence one's treatment within and interaction with environment, so could be an important source of systematic difference from Dz twins, potentially.  However, we assume this is not the case.
+ - trait is normally distributed
+      - other systematic sources of variation should be accounted for - e.g. age, gender
+ - equal variance for both Mz and Dz twins  (??)
+ - accurate classification of zygosity (translates to shared environment error?)
+ - accurate measurement of trait (translates to individual error?)
+ - No dominant genetic variance, where given two alleles at a specific locus the presence of one determines the expression of trait and masking the role of the other allele (one or two copies of dominant allele has same gene expression; in contrast to additive variance)
+ 
+ 
+ Data structure
+ Dependence
+   - correlations of Mz twins are assumed independent to those of Dz twins    
+       - I feel this is conditional on broader population being sampled - e.g. cultural and genetic aspects in play due to specific population mix in region of world being sampled).
+   - within pair dependence in correlation is not accounted for in basic Pearson correlation (interclass correlation).   Where such twin-pair clustering is accounted for the correlation is referred to as an intra-class correlation coefficient. 
+ 
+ What is being compared?
+ 
+ one variable across each of two twins in a sample of pairs?
+ two variables in each individual in a sample of pairs, accounting for twin clustering?
+ two variables in each individual in a sample of pairs, not accounting for twin clustering?
+ 
+ 
+ Existing approaches
+ 
+ R
+   - r.test in Psych package (William Revelle).  The test of difference of two independent correlationsz-transformed correlations divided by the standard error of their difference, with the result assessed against ordinates of the normal distribution. 
+ 
