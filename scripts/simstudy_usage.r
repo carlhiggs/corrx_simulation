@@ -503,9 +503,10 @@ heart <- read.csv("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_
 # create compound indicators of mz (2), dz1 (0) or dz2 (1)  -- ie. to pick up on individ' env. re
 heart["mz_ind"]<- heart$mz+1-heart$dz1
 # run linear mixed effects model
-m.x <- lmer(bmi ~ sex + (1|pairid) + (1|pairid:mz_ind), data = heart)
-m.y <- lmer(lnsbp ~ sex + bmi + (1|pairid) + (1|pairid:mz_ind), data = heart)
-summary(m.y) # Rough equivalent of stata model: mixed lnsbp sex bmi, || pairid: || pairid: mz dz1 dz2, covariance(identity) nocons
+m <- list()
+m[["bmi"]] <- lmer(bmi ~ sex + (1|pairid) + (1|pairid:mz_ind), data = heart)
+m[["lnsbp"]] <- lmer(lnsbp ~ sex + bmi + (1|pairid) + (1|pairid:mz_ind), data = heart)
+summary(m[["lnsbp"]]) # Rough equivalent of stata model: mixed lnsbp sex bmi, || pairid: || pairid: mz dz1 dz2, covariance(identity) nocons
 # Linear mixed model fit by REML ['lmerMod']
 # Formula: lnsbp ~ sex + bmi + (1 | pairid) + (1 | pairid:mz_ind)
 # Data: heart
@@ -533,76 +534,94 @@ summary(m.y) # Rough equivalent of stata model: mixed lnsbp sex bmi, || pairid: 
 #   (Intr) sex   
 # sex  0.176       
 # bmi -0.982 -0.294
-summary.x <- summary(m.x)
-summary.y <- summary(m.y)
-fe.x <- summary.x$coefficients
-fe.y <- summary.y$coefficients
-re.x <- as.data.frame(VarCorr(m.x))
-re.y <- as.data.frame(VarCorr(m.y))
-additive.x <- re.x[1,4]
-shared.x   <- re.x[2,4]
-individ.x  <- re.x[3,4]
-
-additive.y <- re.y[1,4]
-shared.y   <- re.y[2,4]
-individ.y  <- re.y[3,4]
-
-mz_rho.x<-sum(additive.x,shared.x)/sum(additive.x,shared.x,individ.x)
-dz_rho.x<-additive.x/sum(additive.x,shared.x,individ.x)
-mz_rho.y<-sum(additive.y,shared.y)/sum(additive.y,shared.y,individ.y)
-dz_rho.y<-additive.y/sum(additive.y,shared.y,individ.y)
-cat("Correlations")
-matrix(c(mz_rho.x,dz_rho.x,mz_rho.y,dz_rho.y),
+summary <- list()
+for (var in c("bmi","lnsbp")){
+  summary[[var]][["summary"]]         <- summary(m[[var]])
+  summary[[var]][["fe"]]              <- summary[[var]][["summary"]][["coefficients"]]
+  summary[[var]][["re"]]              <- as.data.frame(VarCorr(m[[var]]))
+  summary[[var]][["A"]]               <- summary[[var]][["re"]][1,4] # additional Mz covariance
+  summary[[var]][["C"]]               <- summary[[var]][["re"]][2,4] # Dz covariance
+  summary[[var]][["E"]]               <- summary[[var]][["re"]][3,4] # residual variance
+  summary[[var]][["total_var"]]       <- sum(unlist(summary[[var]][c("A","C","E")]))
+  summary[[var]][["cov"]][["mz"]]     <- summary[[var]]$C+summary[[var]]$A
+  summary[[var]][["cov"]][["dz"]]     <- summary[[var]]$C
+  summary[[var]][["rho"]][["mz"]]     <- summary[[var]][["cov"]]["mz"]/summary[[var]]$total_var
+  summary[[var]][["rho"]][["dz"]]     <- summary[[var]][["cov"]]["dz"]/summary[[var]]$total_var
+}
+cat("Intraclass Correlations, ")
+matrix(c(summary$bmi$rho,summary$lnsbp$rho),
        ncol=2,
        dimnames=list(c("Mz","Dz"),c("BMI","lnsbp")))
 
 
+n.pairs = 149
 
+# Simulate data, drawing on mixed effects models as guide for data generating mechanism
+tw.pair <- defData(varname = "n.inds", formula = 2, variance = 0, id = "id.pair") 
+tw.pair <- defData(tw.pair,varname = "Mz", dist = "binary", formula = 0.3, id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "z0_mz_bmi",   dist = "normal", formula = 0, variance = summary$bmi$cov["mz"],   id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "z0_mz_lnsbp", dist = "normal", formula = 0, variance = summary$lnsbp$cov["mz"], id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "z0_dz_bmi",   dist = "normal", formula = 0, variance = summary$bmi$cov["dz"],   id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "z0_dz_lnsbp", dist = "normal", formula = 0, variance = summary$lnsbp$cov["dz"], id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "age", dist = "uniform", formula = "18; 31", id = "id.pair")
+tw.pair <- defData(tw.pair,varname = "mz_fem", dist = "binary", formula = 0.5, id = "id.pair")
+tw.pair
+# varname formula    variance    dist     link
+# 1:      n.inds       2 0.000000000  normal identity
+# 2:          Mz     0.3 0.000000000  binary identity
+# 3:   z0_mz_bmi       0 7.064280080  normal identity
+# 4: z0_mz_lnsbp       0 0.003296820  normal identity
+# 5:   z0_dz_bmi       0 4.714199627  normal identity
+# 6: z0_dz_lnsbp       0 0.001131618  normal identity
+# 7:         age  18; 31 0.000000000 uniform identity
+# 8:      mz_fem     0.5 0.000000000  binary identity
+dt.pair <- genData(n.pairs, tw.pair)
+dt  .pair
+#      id.pair n.inds Mz  z0_mz_bmi  z0_mz_lnsbp  z0_dz_bmi  z0_dz_lnsbp      age mz_fem
+#   1:       1      2  0 -0.6574000  0.064558889 -3.6999346  0.014983375 28.77778      1
+#   2:       2      2  0 -1.8892245  0.016784464 -3.0159563 -0.011469922 19.82292      0
+#   3:       3      2  1 -1.9766545  0.018124157  0.5023240  0.020114604 28.39733      1
+#   4:       4      2  0  0.2970619  0.046058288 -2.4671660  0.040322515 28.64035      0
+#   5:       5      2  1  4.5812000 -0.032586016  0.3818789  0.027171521 22.80382      0
+# ---                                                                                  
+# 145:     145      2  0 -1.8933768  0.021241787 -0.7393719 -0.018024633 23.25968      0
+# 146:     146      2  1 -3.0230712  0.070729052 -3.1220987 -0.002867279 26.87104      1
+# 147:     147      2  0 -0.3361081  0.102640413  0.8698970  0.016268089 28.48500      0
+# 148:     148      2  0  0.7751230  0.009452269 -1.2566928  0.037654063 28.00665      1
+# 149:     149      2  0 -6.6343096  0.056883598 -2.0525133  0.011597051 21.54519      1
 
+tw.ind <- defDataAdd(varname = "dz_fem", dist = "binary", formula = 0.5) 
+tw.ind <- defDataAdd(tw.ind,varname = "bmi", dist = "normal",  
+                     formula = paste0(summary$bmi$fe["(Intercept)","Estimate"]," + ",
+                                      summary$bmi$fe["sex","Estimate"],"*((mz_fem*Mz)+(dz_fem*(abs(1-Mz)))) + 
+                                      z0_mz_bmi * Mz + z0_dz_bmi * (abs(1-Mz))"), 
+                     variance = summary$bmi$E)
+tw.ind <- defDataAdd(tw.ind,varname = "lnsbp", dist = "normal",  
+                     formula = paste0(summary$lnsbp$fe["(Intercept)","Estimate"]," + ",
+                                      summary$lnsbp$fe["sex","Estimate"],"*((mz_fem*Mz)+(dz_fem*(abs(1-Mz)))) +",
+                                      summary$lnsbp$fe["bmi","Estimate"],
+                                      " * bmi + z0_mz_lnsbp*Mz + z0_dz_lnsbp*(abs(1-Mz))"), 
+                     variance = summary$lnsbp$E)
 
-mz.pair <- defData(varname = "age", dist = "uniform", formula = "18; 31", id = "id.pair")
-mz.pair <- defData(mz.pair,varname = "nTwins", formula = 2, variance = 0, id = "id.pair")
-mz.pair <- defData(mz.pair,varname = "female", dist = "binary", formula = 0.5, id = "id.pair")
-mz.pair <- defData(mz.pair,varname = "p0_sbp", dist = "normal", formula = 0, variance =  43, id = "id.pair")
-mz.pair <- defData(mz.pair,varname = "p0_bmi", dist = "normal", formula = 0, variance = 6.8, id = "id.pair")
-mz.pair
-
-#    varname formula variance    dist     link
-# 1:     age  18; 31      0.0 uniform identity
-# 2:  female     0.6      0.0  binary identity
-# 3:  p0_sbp       0     43.0  normal identity
-# 4:  p0_bmi       0      6.8  normal identity
-
-dt.mz <- genData(8, mz.pair)
-dt.mz
-## So these are twin pair level random effects (for Mz twins)
-#    idpair      age female    p0_sbp     p0_bmi
-# 1:      1 18.27667      1  5.293162 -3.2680182
-# 2:      2 19.55972      1  3.831335  8.0497054
-# 3:      3 30.94106      1  2.535445 -0.4937271
-# 4:      4 24.19007      1  2.450477  0.4954653
-# 5:      5 26.79905      0  2.162944 -2.1045156
-# 6:      6 18.40369      0 11.015737 -0.9356570
-# 7:      7 22.71510      0  8.044301  3.8664231
-# 8:      8 22.00455      0 -7.038198  4.2270851
-
-# using summary data from HeartExample_Stata.dta for parameterisation, by running for Mz twins...
-# mixed bmi b1.sex if mz==1, || pairid: || pairid: mz
-# dz.ind <- defDataAdd(varname = "female", dist = "binary", formula = 0.6)
-mz.ind <- defDataAdd(varname = "sbp", dist = "normal",  formula = "120.6 - 6.16*female + p0_sbp", variance = 2.4)
-mz.ind <- defDataAdd(mz.ind, varname = "bmi", dist = "normal",  formula = "22.7 -.815*female + p0_bmi", variance = 42)
-dt.mz.ind <- genCluster(dt.mz, cLevelVar = "id.pair", numIndsVar = "nTwins", level1ID = "id.ind")
-dt.mz.ind  <- addColumns(mz.ind, dt.mz.ind)
+dt.tw.ind <- genCluster(dt.pair, cLevelVar = "id.pair", numIndsVar = "n.inds", level1ID = "id.ind")
+dt.tw.ind  <- addColumns(tw.ind, dt.tw.ind)
 
 # create within pair index
 # Should be more simple way of doing this; in lieu of knowing a better way, 
 # it is calculated as sum of 1 plus 1 if previous value is identical, else 1 + 0
-dt.mz.ind[ ,id.twin:= 1+replace((shift(id.pair)==id.pair), is.na(shift(id.pair)), 0)]
-# alternately, assuming correctly sorted data: dt.mz.ind["id.twin"] <- 1 + (dt.mz.ind[ ,"id.ind"]%% 2 == 0) 
-dt.mz.ind
+dt.tw.ind[ ,id.twin:= 1+replace((shift(id.pair)==id.pair), is.na(shift(id.pair)), 0)]
+# alternately, assuming correctly sorted data: dt.tw.ind["id.twin"] <- 1 + (dt.tw.ind[ ,"id.ind"]%% 2 == 0) 
 
-#    varname                      formula variance    dist     link
-# 1:  female                          0.5      0.0  binary identity
-# 2:     age                    9.5; 10.5      0.0 uniform identity
-# 3:     sbp 120.6 - 6.16*female + p0_sbp      2.4  normal identity
-# 4:     bmi   22.7 -.815*female + p0_bmi     42.0  normal identity
+dt.tw.ind[(dt.tw.ind$Mz==1),"female"] <- dt.tw.ind[(dt.tw.ind$Mz==1),"mz_fem"]
+dt.tw.ind[(dt.tw.ind$Mz==0),"female"] <- dt.tw.ind[(dt.tw.ind$Mz==0),"dz_fem"]
+dt.tw.ind <- dt.tw.ind[,c("id.pair","id.twin","Mz","age","female","bmi","lnsbp")]
+head(dt.tw.ind,10)
+
+
+# Pearson correlation
+cor(dt.tw.ind[dt.tw.ind$Mz==1&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz==1&dt.tw.ind$id.twin==2,"bmi"])
+# bmi
+# bmi 0.7359233
+cor(dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==2,"bmi"])
+# bmi
+# bmi 0.6420553
