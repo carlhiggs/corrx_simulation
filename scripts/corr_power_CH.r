@@ -50,7 +50,7 @@ z_p
 p_zdiff <- function(rho = c(.2,.5), n = c(20,50), mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),distr = c("normal","normal"),
                     alpha = 0.05, sidedness = 2,
                     method = "pearson", log = TRUE, output  = "z_p",simulation = TRUE) {
-  
+  # print(paste(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation))  
   require("simstudy")
   sim <- list()
   sim[["z_method"]] <- method
@@ -118,8 +118,24 @@ rbind(p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), simulation = FALSE),
 
 # Compute power 
 compute.power <- function(rho = c(.2,.5), n = c(20,50), mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),distr = c("normal","normal"),
-                          alpha = 0.05, sidedness=2,method="pearson",
+                          alpha = 0.05, sidedness=2,method="pearson", rho1 = NULL, rho2 = NULL, n1 = NULL, n2 = NULL, 
+                          mu1a = NULL,
+                          mu1b = NULL,
+                          mu2a = NULL,
+                          mu2b = NULL,
+                          param1a = NULL,
+                          param1b = NULL,
+                          param2a = NULL,
+                          param2b = NULL,
+                          distr1  = NULL,
+                          distr2  = NULL,
                           nsims = 1000,lower.tri = FALSE,log=TRUE, simulation=TRUE,power_only = FALSE) {
+  if((is.null(rho1)==FALSE)&&(is.null(rho2)==FALSE)) rho <- c(rho1,rho2)
+  if((is.null(mu1a)==FALSE)&&(is.null(mu1b)==FALSE)) mu1 <- c(mu1a,mu1b)
+  if((is.null(mu2a)==FALSE)&&(is.null(mu2b)==FALSE)) mu2 <- c(mu2a,mu2b)
+  if((is.null(param1a)==FALSE)&&(is.null(param1b)==FALSE)) param1 <- c(param1a,param1b)
+  if((is.null(param2a)==FALSE)&&(is.null(param2b)==FALSE)) param2 <- c(param2a,param2b)
+  if((is.null(distr1)==FALSE)&&(is.null(distr2)==FALSE)) distr <- c(distr1,distr2)
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
     if(rho[1] < rho[2]) { 
@@ -130,7 +146,7 @@ compute.power <- function(rho = c(.2,.5), n = c(20,50), mu1 = c(0,0),mu2 = c(0,0
   results[["params"]]<-c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2], "n1" = n[1], "n2" = n[2], "sim" = simulation)
   results[["log"]] <- t(replicate(nsims, p_zdiff(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation))[7:15,])
   results[["power"]]<- mean(unlist(results[["log"]][,"z_p"]) < alpha)
-  print(paste(results$params,results$power))
+  cat(results$params,results$power,"\n")
   if(power_only==FALSE) return(results)
   else return(results[["power"]])
 }
@@ -187,28 +203,31 @@ corr_power <- function(n.sims = 100,
   results <- list()
   if (simulation==TRUE) {
     # Evaluate pairwise comparisons across nsims for power estimate
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(compute.power,rho = as.data.frame(c(r, c)), 
-                                                            as.data.frame(n), 
-                                                            as.data.frame(mu1), 
-                                                            as.data.frame(mu2), 
-                                                            as.data.frame(param1), 
-                                                            as.data.frame(param2),
-                                                            as.data.frame(distr),
-                                                            alpha, sidedness,method,
-                                                               nsims = n.sims, lower.tri = lower,
+    # mapply(compute.power,rho1 = r, rho2 = c,n1 = n1, n2 = n2, threshold=alpha, nsims = n.sims, lower.tri = lower,   power_only=TRUE))
+    results <- outer(corrs, corrs, FUN = function(r, c) mapply(compute.power,rho1 = r, 
+                                                                             rho2 = c, 
+                                                                             n1=n[1],
+                                                                             n2=n[2],
+                                                                             mu1a=mu1[1], 
+                                                                             mu1b=mu1[2], 
+                                                                             mu2a=mu2[1], 
+                                                                             mu2b=mu2[2],
+                                                                             param1a=param1[1], 
+                                                                             param1b=param1[1], 
+                                                                             param2a=param2[2],
+                                                                             param2b=param2[2],
+                                                                             distr1=distr[1],
+                                                                             distr2=distr[2],
+                                                                             nsims = n.sims, alpha=alpha, sidedness=sidedness, method=method,
                                                                power_only=TRUE))
   }
   if (simulation==FALSE){
     ## Actually its quite interesting to plot what the probabilities would look like without sampling; 
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(p_zdiff,rho = as.data.frame(c(r, c)),  
-                                                            as.data.frame(n), 
-                                                            as.data.frame(mu1), 
-                                                            as.data.frame(mu2), 
-                                                            as.data.frame(param1), 
-                                                            as.data.frame(param2),
-                                                            as.data.frame(distr),
-                                                            alpha, sidedness, method,log=FALSE,
-                                                            power_only=TRUE, simulation = testsim))
+    results <- outer(corrs, corrs, FUN = function(r, c) mapply(p_zdiff,rho = c(r, c),
+                                                               n, mu1, mu2, param1, param2,distr,
+                                                               alpha, sidedness, method,
+                                                              power_only=TRUE, simulation = testsim,
+                                                              SIMPLIFY = FALSE))
   }
   # format method to proper case for plot
   corr_type <- stringr::str_to_title(method)
@@ -235,11 +254,11 @@ corr_power <- function(n.sims = 100,
   # display running time
   cat(paste0("Power for difference in ",corr_type," correlations","\n",
              "n1 = ",n[1],", n2 = ",n[2],", alpha: ",alpha, ", sims: ",n.sims,"\n",
-             "Processing time: ",round((end_time - start_time)/60,1)," minutes\n\n"))
+             "Processing time: ",round((end_time - start_time)*60,1)," minutes\n\n"))
   return(fig)
 }
 
-corr_power(n.sims  = 100,
+test <- corr_power(n.sims  = 20,
                      n       =  c(134,134), 
                      alpha   =   0.05, 
                      beta    =   0.2,
