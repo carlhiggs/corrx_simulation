@@ -69,3 +69,5 @@ Modern genomics
  R
    - r.test in Psych package (William Revelle).  The test of difference of two independent correlationsz-transformed correlations divided by the standard error of their difference, with the result assessed against ordinates of the normal distribution. 
  
+ Stata
+   - power twocorrelations

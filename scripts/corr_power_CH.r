@@ -34,50 +34,73 @@ z_p
 # New plan:
 #  Incorporate simstudy simulation approach - requires a supplied schema definition 'def' to be set up as below
 
-p_zdiff <- function(rho1, rho2, n1, n2, alpha = 0.05, sidedness = 2,
+# Correlated data example
+
+## a vector containing the mean(s) of the distributions (for binary, should be prob)
+#mu <- c(0.8, 0.1)  
+## given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
+## For binary data, set to NULL
+#param <- c(NULL, NULL) 
+#distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
+#rho1 = 0.78
+
+
+
+
+p_zdiff <- function(rho = c(.2,.5), n = c(20,50), mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),distr = c("normal","normal"),
+                    alpha = 0.05, sidedness = 2,
                     method = "pearson", log = TRUE, output  = "z_p",simulation = TRUE) {
-  require("MASS")
+  
+  require("simstudy")
   sim <- list()
   sim[["z_method"]] <- method
-  sim[["rho_1"]]  <- rho1
-  sim[["rho_2"]]  <- rho2    
-  sim[["n1"]]     <- n1
-  sim[["n2"]]     <- n2
+  sim[["rho_1"]]  <- unlist(rho)[1]
+  sim[["rho_2"]]  <- unlist(rho)[2]   
+  sim[["n1"]]     <- unlist(n)[1]
+  sim[["n2"]]     <- unlist(n)[2]
+  # print(matrix(c(1, sim$rho_1, sim$rho_1, 1)))
+  # print(matrix(c(1, sim$rho_2, sim$rho_2, 1)))
+  
   if(simulation==TRUE){
     sim[["sim"]] <- TRUE
-    sim[["z_1"]]    <- atanh(cor(mvrnorm(n1, mu = c(0, 0),Sigma = matrix(c(1, rho1, rho1, 1), ncol = 2)), method = method)[1,2])
-    sim[["z_2"]]    <- atanh(cor(mvrnorm(n2, mu = c(0, 0),Sigma = matrix(c(1, rho2, rho2, 1), ncol = 2)), method = method)[1,2])
+    sim[["z_1"]]    <- atanh(cor(genCorGen(sim$n1, nvars = 2, params1 = unlist(mu1), params2 = unlist(param1),  
+                                           dist = unlist(distr)[1], corMatrix = matrix(c(1, sim$rho_1, sim$rho_1, 1), ncol = 2), wide = TRUE), 
+                                           method = method)[1,2])
+    sim[["z_2"]]    <- atanh(cor(genCorGen(sim$n2, nvars = 2, params1 = unlist(mu2), params2 = unlist(param2),  
+                                           dist = unlist(distr)[2], corMatrix = matrix(c(1, sim$rho_2, sim$rho_2, 1), ncol = 2), wide = TRUE), 
+                                           method = method)[1,2])
     sim[["r_diff"]] <- tanh(sim[["z_1"]]) - tanh(sim[["z_2"]])
   } else {
     sim[["sim"]] <- FALSE
-    sim[["z_1"]]    <- atanh(rho1)
-    sim[["z_2"]]    <- atanh(rho2)
-    sim[["r_diff"]] <- rho1 - rho2
+    sim[["z_1"]]    <- atanh(sim$rho_1)
+    sim[["z_2"]]    <- atanh(sim$rho_2)
+    sim[["r_diff"]] <- sim$rho_1 - sim$rho_2
   }
   sim[["z_diff"]] <- sim[["z_1"]] - sim[["z_2"]]
-  sim[["z_se"]]   <- sqrt(1/(n1-3) + 1/(n2-3))
+  sim[["z_se"]]   <- sqrt(1/(sim$n1-3) + 1/(sim$n2-3))
   sim[["z_test"]] <- sim[["z_diff"]]/sim[["z_se"]]
   sim[["z_ref"]]  <- qnorm(1-alpha/sidedness)
   sim[["z_power"]] <- 1-pnorm(sim[["z_ref"]]-abs(sim[["z_test"]]))
   sim[["z_p"]]    <- sidedness*pnorm(-abs(sim[["z_test"]]))
+  # print(paste(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation, sim$z_power,"/n"))
   if (log==FALSE){
     return(sim[[output]]) 
   }
   return(sim)
 }
 
-rbind(p_zdiff(0.2,0.5,20,50, simulation = FALSE),
-      p_zdiff(0.2,0.5,200,500, method="pearson", simulation = FALSE),
-      p_zdiff(0.2,0.5,20,50,   method="pearson" ),
-      p_zdiff(0.2,0.5,200,500, method="pearson" ),
-      p_zdiff(0.2,0.5,20,50,   method="spearman", simulation = FALSE),
-      p_zdiff(0.2,0.5,200,500, method="spearman", simulation = FALSE),
-      p_zdiff(0.2,0.5,20,50,   method="spearman"),
-      p_zdiff(0.2,0.5,200,500, method="spearman"),
-      p_zdiff(0.2,0.5,20,50,   method="kendall", simulation = FALSE),
-      p_zdiff(0.2,0.5,200,500, method="kendall", simulation = FALSE),
-      p_zdiff(0.2,0.5,20,50,   method="kendall" ),
-      p_zdiff(0.2,0.5,200,500, method="kendall" ))
+rbind(p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="pearson", simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="pearson" ),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="pearson" ),
+      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="spearman", simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="spearman", simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="spearman"),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="spearman"),
+      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="kendall", simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="kendall", simulation = FALSE),
+      p_zdiff(rho=c(0.2,0.5),n = c(20,5   ), method="kendall" ),
+      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="kendall" ))
 #       z_method   rho_1 rho_2 n1  n2  sim   z_1        z_2       r_diff     z_diff     z_se       z_test    z_ref    z_power   z_p         
 #  [1,] "pearson"  0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557 1.959964 0.2310457 0.2207423   
 #  [2,] "pearson"  0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649  1.959964 0.9844787 3.846864e-05
@@ -92,56 +115,62 @@ rbind(p_zdiff(0.2,0.5,20,50, simulation = FALSE),
 # [11,] "kendall"  0.2   0.5   20  50  TRUE  0.1163111  0.444228  -0.3013534 -0.3279168 0.2830197  -1.158636 1.959964 0.211471  0.2466045   
 # [12,] "kendall"  0.2   0.5   200 500 TRUE  0.05281287 0.3782312 -0.3084065 -0.3254183 0.08419154 -3.865214 1.959964 0.9716262 0.0001109919
 
+
 # Compute power 
-compute.power <- function(rho1 = 0.5, rho2 = 0.2, n1 = 20, n2 = 50, 
-                          threshold = 0.05, sidedness=2,method="pearson",
+compute.power <- function(rho = c(.2,.5), n = c(20,50), mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),distr = c("normal","normal"),
+                          alpha = 0.05, sidedness=2,method="pearson",
                           nsims = 1000,lower.tri = FALSE,log=TRUE, simulation=TRUE,power_only = FALSE) {
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
-    if(rho1 < rho2) { 
+    if(rho[1] < rho[2]) { 
       return(NA)
     }
   }
   results <- list()
-  results[["params"]]<-c("method" = method, "rho_1" = rho1, "rho_2" = rho2, "n1" = n1, "n2" = n2, "sim" = simulation)
-  results[["log"]] <- t(replicate(nsims, p_zdiff(rho1 = rho1, rho2 = rho2, n1 = n1, n2 = n2,
-                                               alpha = threshold,sidedness = sidedness,
-                                               method = method,log = log, simulation = simulation))[7:15,])
-  results[["power"]]<- mean(unlist(results[["log"]][,"z_p"]) < threshold)
+  results[["params"]]<-c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2], "n1" = n[1], "n2" = n[2], "sim" = simulation)
+  results[["log"]] <- t(replicate(nsims, p_zdiff(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation))[7:15,])
+  results[["power"]]<- mean(unlist(results[["log"]][,"z_p"]) < alpha)
+  print(paste(results$params,results$power))
   if(power_only==FALSE) return(results)
   else return(results[["power"]])
 }
 
 # example usage (defaults: 1000 sims, rho1 0.5, rho2 0.2, n1 20, n2 50, alpha 0.05, 2 sided, Pearson)
 simulation1 <- compute.power()
-#       z_method   rho_1 rho_2 n1  n2  sim   z_1        z_2       r_diff     z_diff     z_se       z_test    z_ref    z_power   z_p         
-#  [1,] "pearson"  0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557 1.959964 0.2310457 0.2207423   
-#  [2,] "pearson"  0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649  1.959964 0.9844787 3.846864e-05
-#  [3,] "pearson"  0.2   0.5   20  50  TRUE  0.08106579 0.5163649 -0.3940009 -0.4352991 0.2830197  -1.538053 1.959964 0.3365449 0.1240357   
-#  [4,] "pearson"  0.2   0.5   200 500 TRUE  0.1877089  0.6038379 -0.35424   -0.4161291 0.08419154 -4.942647 1.959964 0.9985713 7.706881e-07
-#  [5,] "spearman" 0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557 1.959964 0.2310457 0.2207423   
-#  [6,] "spearman" 0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649  1.959964 0.9844787 3.846864e-05
-#  [7,] "spearman" 0.2   0.5   20  50  TRUE  0.1147872  0.4721117 -0.3256182 -0.3573245 0.2830197  -1.262543 1.959964 0.2427697 0.2067535   
-#  [8,] "spearman" 0.2   0.5   200 500 TRUE  0.1908226  0.529357  -0.2963497 -0.3385343 0.08419154 -4.021002 1.959964 0.9803503 5.79511e-05 
-#  [9,] "kendall"  0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557 1.959964 0.2310457 0.2207423   
-# [10,] "kendall"  0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649  1.959964 0.9844787 3.846864e-05
-# [11,] "kendall"  0.2   0.5   20  50  TRUE  0.1163111  0.444228  -0.3013534 -0.3279168 0.2830197  -1.158636 1.959964 0.211471  0.2466045   
-# [12,] "kendall"  0.2   0.5   200 500 TRUE  0.05281287 0.3782312 -0.3084065 -0.3254183 0.08419154 -3.865214 1.959964 0.9716262 0.0001109919
-compute.power(0.1,0.5,50,50)$power
-compute.power(0.1,0.5,50,50,power_only=TRUE)
+simulation1
+# $params
+# method     rho_1     rho_2        n1        n2       sim 
+# "pearson"     "0.2"     "0.5"      "20"      "50"    "TRUE" 
+# 
+# $log
+# z_1           z_2          r_diff       z_diff       z_se      z_test       z_ref    z_power    z_p        
+# [1,] -0.3049277    0.1421052    -0.436972    -0.4470329   0.2830197 -1.579512    1.959964 0.3518049  0.1142187  
+# [2,] 0.1985209     0.08794177   0.1082376    0.1105791    0.2830197 0.3907117    1.959964 0.05829459 0.6960103  
+# [3,] 0.101958      0.0836204    0.0181801    0.01833758   0.2830197 0.06479259   1.959964 0.02903485 0.9483391  
+# [4,] 0.3320248     0.09623546   0.2243996    0.2357894    0.2830197 0.8331202    1.959964 0.1299043  0.4047769  
+# [5,] -0.07972956   -0.1182992   0.03818939   0.03856966   0.2830197 0.1362791    1.959964 0.03409986 0.8916007  
+# ....
+
+compute.power(c(0.2,0.5),c(20,50))$power
+compute.power(c(0.2,0.5),c(20,50),power_only=TRUE)
 
 corr_power <- function(n.sims = 100, 
-                        n1=20, 
-                        n2=20, 
+                        n = c(20,50),
+                        mu1 = c(0,0),
+                        mu2 = c(0,0), 
+                        param1 = c(1,1), 
+                        param2 = c(1,1), 
+                        distr = c("normal","normal"),
                         alpha = 0.05, 
-                        beta = 0.2,
                         sidedness = 2,
-                        res_min = -1,
-                        res_max = 1,
-                        res_inc = 0.05,
-                        n1_name = "Population A",
-                        n2_name = "Population B",
                         method  = "pearson",
+                        log = TRUE,
+                        testsim = TRUE,
+                        beta = 0.2,
+                        res_min = -0.99,
+                        res_max = 0.99,
+                        res_inc = 0.05,
+                        names = c("Population A","Population B"),
                         lower   = FALSE,
                         simulation = TRUE) {
   # Note: for now, method may be 'peasron,'spearman' or 'kendall' ; plan to include icc
@@ -158,13 +187,28 @@ corr_power <- function(n.sims = 100,
   results <- list()
   if (simulation==TRUE) {
     # Evaluate pairwise comparisons across nsims for power estimate
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(compute.power,rho1 = r, rho2 = c,n1 = n1, n2 = n2,
-                                                               threshold=alpha, nsims = n.sims, lower.tri = lower,
+    results <- outer(corrs, corrs, FUN = function(r, c) mapply(compute.power,rho = as.data.frame(c(r, c)), 
+                                                            as.data.frame(n), 
+                                                            as.data.frame(mu1), 
+                                                            as.data.frame(mu2), 
+                                                            as.data.frame(param1), 
+                                                            as.data.frame(param2),
+                                                            as.data.frame(distr),
+                                                            alpha, sidedness,method,
+                                                               nsims = n.sims, lower.tri = lower,
                                                                power_only=TRUE))
   }
   if (simulation==FALSE){
     ## Actually its quite interesting to plot what the probabilities would look like without sampling; 
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(p_zdiff,rho1 = r, rho2 = c,n1, n2,log=FALSE))
+    results <- outer(corrs, corrs, FUN = function(r, c) mapply(p_zdiff,rho = as.data.frame(c(r, c)),  
+                                                            as.data.frame(n), 
+                                                            as.data.frame(mu1), 
+                                                            as.data.frame(mu2), 
+                                                            as.data.frame(param1), 
+                                                            as.data.frame(param2),
+                                                            as.data.frame(distr),
+                                                            alpha, sidedness, method,log=FALSE,
+                                                            power_only=TRUE, simulation = testsim))
   }
   # format method to proper case for plot
   corr_type <- stringr::str_to_title(method)
@@ -179,9 +223,9 @@ corr_power <- function(n.sims = 100,
                    axis(1, seq(-1,1,0.2))
                    axis(2, seq(-1,1,0.2)) },
                  plot.title = title(main = paste0("Power for difference in ",corr_type," correlations","\n",
-                                    "n1 = ",n1,", n2 = ",n2,", alpha: ",alpha, ", sims: ",n.sims),
-                                    xlab = paste0("Correlation in ",n1_name),
-                                    ylab = paste0("Correlation in ",n2_name), adj = 0),
+                                    "n1 = ",n[1],", n2 = ",n[2],", alpha: ",alpha, ", sims: ",n.sims),
+                                    xlab = paste0("Correlation in ",names[1]),
+                                    ylab = paste0("Correlation in ",names[2]), adj = 0),
                  color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
         arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")
   
@@ -190,20 +234,18 @@ corr_power <- function(n.sims = 100,
   
   # display running time
   cat(paste0("Power for difference in ",corr_type," correlations","\n",
-             "n1 = ",n1,", n2 = ",n2,", alpha: ",alpha, ", sims: ",n.sims,"\n",
+             "n1 = ",n[1],", n2 = ",n[2],", alpha: ",alpha, ", sims: ",n.sims,"\n",
              "Processing time: ",round((end_time - start_time)/60,1)," minutes\n\n"))
   return(fig)
 }
 
 corr_power(n.sims  = 100,
-           n1      =  134, 
-           n2      =  134, 
-           alpha   =   0.05, 
-           beta    =   0.2,
-           n1_name = "Mz twins",
-           n2_name = "Dz twins",
-           method  =  "pearson",
-           lower   =   FALSE) 
+                     n       =  c(134,134), 
+                     alpha   =   0.05, 
+                     beta    =   0.2,
+                     names   =  c("Mz twins","Dz twins"),
+                     method  =  "pearson",
+                     lower   =   FALSE)
 
 # an example, iterating over different kinds of correlation
 #  -- Although I am not certain implementation is correct for latter two yet.

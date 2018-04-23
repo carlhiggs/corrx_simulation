@@ -625,3 +625,16 @@ cor(dt.tw.ind[dt.tw.ind$Mz==1&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz
 cor(dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==2,"bmi"])
 # bmi
 # bmi 0.6420553
+
+
+# Correlated data example
+nsim = 1000
+# a vector containing the mean(s) of the distributions (for binary, should be prob)
+mu <- c(0.8, 0.1)  
+# given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
+# For binary data, set to NULL
+param <- c(NULL, NULL) 
+distribution = "binary"  # "binary", "poisson" or "gamma", "normal", or "uniform".
+rho = 0.78
+genCorGen(nsim, nvars = 2, params1 = mu, params2 = param,  dist = distribution, rho = rho,
+          corstr = "cs", wide = TRUE)
