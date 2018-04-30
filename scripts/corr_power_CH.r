@@ -128,7 +128,7 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 }
 
 # Fishers Z test - no sim
-fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson") {
+fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson",power = TRUE) {
   # Step 1: Compute sample correlation coefficients
   z1     <- atanh(r1)
   z2     <- atanh(r2)
@@ -136,8 +136,8 @@ fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson") {
   z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
   z_test <- zdiff/z_se
   z_p    <- sidedness*pnorm(-abs(z_test))
-  # return(c(z_p,z_test))
-  return(z_p)
+  return(c(z_p,z_test))
+  # return(z_p)
 }
 
 # GTV test statistic, based on code from Enes
@@ -223,17 +223,19 @@ system.time(cfc_gtv())
 
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
                     mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
-                    alpha = 0.05, sidedness = 2, test = "fz_nosim",
+                    alpha = 0.05, sidedness = 2, test = c("fz","gtv"),
                     method ="pearson", lower.tri = FALSE) {
-  cat("Parameters: ",rho[1],rho[2], n[1],n[2], mu1, mu2, param1, param2, distr, alpha, sidedness, method,"\n")
+  # cat("Parameters: ",rho[1],rho[2], n[1],n[2], mu1, mu2, param1, param2, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
     if(rho[1] < rho[2]) { 
       return(NA)
     }
   }
-  if(test=="fz_nosim"){
-    return(fz_nosim(rho[1],rho[2],n[1],n[2], method = method))
+  results <- list()
+  if ("fz_nosim" %in% test) {
+    results[["fz_nosim"]] <- fz_nosim(rho[1],rho[2],n[1],n[2], method = method)
+    if(length(test)==1) return(results)
   }
   require("simstudy")
   a <- genCorGen(n[1], nvars = 2, params1 = mu1, params2 = param1,  
@@ -242,35 +244,38 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   b <- genCorGen(n[2], nvars = 2, params1 = mu2, params2 = param2,  
                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
                 wide = TRUE)[,2:3]
-  if (test=="fz")  return(fz_compiled(a,b))
-  if (test=="gtv") return(gtv_compiled(a,b))
+  if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
+  if ("gtv"      %in% test) results[["gtv"]]      <- gtv_compiled(a,b)
+  return(rbind(results[test]))
 }
 corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz_nosim") 
 corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
 corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "gtv") 
+corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal") 
 
 # Corr power simulation
 corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
                        mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                       test = c("fz","gtv"),
                        alpha = 0.05, sidedness=2,method="pearson",  
-                       nsims = 1000,lower.tri = FALSE){
-  
-  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-  results <- list()
-  results[["params"]]<-c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2], 
-                         "n1" = ceiling(n*(mzdz_ratio)), "n2" = ceiling(n*(1-mzdz_ratio)), "sim" = simulation)
-  results[["log"]] <- t(replicate(nsims, p_zdiff(rho=rho, n=n,  distr=distr, alpha=alpha, sidedness=sidedness, method=method,log=log, simulation=simulation,
-                                                 mu1=mu1, mu2=mu2, param1=param1, param2=param2))[7:15,])
-  results[["power"]]<- mean(unlist(results[["log"]][,"z_p"]) < alpha)
+                       nsims = 100,lower.tri = FALSE, power_only = FALSE){
+  sim <- list()
+  sim[["params"]]             <- c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2],"n1" = n[1], "n2" = n[2],
+                                 "alpha" = alpha, "sidedness" = sidedness, "nsims" = nsims, "distr" = distr)
+  sim[["z_ref"]]              <- qnorm(1-alpha/sidedness)
+  sim[["z_analytical"]]     <- fz_nosim(rho[1],rho[2],n[1],n[2], method = method)
+  sim[["z_analytical_power"]] <- 1-pnorm(sim$z_ref - abs(sim$z_analytical[2]))
+  sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,test = test)[,])<alpha)
+
   #cat('\r',results$params,results$power)
-  cat("\r",rho[1],"\t",rho[2],"\t",results[["params"]][["n1"]],"\t",results[["params"]][["n2"]],"\t",results$power)
+  cat("\r",sim[["params"]],"\t",sim$power)
   flush.console()
-  if(power_only==FALSE) return(results)
-  else return(results[["power"]])
+  if(power_only==FALSE) return(sim)
+  else return(sim[["power"]])
 }
 
-# example usage (defaults: 1000 sims, rho1 0.5, rho2 0.2, n1 20, n2 50, alpha 0.05, 2 sided, Pearson)
-simulation1 <- compute.power()
+# example usage (defaults: 100 sims, rho1 0.2, rho2 0.5, n1 20, n2 50, alpha 0.05, 2 sided, Pearson)
+simulation1 <- corr_power()
 simulation1
 # $params
 # method     rho_1     rho_2        n1        n2       sim 
