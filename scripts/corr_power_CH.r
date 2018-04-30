@@ -136,7 +136,7 @@ fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson",power = TRUE) {
   z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
   z_test <- zdiff/z_se
   z_p    <- sidedness*pnorm(-abs(z_test))
-  return(c(z_p,z_test))
+  return(c("p" = z_p,"z_test" = z_test))
   # return(z_p)
 }
 
@@ -290,25 +290,124 @@ simulation1
 # [5,] -0.07972956   -0.1182992   0.03818939   0.03856966   0.2830197 0.1362791    1.959964 0.03409986 0.8916007  
 # ....
 
-compute.power(c(0.2,0.5),c(20,50))$power
-compute.power(c(0.2,0.5),c(20,50),power_only=TRUE)
+corr_power(c(0.2,0.5),c(20,50))$power
+temp <- corr_power(c(0.2,0.5),c(20,50),power_only=TRUE)
+
+# Using guidance on outer for n-dimensional arrays
+# ttps://stackoverflow.com/questions/6192848/how-to-generalize-outer-to-n-dimensions
+list_args <- Vectorize( function(a,b) c( as.list(a), as.list(b) ), 
+                        SIMPLIFY = FALSE)
+
+
+make_args_mtx <- function( alist ) {
+  Reduce(function(x, y) outer(x, y, list_args), alist)
+}
+
+multi.outer <- function(f, ... ) {
+  args <- make_args_mtx(list(...))
+  apply(args, 1:length(dim(args)), function(a) do.call(f, a[[1]] ) )
+}
+
+fun <- function(a,b,c) paste(a,b,c)
+
+ans <- multi.outer(fun, LETTERS[1:2], c(3, 4, 5), test)
+ans
+# retrieve array 3rd dimension using subscripting as follows, e.g. for first
+ans[,,1]
+
+## INitial attempt at this abandoned, as it would not work in context where we return multiple results.
+## find another way
+# fun <- function(r,c,test) corr_power(rho = c(r,c), n = c(30,90),distr = "normal",
+#                                      mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+#                                      test = c("fz","gtv"),
+#                                      alpha = 0.05, sidedness=2,method="pearson",  
+#                                      nsims = 100,lower.tri = FALSE, power_only = FALSE)
+# 
+# ans <- multi.outer(fun, corrs, corrs, test)
+
+corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
+                            n = c(30,90),distr = "normal",
+                            mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                            tests = c("fz","gtv"),
+                            alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
+                            names = c("Population A","Population B"),
+                            lower.tri = FALSE, power_only = FALSE){
+  results <- list()
+  results[["params"]] <- c("method" = method,"n1" = n[1], "n2" = n[2],
+                           "alpha" = alpha, "sidedness" = sidedness, 
+                           "nsims" = nsims, "distr" = distr)
+  results[["tests"]]  <- tests
+  results[["z_ref"]]  <- qnorm(1-alpha/sidedness)
+  corrs <- round(seq(res_min, res_max, res_inc),2)
+  tests <-  c("fz","gtv")
+  results <- list()
+  # create result holder matrices per test
+  for (test in results[["tests"]]) {
+    results[[test]] <- matrix(data = NA, nrow = length(corrs), ncol = length(corrs))
+    colnames(results[[test]]) <- rownames(results[[test]]) <- format(corrs, trim=TRUE)
+  }
+  # calculate pairwise results
+  for (r in corrs){
+    for (c in corrs){
+      temp <- corr_power(rho = c(r,c), n = c(n[1],n[2]),distr = distr,
+                          test = tests,
+                          alpha = alpha, sidedness=sidedness,method=method,  
+                          nsims = nsims,lower.tri = lower.tri, power_only = TRUE)  
+      for (test in results[["tests"]]) {
+        results[[test]][r,c] <- temp[test]
+      }
+    }         
+  }
+  results <- corr_power_plot()
+
+  # format method to proper case for plot
+  corr_type <- stringr::str_to_title(method)
+  # define target power (to mark on plot)
+  target <- 1 - beta
+  
+  # plot power simulation results
+  for (test in results[["tests"]]) {
+    results[[test]][[fig]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10, 
+                                xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), 
+                                                     levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                     add = TRUE, lwd = 3, col = "steelblue3");
+                                  abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                  abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                  axis(1, seq(-1,1,0.2))
+                                  axis(2, seq(-1,1,0.2)) },
+                                plot.title = title(main = paste0("Power for difference in ",corr_type," correlations","\n",
+                                                                 test," test","\n",
+                                                                 "Mz = ",results[["params"]][["n1"]],
+                                                                 ", Dz = ",results[["params"]][["n2"]],
+                                                                 ", alpha: ",alpha, ", sims: ",n.sims),
+                                                   xlab = paste0("Correlation in ",names[1]),
+                                                   ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+                                arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")
+  }
+  return(results)
+}
+
+
+
 
 corr_power <- function(n.sims = 100, 
-                        n = 700,
-                        mzdz_ratio = 0.4,
-                        distr = "normal",
-                        alpha = 0.05, 
-                        sidedness = 2,
-                        method  = "pearson",
-                        log = TRUE,
-                        testsim = TRUE,
-                        beta = 0.2,
-                        res_min = -0.99,
-                        res_max = 0.99,
-                        res_inc = 0.05,
-                        names = c("Population A","Population B"),
-                        lower   = FALSE,
-                        simulation = TRUE) {
+                       n = 700,
+                       mzdz_ratio = 0.4,
+                       distr = "normal",
+                       alpha = 0.05, 
+                       sidedness = 2,
+                       method  = "pearson",
+                       log = TRUE,
+                       testsim = TRUE,
+                       beta = 0.2,
+                       res_min = -0.99,
+                       res_max = 0.99,
+                       res_inc = 0.05,
+                       names = c("Population A","Population B"),
+                       lower   = FALSE,
+                       simulation = TRUE) {
   # Note: for now, method may be 'peasron,'spearman' or 'kendall' ; plan to include icc
   # 'lower' option is trial of only processing lower matrix
   #  -- takes < 0.5x processing time; result could be mirrored, or plotted against delta
