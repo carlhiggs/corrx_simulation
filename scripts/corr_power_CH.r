@@ -158,7 +158,7 @@ gtv <- function(a,b,M=1e5,method = "pearson") {
               
               W2     <- matrix(data=0, nrow = M, ncol = 2)
               W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-              W2[,2] <- rchisq(M, df = n1-2, ncp = 1)
+              W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
               
               Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
               
