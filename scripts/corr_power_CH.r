@@ -44,96 +44,218 @@ z_p
 #distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
 #rho1 = 0.78
 
+# Testing out compilation of genCorGen according to directions at 
+# https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
+# on advice from Koen Simons
+require(compiler)
+genCorGen_compiled <- cmpfun(genCorGen)
 
+fo <- function() for (i in 1:1000) genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+                                             corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)
 
+fo_c <- function() for (i in 1:1000) genCorGen_compiled(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+                                                        corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)
 
-p_zdiff <- function(rho = c(.2,.5), n = 700, mzdz_ratio = 0.4, distr = "normal",
-                    alpha = 0.05, sidedness = 2,
-                    method = "pearson", log = TRUE, output  = "z_p",simulation = TRUE,
-                    mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1)) {
-  # print(paste(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation))  
-  require("simstudy")
-  sim <- list()
-  sim[["z_method"]] <- method
-  sim[["rho_1"]]  <- rho[1]
-  sim[["rho_2"]]  <- rho[2]   
-  sim[["n1"]]     <- n*mzdz_ratio
-  sim[["n2"]]     <- n*(1-mzdz_ratio)
-  # print(matrix(c(1, sim$rho_1, sim$rho_1, 1)))
-  # print(matrix(c(1, sim$rho_2, sim$rho_2, 1)))
-  
-  if(simulation==TRUE){
-    sim[["sim"]] <- TRUE
-    sim[["z_1"]]    <- atanh(cor(genCorGen(sim$n1, nvars = 2, params1 = mu1, params2 = param1,  
-                                           dist = distr, corMatrix = matrix(c(1, sim$rho_1, sim$rho_1, 1), ncol = 2), wide = TRUE)[,2:3], 
-                                           method = method)[1,2])
-    sim[["z_2"]]    <- atanh(cor(genCorGen(sim$n2, nvars = 2, params1 = mu2, params2 = param2,  
-                                           dist = distr, corMatrix = matrix(c(1, sim$rho_2, sim$rho_2, 1), ncol = 2), wide = TRUE)[,2:3], 
-                                           method = method)[1,2])
-    sim[["r_diff"]] <- tanh(sim[["z_1"]]) - tanh(sim[["z_2"]])
-  } else {
-    sim[["sim"]] <- FALSE
-    sim[["z_1"]]    <- atanh(sim$rho_1)
-    sim[["z_2"]]    <- atanh(sim$rho_2)
-    sim[["r_diff"]] <- sim$rho_1 - sim$rho_2
-  }
-  sim[["z_diff"]] <- sim[["z_1"]] - sim[["z_2"]]
-  sim[["z_se"]]   <- sqrt(1/(sim$n1-3) + 1/(sim$n2-3))
-  sim[["z_test"]] <- sim[["z_diff"]]/sim[["z_se"]]
-  sim[["z_ref"]]  <- qnorm(1-alpha/sidedness)
-  sim[["z_power"]] <- 1-pnorm(sim[["z_ref"]]-abs(sim[["z_test"]]))
-  sim[["z_p"]]    <- sidedness*pnorm(-abs(sim[["z_test"]]))
-  # print(paste(rho, n, mu1, mu2, param1, param2, distr, alpha, sidedness, method,log, simulation, sim$z_power,"/n"))
-  if (log==FALSE){
-    return(sim[[output]]) 
-  }
-  return(sim)
+system.time(fo())
+system.time(fo_c())
+enableJIT(3)
+system.time(fo())
+system.time(fo_c())
+enableJIT(0)
+## There doesn't appear to be any clear benefits, at least in basic case with normal dist and small sample size
+# > system.time(fo())
+# user  system elapsed 
+# 14.97    0.42   18.71 
+# > system.time(fo_c())
+# user  system elapsed 
+# 13.76    0.34   17.53 
+# > enableJIT(3)
+# [1] 0
+# > system.time(fo())
+# user  system elapsed 
+# 14.44    0.36   17.45 
+# > system.time(fo_c())
+# user  system elapsed 
+# 15.25    0.44   19.59 
+# > enableJIT(0)
+# [1] 3
+
+fo <- function() for (i in 1:1000) genCorGen(500, nvars = 2, params1 = 0, params2 = 1, dist = "gamma", 
+                                             corMatrix = matrix(c(1, 0.3, 0.3, 1), ncol = 2), wide = TRUE)
+
+fo_c <- function() for (i in 1:1000) genCorGen_compiled(500, nvars = 2, params1 = 0, params2 = 1, dist = "gamma", 
+                                                        corMatrix = matrix(c(1, 0.3, 0.3, 1), ncol = 2), wide = TRUE)
+
+system.time(fo())
+system.time(fo_c())
+enableJIT(3)
+system.time(fo())
+system.time(fo_c())
+enableJIT(0)
+## Likewise, not clear benefits with larger sample size, different correlation and gamma distribution
+# > system.time(fo())
+# user  system elapsed 
+# 13.84    0.14   17.19 
+# > system.time(fo_c())
+# user  system elapsed 
+# 15.09    0.67   20.66 
+# > enableJIT(3)
+# [1] 0
+# > system.time(fo())
+# user  system elapsed 
+# 13.58    0.41   18.19 
+# > system.time(fo_c())
+# user  system elapsed 
+# 13.88    0.39   17.58 
+# > enableJIT(0)
+# [1] 3
+
+# Fishers Z test
+fz <- function(a,b,sidedness=2,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+   
+  # Step 1: Compute sample correlation coefficients
+  z1     <- atanh(cor(a,method = method)[2,1])
+  z2     <- atanh(cor(b,method = method)[2,1])
+  zdiff  <- z1-z2
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  # return(c(z_p,z_test))
+  return(z_p)
 }
 
-rbind(p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="pearson", simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="pearson" ),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="pearson" ),
-      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="spearman", simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="spearman", simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="spearman"),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="spearman"),
-      p_zdiff(rho=c(0.2,0.5),n = c(20,50  ), method="kendall", simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="kendall", simulation = FALSE),
-      p_zdiff(rho=c(0.2,0.5),n = c(20,5   ), method="kendall" ),
-      p_zdiff(rho=c(0.2,0.5),n = c(200,500), method="kendall" ))
-#       z_method   rho_1 rho_2 n1  n2  sim   z_1        z_2       r_diff     z_diff     z_se       z_test     z_ref    z_power    z_p         
-#  [1,] "pearson"  0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557  1.959964 0.2310457  0.2207423   
-#  [2,] "pearson"  0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649   1.959964 0.9844787  3.846864e-05
-#  [3,] "pearson"  0.2   0.5   20  50  TRUE  0.1717027  0.5955662 -0.363852  -0.4238635 0.2830197  -1.497647  1.959964 0.3219269  0.134225    
-#  [4,] "pearson"  0.2   0.5   200 500 TRUE  0.2824285  0.4998857 -0.1868761 -0.2174572 0.08419154 -2.582887  1.959964 0.7333324  0.009797744 
-#  [5,] "spearman" 0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557  1.959964 0.2310457  0.2207423   
-#  [6,] "spearman" 0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649   1.959964 0.9844787  3.846864e-05
-#  [7,] "spearman" 0.2   0.5   20  50  TRUE  0.02105574 0.60847   -0.5219966 -0.5874143 0.2830197  -2.075525  1.959964 0.5459997  0.03793793  
-#  [8,] "spearman" 0.2   0.5   200 500 TRUE  0.3152196  0.5729482 -0.212343  -0.2577286 0.08419154 -3.061217  1.959964 0.8646068  0.002204391 
-#  [9,] "kendall"  0.2   0.5   20  50  FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.2830197  -1.224557  1.959964 0.2310457  0.2207423   
-# [10,] "kendall"  0.2   0.5   200 500 FALSE 0.2027326  0.5493061 -0.3       -0.3465736 0.08419154 -4.11649   1.959964 0.9844787  3.846864e-05
-# [11,] "kendall"  0.2   0.5   20  5   TRUE  0.137706   0.4236489 -0.2631579 -0.2859429 0.747545   -0.3825093 1.959964 0.05734547 0.7020836   
-# [12,] "kendall"  0.2   0.5   200 500 TRUE  0.1685118  0.3645807 -0.1823078 -0.196069  0.08419154 -2.328844  1.959964 0.6438914  0.01986733  
+# Fishers Z test - no sim
+fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson") {
+  # Step 1: Compute sample correlation coefficients
+  z1     <- atanh(r1)
+  z2     <- atanh(r2)
+  zdiff  <- z1-z2
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  # return(c(z_p,z_test))
+  return(z_p)
+}
+
+# GTV test statistic, based on code from Enes
+gtv <- function(a,b,M=1e5,method = "pearson") {
+              # Two samples
+              n1 <- nrow(a)
+              n2 <- nrow(b)
+              
+              # Step 1: Compute sample correlation coefficients
+              r1 <- cor(a,method = method)[2,1]
+              r2 <- cor(b,method = method)[2,1]
+              r  <- c(r1,r2)
+              
+              # Step 2: Generate random numbers
+              V2     <- matrix(data=0, nrow = M, ncol = 2)
+              V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+              V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+              
+              W2     <- matrix(data=0, nrow = M, ncol = 2)
+              W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+              W2[,2] <- rchisq(M, df = n1-2, ncp = 1)
+              
+              Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+              
+              # Compute test statistic
+              rstar <- r/sqrt(1-r^2)
+              top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+              G     <- top / sqrt( top^2 + V2 )
+              
+              # Compute p value
+              Grho <- G[,1] - G[,2];
+              p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+              return(p)
+              }
+
+a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+          corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+b <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+             corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
+result <- list()
+system.time(result[["fz"]]       <- fz_test(a,b))
+system.time(result[["fz_nosim"]] <- fz_test_nosim(0.5,0.5,50,50))
+system.time(result[["gtv"]]      <- gtv_test(a,b))
 
 
-# Compute power 
-compute.power <- function(rho = c(.2,.5), n = 700, mzdz_ratio = 0.4,distr = "normal",
-                          alpha = 0.05, sidedness=2,method="pearson", rho1 = NULL, rho2 = NULL, n1 = NULL, n2 = NULL, 
-                          nsims = 1000,lower.tri = FALSE,log=TRUE, simulation=TRUE,power_only = FALSE,
-                          mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1)) {
-  if((is.null(rho1)==FALSE)&&(is.null(rho2)==FALSE)) rho <- c(rho1,rho2)
-  # if((is.null(mu1a)==FALSE)&&(is.null(mu1b)==FALSE)) mu1 <- c(mu1a,mu1b)
-  # if((is.null(mu2a)==FALSE)&&(is.null(mu2b)==FALSE)) mu2 <- c(mu2a,mu2b)
-  # if((is.null(param1a)==FALSE)&&(is.null(param1b)==FALSE)) param1 <- c(param1a,param1b)
-  # if((is.null(param2a)==FALSE)&&(is.null(param2b)==FALSE)) param2 <- c(param2a,param2b)
-  # if((is.null(distr1)==FALSE)&&(is.null(distr2)==FALSE)) distr <- c(distr1,distr2)
+fz_compiled <- cmpfun(fz)
+fz_ns_compiled <- cmpfun(fz_nosim)
+gtv_compiled <- cmpfun(gtv)
+fc_fz     <- function() for (i in 1:1000)      fz_test(a,b)
+fc_fz_ns  <- function() for (i in 1:1000)  fz_test_nosim(0.5,0.5,50,50)
+fc_gtv    <- function() for (i in 1:1000)     gtv_test(a,b)
+cfc_fz    <- function() for (i in 1:1000)  fz_compiled(a,b)
+cfc_fz_ns <- function() for (i in 1:1000) fz_ns_compiled(0.5,0.5,50,50)
+cfc_gtv   <- function() for (i in 1:1000) gtv_compiled(a,b)
+system.time(fc_fz())
+# > system.time(fc_fz())
+# user  system elapsed 
+# 1.42    0.02    1.48 
+system.time(fc_fz_ns())
+# > system.time(fc_fz_ns())
+# user  system elapsed 
+# 0.00    0.00    0.08 
+system.time(fc_gtv())
+# > system.time(fc_gtv())
+# user  system elapsed 
+# 248.23   15.93  286.11 
+system.time(cfc_fz())
+# > system.time(cfc_fz())
+# user  system elapsed 
+# 1.07    0.03    1.36 
+system.time(cfc_fz_ns())
+# > system.time(cfc_fz_ns())
+# user  system elapsed 
+# 0.01    0.00    0.02 
+system.time(cfc_gtv())
+# > system.time(cfc_gtv())
+# user  system elapsed 
+# 208.49   12.06  242.33 
+
+# The self-compiled functions are notable quicker for the simulation tests
+# (~15% to 30% reduced run time, for these samples); worth using
+# except for analytical test; not worth compiling.
+
+corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
+                    mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                    alpha = 0.05, sidedness = 2, test = "fz_nosim",
+                    method ="pearson", lower.tri = FALSE) {
+  cat("Parameters: ",rho[1],rho[2], n[1],n[2], mu1, mu2, param1, param2, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
     if(rho[1] < rho[2]) { 
       return(NA)
     }
   }
+  if(test=="fz_nosim"){
+    return(fz_nosim(rho[1],rho[2],n[1],n[2], method = method))
+  }
+  require("simstudy")
+  a <- genCorGen(n[1], nvars = 2, params1 = mu1, params2 = param1,  
+                dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
+                wide = TRUE)[,2:3]
+  b <- genCorGen(n[2], nvars = 2, params1 = mu2, params2 = param2,  
+                dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
+                wide = TRUE)[,2:3]
+  if (test=="fz")  return(fz_compiled(a,b))
+  if (test=="gtv") return(gtv_compiled(a,b))
+}
+corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz_nosim") 
+corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
+corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "gtv") 
+
+# Corr power simulation
+corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
+                       mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                       alpha = 0.05, sidedness=2,method="pearson",  
+                       nsims = 1000,lower.tri = FALSE){
+  
+  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
   results <- list()
   results[["params"]]<-c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2], 
                          "n1" = ceiling(n*(mzdz_ratio)), "n2" = ceiling(n*(1-mzdz_ratio)), "sim" = simulation)
