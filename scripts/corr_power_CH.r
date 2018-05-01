@@ -133,12 +133,15 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 fz_nosim <- function(r1,r2,n1,n2,
                      alpha = 0.05, sidedness=2,method = "pearson",
                      power = TRUE) {
-  # Step 1: Compute sample correlation coefficients
+  # Step 1: calculate Fisher's Z
   z1     <- atanh(r1)
   z2     <- atanh(r2)
+  # Step 2: take difference
   zdiff  <- z1-z2
+  # Step 3: calculate standard error and test statistic
   z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
   z_test <- zdiff/z_se
+  # optionally return p-value for observing diff at least this large under H0
   z_p    <- sidedness*pnorm(-abs(z_test))
   if (power == FALSE) return("p" = z_p)
   z_ref   <- qnorm(1-alpha/sidedness)
@@ -179,6 +182,50 @@ gtv <- function(a,b,M=1e5,method = "pearson") {
               return(p)
               }
 
+# Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015)
+mslr <- function(a,b,M=1e5,sidedness=2,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+  
+  # Step 1: Compute sample correlation coefficients
+  r1      <- cor(a,method = method)[2,1]
+  r2      <- cor(b,method = method)[2,1]
+  z1     <- atanh(r1)
+  z2     <- atanh(r2)
+  rf     <- tanh(mean(z1,z2))
+  
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  N <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  
+  # Compute test statistic
+  rstar.f  <- rf/sqrt(1-rf^2)
+  rstar.top <- rstar.f * c(V2[,1],V2[,2]) + N
+  rstar     <- rstar.top / sqrt( rstar.top^2 + W2^2 )
+  slr       <- sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
+                                      n1*log(((1-rf*r2)^2)/((1-r1^2)*(1-rf^2))))))
+  
+  # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
+  ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
+  # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
+  mslr      <- (slr - mean(slr)*slr)/sqrt(var(slr)*slr)
+  # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
+  # Compute p value
+  p    <- 2 * pnorm(abs(mslr)); 
+  return(p)
+}
+  
+
+
 a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
           corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
 b <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
@@ -187,7 +234,7 @@ result <- list()
 system.time(result[["fz"]]       <- fz(a,b))
 system.time(result[["fz_nosim"]] <- fz_nosim(0.5,0.5,50,50))
 system.time(result[["gtv"]]      <- gtv(a,b))
-
+mslr(a,b)
 
 fz_compiled <- cmpfun(fz)
 fz_ns_compiled <- cmpfun(fz_nosim)
@@ -397,5 +444,6 @@ system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0
 # 58.14    5.07   63.17
 
 system.time(results<- corr_pplot_compiled())
+
 
 
