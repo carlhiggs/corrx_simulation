@@ -48,6 +48,8 @@ z_p
 # https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
 # on advice from Koen Simons
 require(compiler)
+install.packages("simstudy")
+require("simstudy")
 genCorGen_compiled <- cmpfun(genCorGen)
 
 fo <- function() for (i in 1:1000) genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
@@ -128,7 +130,9 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 }
 
 # Fishers Z test - no sim
-fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson",power = TRUE) {
+fz_nosim <- function(r1,r2,n1,n2,
+                     alpha = 0.05, sidedness=2,method = "pearson",
+                     power = TRUE) {
   # Step 1: Compute sample correlation coefficients
   z1     <- atanh(r1)
   z2     <- atanh(r2)
@@ -136,8 +140,10 @@ fz_nosim <- function(r1,r2,n1,n2,sidedness=2,method = "pearson",power = TRUE) {
   z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
   z_test <- zdiff/z_se
   z_p    <- sidedness*pnorm(-abs(z_test))
-  return(c("p" = z_p,"z_test" = z_test))
-  # return(z_p)
+  if (power == FALSE) return("p" = z_p)
+  z_ref   <- qnorm(1-alpha/sidedness)
+  z_power <- 1-pnorm(z_ref - abs(z_test))
+  return(z_power)
 }
 
 # GTV test statistic, based on code from Enes
@@ -178,16 +184,16 @@ a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal",
 b <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
              corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
 result <- list()
-system.time(result[["fz"]]       <- fz_test(a,b))
-system.time(result[["fz_nosim"]] <- fz_test_nosim(0.5,0.5,50,50))
-system.time(result[["gtv"]]      <- gtv_test(a,b))
+system.time(result[["fz"]]       <- fz(a,b))
+system.time(result[["fz_nosim"]] <- fz_nosim(0.5,0.5,50,50))
+system.time(result[["gtv"]]      <- gtv(a,b))
 
 
 fz_compiled <- cmpfun(fz)
 fz_ns_compiled <- cmpfun(fz_nosim)
 gtv_compiled <- cmpfun(gtv)
-fc_fz     <- function() for (i in 1:1000)      fz_test(a,b)
-fc_fz_ns  <- function() for (i in 1:1000)  fz_test_nosim(0.5,0.5,50,50)
+fc_fz     <- function() for (i in 1:1000)      fz(a,b)
+fc_fz_ns  <- function() for (i in 1:1000)  fz_nosim(0.5,0.5,50,50)
 fc_gtv    <- function() for (i in 1:1000)     gtv_test(a,b)
 cfc_fz    <- function() for (i in 1:1000)  fz_compiled(a,b)
 cfc_fz_ns <- function() for (i in 1:1000) fz_ns_compiled(0.5,0.5,50,50)
@@ -234,7 +240,8 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   }
   results <- list()
   if ("fz_nosim" %in% test) {
-    results[["fz_nosim"]] <- fz_nosim(rho[1],rho[2],n[1],n[2], method = method)
+    results[["fz_nosim"]] <- fz_nosim(rho[1],rho[2],n[1],n[2], 
+                                      alpha = 0.05, sidedness = 2, method = method, power = FALSE)
     if(length(test)==1) return(results)
   }
   require("simstudy")
@@ -253,6 +260,19 @@ corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz")
 corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "gtv") 
 corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal") 
 
+corr_diff_test_compiled <- cmpfun(corr_diff_test)
+cdt  <- function() for (i in 1:1000)  corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
+cdt_c  <- function() for (i in 1:1000)  corr_diff_test_compiled(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
+system.time(cdt())
+system.time(cdt_c())
+## No apparent speed benefits to compilation at the individual test stage
+# > system.time(cdt())
+# user  system elapsed 
+# 34.62    1.12   42.71 
+# > system.time(cdt_c())
+# user  system elapsed 
+# 35.02    1.22   44.27 
+
 # Corr power simulation
 corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
                        mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
@@ -260,78 +280,53 @@ corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
                        alpha = 0.05, sidedness=2,method="pearson",  
                        nsims = 100,lower.tri = FALSE, power_only = FALSE){
   sim <- list()
-  sim[["params"]]             <- c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2],"n1" = n[1], "n2" = n[2],
-                                 "alpha" = alpha, "sidedness" = sidedness, "nsims" = nsims, "distr" = distr)
-  sim[["z_ref"]]              <- qnorm(1-alpha/sidedness)
-  sim[["z_analytical"]]     <- fz_nosim(rho[1],rho[2],n[1],n[2], method = method)
-  sim[["z_analytical_power"]] <- 1-pnorm(sim$z_ref - abs(sim$z_analytical[2]))
-  sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,test = test)[,])<alpha)
+  sim[["params"]] <- c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2],"n1" = n[1], "n2" = n[2],
+                       "alpha" = alpha, "sidedness" = sidedness, "nsims" = nsims, "distr" = distr)
+  sim[["analytical"]] <- c("fz_nosim" = fz_nosim(rho[1],rho[2],n[1],n[2], 
+                                    alpha = alpha, sidedness = sidedness, method = method, power = TRUE))
+  sim_tests <- test[!test %in% "fz_nosim"]
+  sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,test = sim_tests)[,])<alpha)
+  if ("fz_nosim" %in% test) sim[["power"]] <- c(sim[["analytical"]],sim[["power"]])[test]
 
   #cat('\r',results$params,results$power)
-  cat("\r",sim[["params"]],"\t",sim$power)
+  cat("\r                                                                \r",sim[["params"]],sim$power,sep="\t")
   flush.console()
   if(power_only==FALSE) return(sim)
   else return(sim[["power"]])
 }
 
-# example usage (defaults: 100 sims, rho1 0.2, rho2 0.5, n1 20, n2 50, alpha 0.05, 2 sided, Pearson)
-simulation1 <- corr_power()
-simulation1
-# $params
-# method     rho_1     rho_2        n1        n2       sim 
-# "pearson"     "0.2"     "0.5"      "20"      "50"    "TRUE" 
-# 
-# $log
-# z_1           z_2          r_diff       z_diff       z_se      z_test       z_ref    z_power    z_p        
-# [1,] -0.3049277    0.1421052    -0.436972    -0.4470329   0.2830197 -1.579512    1.959964 0.3518049  0.1142187  
-# [2,] 0.1985209     0.08794177   0.1082376    0.1105791    0.2830197 0.3907117    1.959964 0.05829459 0.6960103  
-# [3,] 0.101958      0.0836204    0.0181801    0.01833758   0.2830197 0.06479259   1.959964 0.02903485 0.9483391  
-# [4,] 0.3320248     0.09623546   0.2243996    0.2357894    0.2830197 0.8331202    1.959964 0.1299043  0.4047769  
-# [5,] -0.07972956   -0.1182992   0.03818939   0.03856966   0.2830197 0.1362791    1.959964 0.03409986 0.8916007  
-# ....
+corr_power_compiled <- cmpfun(corr_power)
+cp  <- function() for (i in 1:10)  corr_power(power_only=TRUE)
+cp_c  <- function() for (i in 1:10)  corr_power_compiled(power_only=TRUE)
+# system.time(cp())
+# system.time(cp_c())
+# > system.time(cp())
+# pearson 0.2 0.5 30 90 0.05 2 100 normal 	 0.38 0.4   
+# user  system elapsed 
+# 266.84   12.50  313.37 
+# > system.time(cp_c())
+# pearson 0.2 0.5 30 90 0.05 2 100 normal 	 0.35 0.37
+# user  system elapsed 
+# 263.76   12.39  307.74 
+## Pretty similar timing; still, i'll use just in case.
 
-corr_power(c(0.2,0.5),c(20,50))$power
-temp <- corr_power(c(0.2,0.5),c(20,50),power_only=TRUE)
+corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim","gtv"))
+# fz  fz_nosim       gtv                                     
+# 0.1000000 0.3494663 0.1000000 
+## NOTE - issue if only one simulation is processed - the rowMeans subcommand bugs out
+# corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim"))
+# Error in rowMeans(replicate(nsims, corr_diff_test(rho = rho, n = n, distr = distr,  : 
+# 'x' must be an array of at least two dimensions
 
-# Using guidance on outer for n-dimensional arrays
-# ttps://stackoverflow.com/questions/6192848/how-to-generalize-outer-to-n-dimensions
-list_args <- Vectorize( function(a,b) c( as.list(a), as.list(b) ), 
-                        SIMPLIFY = FALSE)
-
-
-make_args_mtx <- function( alist ) {
-  Reduce(function(x, y) outer(x, y, list_args), alist)
-}
-
-multi.outer <- function(f, ... ) {
-  args <- make_args_mtx(list(...))
-  apply(args, 1:length(dim(args)), function(a) do.call(f, a[[1]] ) )
-}
-
-fun <- function(a,b,c) paste(a,b,c)
-
-ans <- multi.outer(fun, LETTERS[1:2], c(3, 4, 5), test)
-ans
-# retrieve array 3rd dimension using subscripting as follows, e.g. for first
-ans[,,1]
-
-## INitial attempt at this abandoned, as it would not work in context where we return multiple results.
-## find another way
-# fun <- function(r,c,test) corr_power(rho = c(r,c), n = c(30,90),distr = "normal",
-#                                      mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
-#                                      test = c("fz","gtv"),
-#                                      alpha = 0.05, sidedness=2,method="pearson",  
-#                                      nsims = 100,lower.tri = FALSE, power_only = FALSE)
-# 
-# ans <- multi.outer(fun, corrs, corrs, test)
 
 corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
                             n = c(30,90),distr = "normal",
                             mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
-                            tests = c("fz","gtv"),
+                            tests = c("fz_nosim","fz","gtv"),
                             alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
                             names = c("Population A","Population B"),
-                            lower.tri = FALSE, power_only = FALSE){
+                            lower.tri = FALSE){
+  cat("\n","Correlation power plot simulation commenced at",as.character(Sys.time()),"\n")
   results <- list()
   results[["params"]] <- c("method" = method,"n1" = n[1], "n2" = n[2],
                            "alpha" = alpha, "sidedness" = sidedness, 
@@ -339,329 +334,86 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
   results[["tests"]]  <- tests
   results[["z_ref"]]  <- qnorm(1-alpha/sidedness)
   corrs <- round(seq(res_min, res_max, res_inc),2)
-  tests <-  c("fz","gtv")
-  results <- list()
+  
   # create result holder matrices per test
   for (test in results[["tests"]]) {
     results[[test]] <- matrix(data = NA, nrow = length(corrs), ncol = length(corrs))
     colnames(results[[test]]) <- rownames(results[[test]]) <- format(corrs, trim=TRUE)
   }
+  # print header for corr_power output
+  cat("\tmethod","rho_1","rho_2","n1","n2","alpha","sides","nsims","distr","PowerXtests","\n",sep="\t")
+  cat("\t",rep("-",45),"\n")
   # calculate pairwise results
   for (r in corrs){
     for (c in corrs){
-      temp <- corr_power(rho = c(r,c), n = c(n[1],n[2]),distr = distr,
+      temp <- corr_power_compiled(rho = c(r,c), n = c(n[1],n[2]),distr = distr,
                           test = tests,
                           alpha = alpha, sidedness=sidedness,method=method,  
                           nsims = nsims,lower.tri = lower.tri, power_only = TRUE)  
       for (test in results[["tests"]]) {
-        results[[test]][r,c] <- temp[test]
+        results[[test]][r == corrs,c == corrs] <- temp[test]
       }
     }         
   }
-  results <- corr_power_plot()
-
+  
   # format method to proper case for plot
   corr_type <- stringr::str_to_title(method)
   # define target power (to mark on plot)
   target <- 1 - beta
-  
+
   # plot power simulation results
-  for (test in results[["tests"]]) {
-    results[[test]][[fig]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10, 
+   for (test in results[["tests"]]) {
+    results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
                                 xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), 
+                                plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
                                                      levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
                                                      add = TRUE, lwd = 3, col = "steelblue3");
                                   abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
                                   abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
                                   axis(1, seq(-1,1,0.2))
-                                  axis(2, seq(-1,1,0.2)) },
-                                plot.title = title(main = paste0("Power for difference in ",corr_type," correlations","\n",
-                                                                 test," test","\n",
+                                  axis(2, seq(-1,1,0.2))},
+                                plot.title = title(main = paste0(test," test","\n",
                                                                  "Mz = ",results[["params"]][["n1"]],
                                                                  ", Dz = ",results[["params"]][["n2"]],
-                                                                 ", alpha: ",alpha, ", sims: ",n.sims),
+                                                                 ", alpha: ",alpha, ", sims: ",nsims),
                                                    xlab = paste0("Correlation in ",names[1]),
                                                    ylab = paste0("Correlation in ",names[2]), adj = 0),
                                 color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-                                arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")
-  }
+   # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
+   }
+  cat("\n","Completed at ",as.character(Sys.time()),"\n")
   return(results)
 }
 
+corr_pplot_compiled <- cmpfun(corr_power_plot)
+system.time(results<- corr_pplot_compiled())
+# pearson 0.45 0.9 30 90 0.05 2 100 normal 	 0.98 0.98           
+# ...
+# Timing stopped at: 59077.9 2665.76 68200.69 
+# > 59077.9/60
+# [1] 984.6317
+# > 59077.9/60/60
+# [1] 16.41053
+# > cat("This took",59077.9/60/60,"hours before I cancelled it on my home computer")
+# This took 16.41053 hours before I cancelled it on my home computer! Appears to be running faster
+# on my work computer, which although started around 8 hours ago is already more complete.
+# Rather than run the same code on both computers, I have cancelled this and will get something else working, 
+# after trialling a very small test case.
 
 
+system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.9, res_max = .9, res_inc = 0.3, n = c(30,90)))
+# Very strange behaviour --- it completes the requested cycle BUT
+# instead of moving onto figures reverts to the unwieldy default params and starts again....
+# ie. reports: pearson -0.95 -0.95 30 90 0.05 2 100 normal 	 0.07 0.06  
+# I found the issue - I had this line (an apparent artifact of test code) 
+# in my function, resulting in infinite loop: "results <- corr_power_plot()", 
+# so the function was recursively calling itself... ach....
 
-corr_power <- function(n.sims = 100, 
-                       n = 700,
-                       mzdz_ratio = 0.4,
-                       distr = "normal",
-                       alpha = 0.05, 
-                       sidedness = 2,
-                       method  = "pearson",
-                       log = TRUE,
-                       testsim = TRUE,
-                       beta = 0.2,
-                       res_min = -0.99,
-                       res_max = 0.99,
-                       res_inc = 0.05,
-                       names = c("Population A","Population B"),
-                       lower   = FALSE,
-                       simulation = TRUE) {
-  # Note: for now, method may be 'peasron,'spearman' or 'kendall' ; plan to include icc
-  # 'lower' option is trial of only processing lower matrix
-  #  -- takes < 0.5x processing time; result could be mirrored, or plotted against delta
-  
-  start_time <- Sys.time()
-  
-  # define target power (to mark on plot)
-  target <- 1 - beta
-
-  # Sequance of correlations to compare
-  corrs <- seq(res_min, res_max, res_inc)
-  results <- list()
-  results[["params"]]<-c("method" = method, "distr" = distr,
-                         "n1" = ceiling(n*(mzdz_ratio)), "n2" = ceiling(n*(1-mzdz_ratio)), "sim" = simulation, "nsim" = n.sims,"\n")
-  cat("Simulation for power to detect a difference in bivariate correlations","\n")
-  cat("Correlation method: ",results[["params"]][["method"]],"\n")
-  cat("Distribution:","bivariate",results[["params"]][["distr"]],"\n")
-  cat("Simulation length: ",results[["params"]][["nsim"]],"\n")
-  cat("rho1\trho2\tmz\tdz\tpower\n")
-  if (simulation==TRUE) {
-    # Evaluate pairwise comparisons across nsims for power estimate
-    # mapply(compute.power,rho1 = r, rho2 = c,n1 = n1, n2 = n2, threshold=alpha, nsims = n.sims, lower.tri = lower,   power_only=TRUE))
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(compute.power,rho1 = r, 
-                                                                             rho2 = c, 
-                                                                             n=n,
-                                                                             mzdz_ratio=mzdz_ratio,
-                                                                             distr=distr,
-                                                                             nsims = n.sims, alpha=alpha, sidedness=sidedness, method=method,
-                                                                             power_only=TRUE))
-  }
-  if (simulation==FALSE){
-    ## Actually its quite interesting to plot what the probabilities would look like without sampling; 
-    results <- outer(corrs, corrs, FUN = function(r, c) mapply(p_zdiff,rho1 = r, 
-                                                                       rho2 = c, 
-                                                                       n=n,
-                                                                       mzdz_ratio=mzdz_ratio,
-                                                                       distr=distr,
-                                                                       nsims = n.sims, alpha=alpha, sidedness=sidedness, method=method,
-                                                                       power_only=TRUE,simulation = testsim,
-                                                                       SIMPLIFY = FALSE))
-  }
-  # format method to proper case for plot
-  corr_type <- stringr::str_to_title(method)
-  # plot power simulation results
-  fig<-filled.contour(x = corrs, y = corrs, z = as.matrix(results), nlevels = 10, 
-                 xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                 plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results), 
-                                      levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                      add = TRUE, lwd = 3, col = "steelblue3");
-                   abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                   abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                   axis(1, seq(-1,1,0.2))
-                   axis(2, seq(-1,1,0.2)) },
-                 plot.title = title(main = paste0("Power for difference in ",corr_type," correlations","\n",
-                                    "Mz = ",results[["params"]][["n1"]],", Dz = ",results[["params"]][["n2"]],", alpha: ",alpha, ", sims: ",n.sims),
-                                    xlab = paste0("Correlation in ",names[1]),
-                                    ylab = paste0("Correlation in ",names[2]), adj = 0),
-                 color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-        arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")
-  
-
-  end_time <- Sys.time()
-  
-  # display running time
-  cat(paste0("Power for difference in ",corr_type," correlations","\n",
-             "n1 = ",n[1],", n2 = ",n[2],", alpha: ",alpha, ", sims: ",n.sims,"\n",
-             "Processing time: ",end_time - start_time,"\n\n"))
-  return(fig)
-}
+results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0, res_inc = 0.3, n = c(30,90))
+# Correlation power plot simulation commenced at 2018-05-01 21:51:35 
+# method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#   pearson	0	0	30	90	0.05	2	10	normal	0.025	0	0
+# Completed at  2018-05-01 21:51:46 
 
 
-power_4to6 <- corr_power(n.sims    = 100,
-                     n       =  700,
-                     mzdz_ratio = 0.4,
-                     distr   = "normal",
-                     alpha   =   0.05, 
-                     beta    =   0.2,
-                     names   =  c("Mz twins","Dz twins"),
-                     method  =  "pearson",
-                     lower   =   TRUE)
-
-# an example, iterating over different kinds of correlation
-#  -- Although I am not certain implementation is correct for latter two yet.
-p <- list()
-for(corr in c("pearson","spearman")){
-  p[[corr]]  <- corr_power(n.sims  = 100,
-                           n1      =  134, 
-                           n2      =  134, 
-                           alpha   =   0.05, 
-                           beta    =   0.2,
-                           n1_name = "Mz twins",
-                           n2_name = "Dz twins",
-                           method  =  corr,
-                           lower   =   FALSE) 
-}               
-
-
-# plot combinations of result processing parameters (correlations, sim size, and alpha)
-correlations <- c("pearson","spearman")
-results <- list()
-for(corr in correlations){
-  for(n1 in c(30,150)){
-    for(n2 in c(30,150)){
-results[[corr]][[paste0("n1_",n1)]][[paste0("n2_",n2)]] <- corr_power(n.sims  = 100,
-                                                                      n1      =  n1, 
-                                                                      n2      =  n2, 
-                                                                      alpha   =  0.05, 
-                                                                      beta    =  0.2,
-                                                                      n1_name =  "Mz twins",
-                                                                      n2_name =  "Dz twins",
-                                                                      method  =  corr,
-                                                                      lower   =  FALSE) 
-    }
-  }
-}
-
-
-# trick to remove warnings while debugging
-assign("last.warning", NULL, envir = baseenv())
-
-
-coloursets <- list()
-coloursets[["pgrn"]] <- c('#276419','#4d9221','#7fbc41','#b8e186','#e6f5d0','#fde0ef','#f1b6da','#de77ae','#c51b7d','#8e0152','#f7f7f7')
-coloursets[["BrBG"]] <- c('#003c30','#01665e','#35978f','#80cdc1','#c7eae5','#f5f5f5','#f6e8c3','#dfc27d','#bf812d','#8c510a','#543005')
-coloursets[["RdYlBu"]] <- c('#313695','#4575b4','#74add1','#abd9e9','#e0f3f8','#ffffbf','#fee090','#fdae61','#f46d43','#d73027','#a50026')
-
-
-# Simulation data
-
-## APPLICATION FOR TWIN STUDY CONTEXT
-# twins are same age, Mz twins are assumed to be same sex; Dz may vary (but modelled seperately
-# csv copy of HeartExampleStata.data
-heart <- read.csv("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/mbiostatprojectbackgroundreading/HeartExample.csv")
-# create compound indicators of mz (2), dz1 (0) or dz2 (1)  -- ie. to pick up on individ' env. re
-heart["mz_ind"]<- heart$mz+1-heart$dz1
-# run linear mixed effects model
-m <- list()
-m[["bmi"]] <- lmer(bmi ~ sex + (1|pairid) + (1|pairid:mz_ind), data = heart)
-m[["lnsbp"]] <- lmer(lnsbp ~ sex + bmi + (1|pairid) + (1|pairid:mz_ind), data = heart)
-summary(m[["lnsbp"]]) # Rough equivalent of stata model: mixed lnsbp sex bmi, || pairid: || pairid: mz dz1 dz2, covariance(identity) nocons
-# Linear mixed model fit by REML ['lmerMod']
-# Formula: lnsbp ~ sex + bmi + (1 | pairid) + (1 | pairid:mz_ind)
-# Data: heart
-# 
-# REML criterion at convergence: -666.1
-# 
-# Scaled residuals: 
-#   Min       1Q   Median       3Q      Max 
-# -2.03202 -0.50601 -0.01025  0.49651  2.08075 
-# 
-# Random effects:
-#   Groups        Name        Variance Std.Dev.
-# pairid:mz_ind (Intercept) 0.002165 0.04653 
-# pairid        (Intercept) 0.001132 0.03364 
-# Residual                  0.002967 0.05447 
-# Number of obs: 298, groups:  pairid:mz_ind, 232; pairid, 149
-# 
-# Fixed effects:
-#   Estimate Std. Error t value
-# (Intercept) 4.592482   0.035140  130.69
-# sex         0.066597   0.010434    6.38
-# bmi         0.005725   0.001582    3.62
-# 
-# Correlation of Fixed Effects:
-#   (Intr) sex   
-# sex  0.176       
-# bmi -0.982 -0.294
-summary <- list()
-for (var in c("bmi","lnsbp")){
-  summary[[var]][["summary"]]         <- summary(m[[var]])
-  summary[[var]][["fe"]]              <- summary[[var]][["summary"]][["coefficients"]]
-  summary[[var]][["re"]]              <- as.data.frame(VarCorr(m[[var]]))
-  summary[[var]][["A"]]               <- summary[[var]][["re"]][1,4] # additional Mz covariance
-  summary[[var]][["C"]]               <- summary[[var]][["re"]][2,4] # Dz covariance
-  summary[[var]][["E"]]               <- summary[[var]][["re"]][3,4] # residual variance
-  summary[[var]][["total_var"]]       <- sum(unlist(summary[[var]][c("A","C","E")]))
-  summary[[var]][["cov"]][["mz"]]     <- summary[[var]]$C+summary[[var]]$A
-  summary[[var]][["cov"]][["dz"]]     <- summary[[var]]$C
-  summary[[var]][["rho"]][["mz"]]     <- summary[[var]][["cov"]]["mz"]/summary[[var]]$total_var
-  summary[[var]][["rho"]][["dz"]]     <- summary[[var]][["cov"]]["dz"]/summary[[var]]$total_var
-}
-cat("Intraclass Correlations, ")
-matrix(c(summary$bmi$rho,summary$lnsbp$rho),
-       ncol=2,
-       dimnames=list(c("Mz","Dz"),c("BMI","lnsbp")))
-
-n.pairs = 149
-
-# Simulate data, drawing on mixed effects models as guide for data generating mechanism
-tw.pair <- defData(varname = "n.inds", formula = 2, variance = 0, id = "id.pair") 
-tw.pair <- defData(tw.pair,varname = "Mz", dist = "binary", formula = 0.3, id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "z0_mz_bmi",   dist = "normal", formula = 0, variance = summary$bmi$cov["mz"],   id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "z0_mz_lnsbp", dist = "normal", formula = 0, variance = summary$lnsbp$cov["mz"], id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "z0_dz_bmi",   dist = "normal", formula = 0, variance = summary$bmi$cov["dz"],   id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "z0_dz_lnsbp", dist = "normal", formula = 0, variance = summary$lnsbp$cov["dz"], id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "age", dist = "uniform", formula = "18; 31", id = "id.pair")
-tw.pair <- defData(tw.pair,varname = "mz_fem", dist = "binary", formula = 0.5, id = "id.pair")
-tw.pair
-# varname formula    variance    dist     link
-# 1:      n.inds       2 0.000000000  normal identity
-# 2:          Mz     0.3 0.000000000  binary identity
-# 3:   z0_mz_bmi       0 7.064280080  normal identity
-# 4: z0_mz_lnsbp       0 0.003296820  normal identity
-# 5:   z0_dz_bmi       0 4.714199627  normal identity
-# 6: z0_dz_lnsbp       0 0.001131618  normal identity
-# 7:         age  18; 31 0.000000000 uniform identity
-# 8:      mz_fem     0.5 0.000000000  binary identity
-dt.pair <- genData(n.pairs, tw.pair)
-dt  .pair
-#      id.pair n.inds Mz  z0_mz_bmi  z0_mz_lnsbp  z0_dz_bmi  z0_dz_lnsbp      age mz_fem
-#   1:       1      2  0 -0.6574000  0.064558889 -3.6999346  0.014983375 28.77778      1
-#   2:       2      2  0 -1.8892245  0.016784464 -3.0159563 -0.011469922 19.82292      0
-#   3:       3      2  1 -1.9766545  0.018124157  0.5023240  0.020114604 28.39733      1
-#   4:       4      2  0  0.2970619  0.046058288 -2.4671660  0.040322515 28.64035      0
-#   5:       5      2  1  4.5812000 -0.032586016  0.3818789  0.027171521 22.80382      0
-# ---                                                                                  
-# 145:     145      2  0 -1.8933768  0.021241787 -0.7393719 -0.018024633 23.25968      0
-# 146:     146      2  1 -3.0230712  0.070729052 -3.1220987 -0.002867279 26.87104      1
-# 147:     147      2  0 -0.3361081  0.102640413  0.8698970  0.016268089 28.48500      0
-# 148:     148      2  0  0.7751230  0.009452269 -1.2566928  0.037654063 28.00665      1
-# 149:     149      2  0 -6.6343096  0.056883598 -2.0525133  0.011597051 21.54519      1
-
-tw.ind <- defDataAdd(varname = "dz_fem", dist = "binary", formula = 0.5) 
-tw.ind <- defDataAdd(tw.ind,varname = "bmi", dist = "normal",  
-                     formula = paste0(summary$bmi$fe["(Intercept)","Estimate"]," + ",
-                                      summary$bmi$fe["sex","Estimate"],"*((mz_fem*Mz)+(dz_fem*(abs(1-Mz)))) + 
-                                      z0_mz_bmi * Mz + z0_dz_bmi * (abs(1-Mz))"), 
-                     variance = summary$bmi$E)
-tw.ind <- defDataAdd(tw.ind,varname = "lnsbp", dist = "normal",  
-                     formula = paste0(summary$lnsbp$fe["(Intercept)","Estimate"]," + ",
-                                      summary$lnsbp$fe["sex","Estimate"],"*((mz_fem*Mz)+(dz_fem*(abs(1-Mz)))) +",
-                                      summary$lnsbp$fe["bmi","Estimate"],
-                                      " * bmi + z0_mz_lnsbp*Mz + z0_dz_lnsbp*(abs(1-Mz))"), 
-                     variance = summary$lnsbp$E)
-
-dt.tw.ind <- genCluster(dt.pair, cLevelVar = "id.pair", numIndsVar = "n.inds", level1ID = "id.ind")
-dt.tw.ind  <- addColumns(tw.ind, dt.tw.ind)
-
-# create within pair index
-# Should be more simple way of doing this; in lieu of knowing a better way, 
-# it is calculated as sum of 1 plus 1 if previous value is identical, else 1 + 0
-dt.tw.ind[ ,id.twin:= 1+replace((shift(id.pair)==id.pair), is.na(shift(id.pair)), 0)]
-# alternately, assuming correctly sorted data: dt.tw.ind["id.twin"] <- 1 + (dt.tw.ind[ ,"id.ind"]%% 2 == 0) 
-
-dt.tw.ind[(dt.tw.ind$Mz==1),"female"] <- dt.tw.ind[(dt.tw.ind$Mz==1),"mz_fem"]
-dt.tw.ind[(dt.tw.ind$Mz==0),"female"] <- dt.tw.ind[(dt.tw.ind$Mz==0),"dz_fem"]
-dt.tw.ind <- dt.tw.ind[,c("id.pair","id.twin","Mz","age","female","bmi","lnsbp")]
-head(dt.tw.ind,10)
-
-
-# Pearson correlation
-cor(dt.tw.ind[dt.tw.ind$Mz==1&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz==1&dt.tw.ind$id.twin==2,"bmi"])
-# bmi
-# bmi 0.7359233
-cor(dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==1,"bmi"],dt.tw.ind[dt.tw.ind$Mz==0&dt.tw.ind$id.twin==2,"bmi"])
-# bmi
-# bmi 0.6420553
