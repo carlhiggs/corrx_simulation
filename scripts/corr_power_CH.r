@@ -182,8 +182,8 @@ gtv <- function(a,b,M=1e5,method = "pearson") {
               return(p)
               }
 
-# Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015)
-mslr <- function(a,b,M=1e5,sidedness=2,method = "pearson") {
+# Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015; maybe based on Barndorff Nielsen 1991
+mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -195,32 +195,35 @@ mslr <- function(a,b,M=1e5,sidedness=2,method = "pearson") {
   z2     <- atanh(r2)
   rf     <- tanh(mean(z1,z2))
   
-  # Step 2: Generate random numbers
-  V2     <- matrix(data=0, nrow = M, ncol = 2)
-  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  # Steps 2 to 6 (recursive): Generate random numbers and calculate SLR
+  slr  <- vector(mode="numeric", length=0)
+  for (i in 1:M) {
+    V1 <- rchisq(n1, df = n1-1, ncp = 1)
+    V2 <- rchisq(n2, df = n2-1, ncp = 1)
   
-  W2     <- matrix(data=0, nrow = M, ncol = 2)
-  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-  
-  N <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-  
-  
-  # Compute test statistic
-  rstar.f  <- rf/sqrt(1-rf^2)
-  rstar.top <- rstar.f * c(V2[,1],V2[,2]) + N
-  rstar     <- rstar.top / sqrt( rstar.top^2 + W2^2 )
-  slr       <- sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
-                                      n1*log(((1-rf*r2)^2)/((1-r1^2)*(1-rf^2))))))
-  
+    W1 <- rchisq(n1, df = n1-2, ncp = 1)
+    W2 <- rchisq(n2, df = n2-2, ncp = 1)
+    
+    N1 <- rnorm(n1)
+    N2 <- rnorm(n2)
+    
+    # Compute test statistic
+    rstar.f  <- rf/sqrt(1-rf^2)
+    rstar.top <- rstar.f * c(V1,V2) + N
+    rstar     <- rstar.top / c(sqrt( rstar.top[,1]^2 + W1^2 ),sqrt( rstar.top[,2]^2 + W2^2 ))
+    # NOTE  - SOMETHING IS WRONG HERE! rstar is a vector, and will vary over iterations
+    #  but it is not included in the formula for the slr - and if it were, the slr wouldn't return
+    #  the singular value it is meant to.... how do we square this?
+    slr <- c(slr,sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
+                                        n2*log(((1-rf*r2)^2)/((1-r1^2)*(1-rf^2)))))))
+  }
   # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
   ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
   # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
-  mslr      <- (slr - mean(slr)*slr)/sqrt(var(slr)*slr)
+  mslr      <- (slr - mean(slr))/sqrt(var(slr))
   # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
   # Compute p value
-  p    <- 2 * pnorm(abs(mslr)); 
+  p    <- 2 * pnorm(abs(mean(mslr))); 
   return(p)
 }
   
@@ -234,7 +237,7 @@ result <- list()
 system.time(result[["fz"]]       <- fz(a,b))
 system.time(result[["fz_nosim"]] <- fz_nosim(0.5,0.5,50,50))
 system.time(result[["gtv"]]      <- gtv(a,b))
-mslr(a,b)
+mslr(a,b, M=100)
 
 fz_compiled <- cmpfun(fz)
 fz_ns_compiled <- cmpfun(fz_nosim)
