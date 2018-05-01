@@ -386,34 +386,16 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
 }
 
 corr_pplot_compiled <- cmpfun(corr_power_plot)
-system.time(results<- corr_pplot_compiled())
-# pearson 0.45 0.9 30 90 0.05 2 100 normal 	 0.98 0.98           
-# ...
-# Timing stopped at: 59077.9 2665.76 68200.69 
-# > 59077.9/60
-# [1] 984.6317
-# > 59077.9/60/60
-# [1] 16.41053
-# > cat("This took",59077.9/60/60,"hours before I cancelled it on my home computer")
-# This took 16.41053 hours before I cancelled it on my home computer! Appears to be running faster
-# on my work computer, which although started around 8 hours ago is already more complete.
-# Rather than run the same code on both computers, I have cancelled this and will get something else working, 
-# after trialling a very small test case.
 
-
-system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.9, res_max = .9, res_inc = 0.3, n = c(30,90)))
-# Very strange behaviour --- it completes the requested cycle BUT
-# instead of moving onto figures reverts to the unwieldy default params and starts again....
-# ie. reports: pearson -0.95 -0.95 30 90 0.05 2 100 normal 	 0.07 0.06  
-# I found the issue - I had this line (an apparent artifact of test code) 
-# in my function, resulting in infinite loop: "results <- corr_power_plot()", 
-# so the function was recursively calling itself... ach....
-
-results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0, res_inc = 0.3, n = c(30,90))
-# Correlation power plot simulation commenced at 2018-05-01 21:51:35 
+system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
+# Correlation power plot simulation commenced at 2018-05-01 21:57:57 
 # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-#   pearson	0	0	30	90	0.05	2	10	normal	0.025	0	0
-# Completed at  2018-05-01 21:51:46 
+#   pearson	0.3	0.3	30	90	0.05	2	10	normal	0.025	0	0
+# Completed at  2018-05-01 21:59:00 
+# user  system elapsed 
+# 58.14    5.07   63.17
+
+system.time(results<- corr_pplot_compiled())
 
 
