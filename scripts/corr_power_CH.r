@@ -443,7 +443,46 @@ system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0
 # 58.14    5.07   63.17
 
 system.time(results<- corr_pplot_compiled())
-
+## Note - this time test was run on more powerful work computer
+# Correlation power plot simulation commenced at 2018-05-01 22:05:06 
+# method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+#   pearson	0.95	0.95	30	90	0.05	2	100	normal	0.025	0.09	0.09
+# Completed at  2018-05-02 02:06:36 
+# user   system  elapsed 
+# 14425.09    94.50 14489.76
+#
+# There was some error viewing all plots some time later - not sure why; however, results should be saved
+corrs<- seq(-0.95,0.95,0.05)
+nsims = 100 
+n = c(30,90)
+distr = "normal"
+tests = c("fz_nosim","fz","gtv")
+alpha = 0.05
+beta = 0.2
+sidedness=2
+target = 1-beta
+method="pearson"  
+names = c("Population A","Population B")
+for (test in results[["tests"]]) {
+results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
+                                         xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                         plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
+                                                              levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                              add = TRUE, lwd = 3, col = "steelblue3");
+                                           abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                           abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                           axis(1, seq(-1,1,0.2))
+                                           axis(2, seq(-1,1,0.2))},
+                                         plot.title = title(main = paste0(test," test","\n",
+                                                                          "Mz = ",results[["params"]][["n1"]],
+                                                                          ", Dz = ",results[["params"]][["n2"]],
+                                                                          ", alpha: ",alpha, ", sims: ",nsims),
+                                                            xlab = paste0("Correlation in ",names[1]),
+                                                            ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                         color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+}
 
 system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 
