@@ -1,21 +1,9 @@
 # R script to simulate power for difference in correlations (Pearson, Spearman, and later ... ICC)
 # Carl Higgs 2017
 #
-# Adapted from https://janhove.github.io/design/2015/04/14/power-simulations-for-comparing-independent-correlations
+# Initial inspiration for corr_power_plot from https://janhove.github.io/design/2015/04/14/power-simulations-for-comparing-independent-correlations
 # Jan Vanhove 14 April 2015
 
-# The approach by Vanhove uses r.test in the psych package to calculate significance of 
-
-# OWN TEST FORMULATION (benefits: not reliant on package; can swap out method for other; can report results)
-# Confirm calculation of r.test
-r.test(n = 20, r12 = 0.5, n2 = 50, r34 = 0.2)$p
-## [1] 0.2207423
-z_diff = atanh(0.5) - atanh(0.2)
-z_se   = sqrt(1/(20-3) + 1/(50-3))
-z_test = (z_diff/z_se)
-z_p    = 2*pnorm(-abs(z_test))
-z_p
-## [1] 0.2207423
 
 # Function to simulate two bivariate normal distributions based on respective population correlations.
 # Reports:
@@ -26,23 +14,12 @@ z_p
 #    - calculate the significance and power without sampling using the two input correlations (simulation = FALSE).
 #    - output a full log of simulation paramaters with results
 #    - output a single statistic (z_p, or z_power).
+#    - distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
+#    - given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
 # To develop
 #    - accounting for clustering (ie. icc in twin studies)
 #    - allow parameterisation to explore change in source pop mean and sd (unequal variance, etc)
 
-
-# New plan:
-#  Incorporate simstudy simulation approach - requires a supplied schema definition 'def' to be set up as below
-
-# Correlated data example
-
-## a vector containing the mean(s) of the distributions (for binary, should be prob)
-#mu <- c(0.8, 0.1)  
-## given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
-## For binary data, set to NULL
-#param <- c(NULL, NULL) 
-#distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
-#rho1 = 0.78
 
 # Testing out compilation of genCorGen according to directions at 
 # https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
@@ -183,6 +160,7 @@ gtv <- function(a,b,M=1e5,method = "pearson") {
               }
 
 # Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015; maybe based on Barndorff Nielsen 1991
+# note limitation that Rf (here, rstar.f)
 mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
@@ -195,23 +173,37 @@ mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   z2     <- atanh(r2)
   rf     <- tanh(mean(z1,z2))
   
-  # Steps 2 to 6: Generate random numbers and calculate SLR
-  V1 <- rchisq(M, df = n1-1, ncp = 1)
-  V2 <- rchisq(M, df = n2-1, ncp = 1)
-  W1 <- rchisq(M, df = n1-2, ncp = 1)
-  W2 <- rchisq(M, df = n2-2, ncp = 1)
-  N1 <- rnorm(M)
-  N2 <- rnorm(M)
-    
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  N <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  
   # Compute test statistic
   rstar.f  <- rf/sqrt(1-rf^2)
-  rstar.top <- rstar.f * c(V1,V2) + N
-  rstar     <- rstar.top / c(sqrt( rstar.top[,1]^2 + W1^2 ),sqrt( rstar.top[,2]^2 + W2^2 ))
-  # NOTE  - SOMETHING IS WRONG HERE! rstar is a vector, and will vary over iterations
-  #  but it is not included in the formula for the slr - and if it were, the slr wouldn't return
-  #  the singular value it is meant to.... how do we square this?
-  slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*rstar[,1])^2)/((1-rstar[,1]^2)*(1-rf^2))),
-                                              n2*log(((1-rf*rstar[,2])^2)/((1-rstar[,2]^2)*(1-rf^2))))))
+  rstar.top <- rstar.f * c(V2[,1],V2[,2]) + N
+  rstar     <- rstar.top / sqrt( rstar.top^2 + W2^2 )
+
+  # non looping approach (but otherwise as per formula) which does not result in vector of slr
+  #  but a vector is required to calculate slr mean and variance
+  slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
+                                              n2*log(((1-rf*r2)^2)/((1-r2^2)*(1-rf^2))))))
+  
+  ## non-working attempt using rstar to recalculate rf as vector
+  # rf     <- tanh(rowMeans(atanh(rstar)))
+  # slr <- numeric(length = 0)
+  # for (i in 1:length(rf))   slr <- c(slr,sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf[i]*r1)^2)/((1-r1^2)*(1-rf[i]^2))),
+  #                                                              n1*log(((1-rf[i]*r2)^2)/((1-r1^2)*(1-rf[i]^2)))))))
+  
+  ## non-working attempt, using rstar as vector
+  # slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*rstar[,1])^2)/((1-rstar[,1]^2)*(1-rf^2))),
+  #                                            n2*log(((1-rf*rstar[,2])^2)/((1-rstar[,2]^2)*(1-rf^2))))))
 
   # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
   ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
@@ -219,7 +211,7 @@ mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   mslr      <- (slr - mean(slr))/sqrt(var(slr))
   # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
   # Compute p value
-  p    <- 2 * pnorm(abs(mean(mslr))); 
+  p    <- 2 * (1 - pnorm(abs(mslr))); 
   return(p)
 }
   
@@ -274,10 +266,10 @@ system.time(cfc_gtv())
 # except for analytical test; not worth compiling.
 
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
-                    mu1 = c(0,0), mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                    param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
                     alpha = 0.05, sidedness = 2, test = c("fz","gtv"),
                     method ="pearson", lower.tri = FALSE) {
-  # cat("Parameters: ",rho[1],rho[2], n[1],n[2], mu1, mu2, param1, param2, distr, alpha, sidedness, method,"\n")
+  # cat("Parameters: ",rho[1],rho[2], n[1],n[2], param1a, param1b, param2a, param2b, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
     if(rho[1] < rho[2]) { 
@@ -291,10 +283,10 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
     if(length(test)==1) return(results)
   }
   require("simstudy")
-  a <- genCorGen(n[1], nvars = 2, params1 = mu1, params2 = param1,  
+  a <- genCorGen(n[1], nvars = 2, params1 = param1a, params2 = param2a,  
                 dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
                 wide = TRUE)[,2:3]
-  b <- genCorGen(n[2], nvars = 2, params1 = mu2, params2 = param2,  
+  b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
                 wide = TRUE)[,2:3]
   if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
@@ -321,17 +313,22 @@ system.time(cdt_c())
 
 # Corr power simulation
 corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
-                       mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                       param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
                        test = c("fz","gtv"),
                        alpha = 0.05, sidedness=2,method="pearson",  
                        nsims = 100,lower.tri = FALSE, power_only = FALSE){
   sim <- list()
   sim[["params"]] <- c("method" = method, "rho_1" = rho[1], "rho_2" = rho[2],"n1" = n[1], "n2" = n[2],
                        "alpha" = alpha, "sidedness" = sidedness, "nsims" = nsims, "distr" = distr)
+  
+  sim[["additional"]] <- c("param1a" = param1a, "param1b" = param1b,"param2a" = param2a, "param2b" = param2b)
   sim[["analytical"]] <- c("fz_nosim" = fz_nosim(rho[1],rho[2],n[1],n[2], 
                                     alpha = alpha, sidedness = sidedness, method = method, power = TRUE))
   sim_tests <- test[!test %in% "fz_nosim"]
-  sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,test = sim_tests)[,])<alpha)
+  sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,
+                                                            param1a = param1a, param1b = param1b,param2a = param2a, param2b = param2b,
+                                                            alpha = alpha, sidedness=sidedness,method=method, 
+                                                            test = sim_tests)[,])<alpha)
   if ("fz_nosim" %in% test) sim[["power"]] <- c(sim[["analytical"]],sim[["power"]])[test]
 
   #cat('\r',results$params,results$power)
@@ -367,7 +364,7 @@ corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim","gtv"))
 
 corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
                             n = c(30,90),distr = "normal",
-                            mu1 = c(0,0),mu2 = c(0,0),param1 = c(1,1), param2 = c(1,1),
+                            param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
                             tests = c("fz_nosim","fz","gtv"),
                             alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
                             names = c("Population A","Population B"),
@@ -375,6 +372,7 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
   cat("\n","Correlation power plot simulation commenced at",as.character(Sys.time()),"\n")
   results <- list()
   results[["params"]] <- c("method" = method,"n1" = n[1], "n2" = n[2],
+                           "param1a" = param1a, "param1b" = param1b,"param2a" = param2a, "param2b" = param2b,
                            "alpha" = alpha, "sidedness" = sidedness, 
                            "nsims" = nsims, "distr" = distr)
   results[["tests"]]  <- tests
@@ -393,9 +391,10 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
   for (r in corrs){
     for (c in corrs){
       temp <- corr_power_compiled(rho = c(r,c), n = c(n[1],n[2]),distr = distr,
-                          test = tests,
-                          alpha = alpha, sidedness=sidedness,method=method,  
-                          nsims = nsims,lower.tri = lower.tri, power_only = TRUE)  
+                                  param1a = param1a, param1b = param1b,param2a = param2a, param2b = param2b,
+                                  test = tests,
+                                  alpha = alpha, sidedness=sidedness,method=method,  
+                                  nsims = nsims,lower.tri = lower.tri, power_only = TRUE)  
       for (test in results[["tests"]]) {
         results[[test]][r == corrs,c == corrs] <- temp[test]
       }
@@ -484,5 +483,57 @@ results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(res
 arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
 }
 
-system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
+
+
+# Non-normal distribution simulation
+# normal reference distribution
+bivariate_distribution_normal_m0_s1_n50 <- ggExtra::ggMarginal(data = as.data.frame(a), x = "V1", y = "V2") 
+plot(bivariate_distribution_normal_m0_s1_n50)
+# gamma distribution example (mean/shape, and rate/dispersion)
+# some positive skew (but distinctly non-normal)
+gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma", 
+                   corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+bivariate_distribution_gamma_m1.5_d0.09_n50 <- ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2") 
+plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
+
+# more gamma exploration, using our otherwise defaults
+gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+
+ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2") 
+ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2") 
+fz(gamma_a,gamma_b)
+gtv(gamma_a,gamma_b)   
+corr_power(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5), param2a = c(.09,.09), param2b = c(.09,.09))
+# pearson	0.2	0.5	30	90	0.05	2	100	gamma	0.37	0.37$params        
+# method     rho_1     rho_2        n1        n2     alpha sidedness     nsims     distr 
+# "pearson"     "0.2"     "0.5"      "30"      "90"    "0.05"       "2"     "100"   "gamma" 
+# 
+# $additional
+# param1a1 param1a2 param1b1 param1b2 param2a1 param2a2 param2b1 param2b2 
+# 1.50     1.50     1.50     1.50     0.09     0.09     0.09     0.09 
+# 
+# $analytical
+# fz_nosim 
+# 0.3494663 
+# 
+# $power
+# fz  gtv 
+# 0.37 0.37 
+
+# simulate using non-normal, positively skewed distribution
+system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09)))
+
+
+
+
+
+
+#other mslrt exploration
+# param1 are the probabilities
+binary <- genCorGen(50, nvars = 2, params1 = c(.3, .5), dist = "binary", 
+                    corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
+
 
