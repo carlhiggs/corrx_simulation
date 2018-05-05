@@ -28,16 +28,78 @@ require(compiler)
 # install.packages("simstudy")
 require("simstudy")
 require(Rcpp)
-sourceCpp('test.cpp')
+sourceCpp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/test.cpp')
 
-## Define tests
+# Time genCorGen (result - not worthwhile compiling)
+genCorGen_compiled <- cmpfun(genCorGen)
 
+fo <- function() for (i in 1:1000) genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+                                             corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)
+
+fo_c <- function() for (i in 1:1000) genCorGen_compiled(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
+                                                        corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)
+
+system.time(fo())
+system.time(fo_c())
+enableJIT(3)
+system.time(fo())
+system.time(fo_c())
+enableJIT(0)
+## There doesn't appear to be any clear benefits, at least in basic case with normal dist and small sample size
+# > system.time(fo())
+# user  system elapsed 
+# 14.97    0.42   18.71 
+# > system.time(fo_c())
+# user  system elapsed 
+# 13.76    0.34   17.53 
+# > enableJIT(3)
+# [1] 0
+# > system.time(fo())
+# user  system elapsed 
+# 14.44    0.36   17.45 
+# > system.time(fo_c())
+# user  system elapsed 
+# 15.25    0.44   19.59 
+# > enableJIT(0)
+# [1] 3
+
+fo <- function() for (i in 1:1000) genCorGen(500, nvars = 2, params1 = 0, params2 = 1, dist = "gamma", 
+                                             corMatrix = matrix(c(1, 0.3, 0.3, 1), ncol = 2), wide = TRUE)
+
+fo_c <- function() for (i in 1:1000) genCorGen_compiled(500, nvars = 2, params1 = 0, params2 = 1, dist = "gamma", 
+                                                        corMatrix = matrix(c(1, 0.3, 0.3, 1), ncol = 2), wide = TRUE)
+
+system.time(fo())
+system.time(fo_c())
+enableJIT(3)
+system.time(fo())
+system.time(fo_c())
+enableJIT(0)
+## Likewise, not clear benefits with larger sample size, different correlation and gamma distribution
+# > system.time(fo())
+# user  system elapsed 
+# 13.84    0.14   17.19 
+# > system.time(fo_c())
+# user  system elapsed 
+# 15.09    0.67   20.66 
+# > enableJIT(3)
+# [1] 0
+# > system.time(fo())
+# user  system elapsed 
+# 13.58    0.41   18.19 
+# > system.time(fo_c())
+# user  system elapsed 
+# 13.88    0.39   17.58 
+# > enableJIT(0)
+# [1] 3
+
+## Define custom tests
 # Fishers Z test
 fz <- function(a,b,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
-   
+  
   # Step 1: Compute sample correlation coefficients
   z1     <- atanh(cor(a,method = method)[2,1])
   z2     <- atanh(cor(b,method = method)[2,1])
@@ -70,37 +132,37 @@ fz_nosim <- function(r1,r2,n1,n2,
 }
 
 # GTV test statistic, based on code from Enes
-gtv <- function(a,b,M=1e4,method = "pearson") {
-              # Two samples
-              n1 <- nrow(a)
-              n2 <- nrow(b)
-              
-              # Step 1: Compute sample correlation coefficients
-              r1 <- cor(a,method = method)[2,1]
-              r2 <- cor(b,method = method)[2,1]
-              r  <- c(r1,r2)
-              
-              # Step 2: Generate random numbers
-              V2     <- matrix(data=0, nrow = M, ncol = 2)
-              V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-              V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
-              
-              W2     <- matrix(data=0, nrow = M, ncol = 2)
-              W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-              W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-              
-              Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-              
-              # Compute test statistic
-              rstar <- r/sqrt(1-r^2)
-              top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
-              G     <- top / sqrt( top^2 + V2 )
-              
-              # Compute p value
-              Grho <- G[,1] - G[,2];
-              p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
-              return(p)
-              }
+gtv <- function(a,b,M=1e5,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+  
+  # Step 1: Compute sample correlation coefficients
+  r1 <- cor(a,method = method)[2,1]
+  r2 <- cor(b,method = method)[2,1]
+  r  <- c(r1,r2)
+  
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  # Compute test statistic
+  rstar <- r/sqrt(1-r^2)
+  top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+  G     <- top / sqrt( top^2 + V2 )
+  
+  # Compute p value
+  Grho <- G[,1] - G[,2];
+  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  return(p)
+}
 
 gtv2 <- function(a,b,M=1e5,method = "pearson") {
   # Two samples
@@ -136,78 +198,116 @@ gtv2 <- function(a,b,M=1e5,method = "pearson") {
 
 # Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015; maybe based on Barndorff Nielsen 1991
 # note limitation that Rf (here, rstar.f)
-
-slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
-  n  <- c(nrow(a),nrow(b))
+  n1 <- nrow(a)
+  n2 <- nrow(b)
   
   # Step 1: Compute sample correlation coefficients
-  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-  z  <- atanh(r)
-  rf <- tanh(mean(z))
+  r1      <- cor(a,method = method)[2,1]
+  r2      <- cor(b,method = method)[2,1]
+  z1     <- atanh(r1)
+  z2     <- atanh(r2)
+  rf     <- tanh(mean(z1,z2))
   
-  slr_init <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
   
-  # # Step 2: Generate random numbers
-  # V     <- cbind(rchisq(M, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-  # W     <- cbind(rchisq(M, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-  # N     <- cbind(rnorm(M),rnorm(M))
-  # slr <- numeric(0)
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
   
-  # rstar.f  <- rf/sqrt(1-rf^2)
-  # for (i in 1:M) {
-    # V     <- cbind(rchisq(1, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-    # W     <- cbind(rchisq(1, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-    # N     <- rnorm(2)
-    # Compute test statistic
-    # rstar.top <- rstar.f * V[i,] + N[i,]
-    # rstar     <- rstar.top / sqrt( rstar.top^2 + W[i,]^2 )
-    
-    # non looping approach (but otherwise as per formula) which does not result in vector of slr
-    #  but a vector is required to calculate slr mean and variance
-    # slr <- c(slr,sign(rstar[1]-rstar[2])*sqrt(sum(c(n[1]*log(((1-rstar.f*rstar[1])^2)/((1-rstar[1]^2)*(1-rstar.f^2))),
-    #                                                 n[2]*log(((1-rstar.f*rstar[2])^2)/((1-rstar[2]^2)*(1-rstar.f^2)))))))
-    # slr <- c(slr,sign(r-r)*sqrt(sum(n*log(((1-rstar.f*r)^2)/((1-r^2)*(1-rstar.f^2))))))
-    # r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-    # z  <- atanh(r)
-    # rf <- tanh(mean(z))
-    # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
-  # }
+  N <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  
+  # Compute test statistic
+  rstar.f  <- rf/sqrt(1-rf^2)
+  rstar.top <- rstar.f * c(V2[,1],V2[,2]) + N
+  rstar     <- rstar.top / sqrt( rstar.top^2 + W2^2 )
+  
+  # non looping approach (but otherwise as per formula) which does not result in vector of slr
+  #  but a vector is required to calculate slr mean and variance
+  slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
+                                              n2*log(((1-rf*r2)^2)/((1-r2^2)*(1-rf^2))))))
+  
+  ## non-working attempt using rstar to recalculate rf as vector
+  # rf     <- tanh(rowMeans(atanh(rstar)))
+  # slr <- numeric(length = 0)
+  # for (i in 1:length(rf))   slr <- c(slr,sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf[i]*r1)^2)/((1-r1^2)*(1-rf[i]^2))),
+  #                                                              n1*log(((1-rf[i]*r2)^2)/((1-r1^2)*(1-rf[i]^2)))))))
+  
+  ## non-working attempt, using rstar as vector
+  # slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*rstar[,1])^2)/((1-rstar[,1]^2)*(1-rf^2))),
+  #                                            n2*log(((1-rf*rstar[,2])^2)/((1-rstar[,2]^2)*(1-rf^2))))))
+  
+  # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
+  ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
   # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
-  # cat(mean(slr)/sqrt(1+var(slr)))
-  # mslr      <- (slr_init - mean(slr))/sqrt(1+var(slr))
+  mslr      <- (slr - mean(slr))/sqrt(var(slr))
   # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
   # Compute p value
-  # p    <- 2 * (1 - pnorm(abs(mslr))); 
-  p    <- 2 * (1 - pnorm(abs(slr_init))); 
+  p    <- 2 * (1 - pnorm(abs(mslr))); 
   return(p)
 }
+
+## time custom tests
+
 a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
                corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
 b <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
                corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
-corr <- c(cor(a)[1,2],cor(b)[1,2])
-cat("corr: ",corr,"diff: ", corr[1] - corr[2])
-t1 <- fz(a,b)
-t2 <- gtv(a,b)
-t3 <-slr(a,b)
-t1
-t2
-t3
-cat("slr/fz =",t3,"/",t1,"=",t3/t1)
-
-
-set.seed(1)
-independence_test(r ~ label, data = df, distribution = approximate(9999))
-
+result <- list()
+system.time(result[["fz"]]       <- fz(a,b))
+system.time(result[["fz_nosim"]] <- fz_nosim(0.5,0.5,50,50))
+system.time(result[["gtv"]]      <- gtv(a,b))
+mslr(a,b, M=10000)
 
 fz_compiled <- cmpfun(fz)
+fz_ns_compiled <- cmpfun(fz_nosim)
 gtv_compiled <- cmpfun(gtv)
+fc_fz     <- function() for (i in 1:1000)      fz(a,b)
+fc_fz_ns  <- function() for (i in 1:1000)  fz_nosim(0.5,0.5,50,50)
+fc_gtv    <- function() for (i in 1:1000)     gtv_test(a,b)
+cfc_fz    <- function() for (i in 1:1000)  fz_compiled(a,b)
+cfc_fz_ns <- function() for (i in 1:1000) fz_ns_compiled(0.5,0.5,50,50)
+cfc_gtv   <- function() for (i in 1:1000) gtv_compiled(a,b)
+system.time(fc_fz())
+# > system.time(fc_fz())
+# user  system elapsed 
+# 1.42    0.02    1.48 
+system.time(fc_fz_ns())
+# > system.time(fc_fz_ns())
+# user  system elapsed 
+# 0.00    0.00    0.08 
+system.time(fc_gtv())
+# > system.time(fc_gtv())
+# user  system elapsed 
+# 248.23   15.93  286.11 
+system.time(cfc_fz())
+# > system.time(cfc_fz())
+# user  system elapsed 
+# 1.07    0.03    1.36 
+system.time(cfc_fz_ns())
+# > system.time(cfc_fz_ns())
+# user  system elapsed 
+# 0.01    0.00    0.02 
+system.time(cfc_gtv())
+# > system.time(cfc_gtv())
+# user  system elapsed 
+# 208.49   12.06  242.33 
 
+# The self-compiled functions are notable quicker for the simulation tests
+# (~15% to 30% reduced run time, for these samples); worth using
+# except for analytical test; not worth compiling.
+
+
+## Define test difference in correlation function
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
-                    param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-                    alpha = 0.05, sidedness = 2, test = c("fz","gtv"),
-                    method ="pearson", lower.tri = FALSE) {
+                           param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
+                           alpha = 0.05, sidedness = 2, test = c("fz","gtv"),
+                           method ="pearson", lower.tri = FALSE) {
   # cat("Parameters: ",rho[1],rho[2], n[1],n[2], param1a, param1b, param2a, param2b, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
@@ -223,11 +323,11 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   }
   require("simstudy")
   a <- genCorGen(n[1], nvars = 2, params1 = param1a, params2 = param2a,  
-                dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
-                wide = TRUE)[,2:3]
+                 dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
+                 wide = TRUE)[,2:3]
   b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
-                dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
-                wide = TRUE)[,2:3]
+                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
+                 wide = TRUE)[,2:3]
   if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
   if ("gtv"      %in% test) results[["gtv"]]      <- gtv_compiled(a,b)
   return(rbind(results[test]))
@@ -262,14 +362,14 @@ corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
   
   sim[["additional"]] <- c("param1a" = param1a, "param1b" = param1b,"param2a" = param2a, "param2b" = param2b)
   sim[["analytical"]] <- c("fz_nosim" = fz_nosim(rho[1],rho[2],n[1],n[2], 
-                                    alpha = alpha, sidedness = sidedness, method = method, power = TRUE))
+                                                 alpha = alpha, sidedness = sidedness, method = method, power = TRUE))
   sim_tests <- test[!test %in% "fz_nosim"]
   sim[["power"]] <- rowMeans(replicate(nsims,corr_diff_test(rho = rho, n = n,distr =distr,
                                                             param1a = param1a, param1b = param1b,param2a = param2a, param2b = param2b,
                                                             alpha = alpha, sidedness=sidedness,method=method, 
                                                             test = sim_tests)[,])<alpha)
   if ("fz_nosim" %in% test) sim[["power"]] <- c(sim[["analytical"]],sim[["power"]])[test]
-
+  
   #cat('\r',results$params,results$power)
   cat("\r                                                                \r",sim[["params"]],sim$power,sep="\t")
   flush.console()
@@ -301,12 +401,12 @@ corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim","gtv"))
 # 'x' must be an array of at least two dimensions
 
 corr_power_plot_plot <- function(data, nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
-                            n = c(30,90),distr = "normal",
-                            param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-                            test,
-                            alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
-                            names = c("Population A","Population B"),
-                            lower.tri = FALSE){
+                                 n = c(30,90),distr = "normal",
+                                 param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
+                                 test,
+                                 alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
+                                 names = c("Population A","Population B"),
+                                 lower.tri = FALSE){
   results <- plot
   print(results)
   # format method to proper case for plot
@@ -316,24 +416,24 @@ corr_power_plot_plot <- function(data, nsims = 100, res_min = -0.95, res_max = 0
   corrs <- round(seq(res_min, res_max, res_inc),2)
   # plot power simulation results
   out<-filled.contour(x = corrs, y = corrs, z = as.matrix(results), nlevels = 10,
-                                             xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                             plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results),
-                                                                  levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                                  add = TRUE, lwd = 3, col = "steelblue3");
-                                               abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                               abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                               axis(1, seq(-1,1,0.2))
-                                               axis(2, seq(-1,1,0.2))},
-                                             plot.title = title(main = paste0(test," test ~ ",
-                                                                              distr,"((",param1a,",",param2a,"),(",
-                                                                              param1b,",",param2b,"))","\n",
-                                                                              "Mz = ",n[1],
-                                                                              ", Dz = ",n[2],
-                                                                              ", alpha: ",alpha, ", sims: ",nsims),
-                                                                xlab = paste0("Correlation in ",names[1]),
-                                                                ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                             color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-    # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
+                      xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                      plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results),
+                                           levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                           add = TRUE, lwd = 3, col = "steelblue3");
+                        abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                        abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                        axis(1, seq(-1,1,0.2))
+                        axis(2, seq(-1,1,0.2))},
+                      plot.title = title(main = paste0(test," test ~ ",
+                                                       distr,"((",param1a,",",param2a,"),(",
+                                                       param1b,",",param2b,"))","\n",
+                                                       "Mz = ",n[1],
+                                                       ", Dz = ",n[2],
+                                                       ", alpha: ",alpha, ", sims: ",nsims),
+                                         xlab = paste0("Correlation in ",names[1]),
+                                         ylab = paste0("Correlation in ",names[2]), adj = 0),
+                      color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+  # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
   return(out)
 }
 
@@ -382,29 +482,29 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
   corr_type <- stringr::str_to_title(method)
   # define target power (to mark on plot)
   target <- 1 - beta
-
+  
   # plot power simulation results
-   for (test in results[["tests"]]) {
+  for (test in results[["tests"]]) {
     results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
-                                xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
-                                                     levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                     add = TRUE, lwd = 3, col = "steelblue3");
-                                  abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                  abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                  axis(1, seq(-1,1,0.2))
-                                  axis(2, seq(-1,1,0.2))},
-                                plot.title = title(main = paste0(test," test ~ ",
-                                                                 distr,"((",param1a,",",param2a,"),(",
-                                                                            param1b,",",param2b,"))","\n",
-                                                                 "Mz = ",results[["params"]][["n1"]],
-                                                                 ", Dz = ",results[["params"]][["n2"]],
-                                                                 ", alpha: ",alpha, ", sims: ",nsims),
-                                                   xlab = paste0("Correlation in ",names[1]),
-                                                   ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-   # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
-   }
+                                             xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                             plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
+                                                                  levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                                  add = TRUE, lwd = 3, col = "steelblue3");
+                                               abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                               abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                               axis(1, seq(-1,1,0.2))
+                                               axis(2, seq(-1,1,0.2))},
+                                             plot.title = title(main = paste0(test," test ~ ",
+                                                                              distr,"((",param1a,",",param2a,"),(",
+                                                                              param1b,",",param2b,"))","\n",
+                                                                              "Mz = ",results[["params"]][["n1"]],
+                                                                              ", Dz = ",results[["params"]][["n2"]],
+                                                                              ", alpha: ",alpha, ", sims: ",nsims),
+                                                                xlab = paste0("Correlation in ",names[1]),
+                                                                ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                             color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+    # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
+  }
   cat("\n","Completed at ",as.character(Sys.time()),"\n")
   return(results)
 }
@@ -443,25 +543,25 @@ target = 1-beta
 method="pearson"  
 names = c("Population A","Population B")
 for (test in results[["tests"]]) {
-results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
-                                         xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                         plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
-                                                              levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                              add = TRUE, lwd = 3, col = "steelblue3");
-                                           abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                           abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                           axis(1, seq(-1,1,0.2))
-                                           axis(2, seq(-1,1,0.2))},
-                                         plot.title = title(main = paste0(test," test ~ ",
-                                                                 distr,"((",param1a,",",param2a,"),(",
-                                                                                                    param1b,",",param2b,"))","\n",
-                                                                          "Mz = ",results[["params"]][["n1"]],
-                                                                          ", Dz = ",results[["params"]][["n2"]],
-                                                                          ", alpha: ",alpha, ", sims: ",nsims),
-                                                            xlab = paste0("Correlation in ",names[1]),
-                                                            ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                         color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+  results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
+                                           xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                           plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
+                                                                levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                                add = TRUE, lwd = 3, col = "steelblue3");
+                                             abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                             abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                             axis(1, seq(-1,1,0.2))
+                                             axis(2, seq(-1,1,0.2))},
+                                           plot.title = title(main = paste0(test," test ~ ",
+                                                                            distr,"((",param1a,",",param2a,"),(",
+                                                                            param1b,",",param2b,"))","\n",
+                                                                            "Mz = ",results[["params"]][["n1"]],
+                                                                            ", Dz = ",results[["params"]][["n2"]],
+                                                                            ", alpha: ",alpha, ", sims: ",nsims),
+                                                              xlab = paste0("Correlation in ",names[1]),
+                                                              ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                           color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+  arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
 }
 
 
@@ -533,23 +633,23 @@ method="pearson"
 names = c("Population A","Population B")
 for (test in res_gamma[["tests"]]) {
   res_gamma[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]), nlevels = 10,
-                                           xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                           plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]),
-                                                                levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                                add = TRUE, lwd = 3, col = "steelblue3");
-                                             abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                             abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                             axis(1, seq(-1,1,0.2))
-                                             axis(2, seq(-1,1,0.2))},
-                                           plot.title = title(main = paste0(test," test ~ ",
-                                                                            dist,"((",param1a,",",param2a,"),(",
-                                                                            param1b,",",param2b,"))","\n",
-                                                                            "Mz = ",n[1],
-                                                                            ", Dz = ",n[2],
-                                                                            ", alpha: ",alpha, ", sims: ",nsims),
-                                                              xlab = paste0("Correlation in ",names[1]),
-                                                              ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                           color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+                                             xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                             plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]),
+                                                                  levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                                  add = TRUE, lwd = 3, col = "steelblue3");
+                                               abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                               abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                               axis(1, seq(-1,1,0.2))
+                                               axis(2, seq(-1,1,0.2))},
+                                             plot.title = title(main = paste0(test," test ~ ",
+                                                                              dist,"((",param1a,",",param2a,"),(",
+                                                                              param1b,",",param2b,"))","\n",
+                                                                              "Mz = ",n[1],
+                                                                              ", Dz = ",n[2],
+                                                                              ", alpha: ",alpha, ", sims: ",nsims),
+                                                                xlab = paste0("Correlation in ",names[1]),
+                                                                ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                             color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
   arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
 }
 
