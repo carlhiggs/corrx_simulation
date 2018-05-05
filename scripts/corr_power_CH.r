@@ -146,40 +146,8 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   z  <- atanh(r)
   rf <- tanh(mean(z))
   
-  slr_init <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
-  
-  # # Step 2: Generate random numbers
-  # V     <- cbind(rchisq(M, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-  # W     <- cbind(rchisq(M, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-  # N     <- cbind(rnorm(M),rnorm(M))
-  # slr <- numeric(0)
-  
-  # rstar.f  <- rf/sqrt(1-rf^2)
-  # for (i in 1:M) {
-    # V     <- cbind(rchisq(1, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-    # W     <- cbind(rchisq(1, df = n[1]-1, ncp = 1),rchisq(1, df = n[2]-1, ncp = 1))
-    # N     <- rnorm(2)
-    # Compute test statistic
-    # rstar.top <- rstar.f * V[i,] + N[i,]
-    # rstar     <- rstar.top / sqrt( rstar.top^2 + W[i,]^2 )
-    
-    # non looping approach (but otherwise as per formula) which does not result in vector of slr
-    #  but a vector is required to calculate slr mean and variance
-    # slr <- c(slr,sign(rstar[1]-rstar[2])*sqrt(sum(c(n[1]*log(((1-rstar.f*rstar[1])^2)/((1-rstar[1]^2)*(1-rstar.f^2))),
-    #                                                 n[2]*log(((1-rstar.f*rstar[2])^2)/((1-rstar[2]^2)*(1-rstar.f^2)))))))
-    # slr <- c(slr,sign(r-r)*sqrt(sum(n*log(((1-rstar.f*r)^2)/((1-r^2)*(1-rstar.f^2))))))
-    # r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-    # z  <- atanh(r)
-    # rf <- tanh(mean(z))
-    # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
-  # }
-  # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
-  # cat(mean(slr)/sqrt(1+var(slr)))
-  # mslr      <- (slr_init - mean(slr))/sqrt(1+var(slr))
-  # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
-  # Compute p value
-  # p    <- 2 * (1 - pnorm(abs(mslr))); 
-  p    <- 2 * (1 - pnorm(abs(slr_init))); 
+  slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
+  p    <- 2 * (1 - pnorm(abs(slr))); 
   return(p)
 }
 a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
@@ -190,15 +158,14 @@ corr <- c(cor(a)[1,2],cor(b)[1,2])
 cat("corr: ",corr,"diff: ", corr[1] - corr[2])
 t1 <- fz(a,b)
 t2 <- gtv(a,b)
-t3 <-slr(a,b)
+t3 <- gtv2(a,b)
+t4 <-slr(a,b)
 t1
 t2
 t3
+t4
 cat("slr/fz =",t3,"/",t1,"=",t3/t1)
 
-
-set.seed(1)
-independence_test(r ~ label, data = df, distribution = approximate(9999))
 
 
 fz_compiled <- cmpfun(fz)

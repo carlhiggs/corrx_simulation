@@ -245,8 +245,8 @@ mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
   ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
   # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
-  mslr      <- (slr - mean(slr))/sqrt(var(slr))
-  # 8. Determine the p-value 2 as:  2 * pnorm(abs(mslr))
+  mslr      <- (slr_in - mean(slr))/sqrt(var(slr))
+
   # Compute p value
   p    <- 2 * (1 - pnorm(abs(mslr))); 
   return(p)
