@@ -27,6 +27,12 @@ require(Rcpp)
 require("simstudy")
 sourceCpp('test.cpp')
 
+
+# # deploy to shinyapps.io
+library(rsconnect)
+rsconnect::deployApp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/corr_power_app')
+
+
 ## Define tests
 
 
