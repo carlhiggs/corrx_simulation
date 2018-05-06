@@ -20,14 +20,10 @@
 #    - accounting for clustering (ie. icc in twin studies)
 #    - allow parameterisation to explore change in source pop mean and sd (unequal variance, etc)
 
-
-# Testing out compilation of genCorGen according to directions at 
-# https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
-# on advice from Koen Simons
+# install.packages("Rcpp")
+# install.packages("simstudy")
 require(compiler)
 require(Rcpp)
-# install.packages("simstudy")
-# install.packages("SimCorrMix")
 require("simstudy")
 sourceCpp('test.cpp')
 
