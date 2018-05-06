@@ -25,29 +25,14 @@
 # https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
 # on advice from Koen Simons
 require(compiler)
-# install.packages("simstudy")
-require("simstudy")
 require(Rcpp)
+# install.packages("simstudy")
+# install.packages("SimCorrMix")
+require("simstudy")
 sourceCpp('test.cpp')
 
 ## Define tests
 
-# Fishers Z test
-fz <- function(a,b,sidedness=2,method = "pearson") {
-  # Two samples
-  n1 <- nrow(a)
-  n2 <- nrow(b)
-   
-  # Step 1: Compute sample correlation coefficients
-  z1     <- atanh(cor(a,method = method)[2,1])
-  z2     <- atanh(cor(b,method = method)[2,1])
-  zdiff  <- z1-z2
-  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
-  z_test <- zdiff/z_se
-  z_p    <- sidedness*pnorm(-abs(z_test))
-  # return(c(z_p,z_test))
-  return(z_p)
-}
 
 # Fishers Z test - no sim
 fz_nosim <- function(r1,r2,n1,n2,
@@ -69,40 +54,25 @@ fz_nosim <- function(r1,r2,n1,n2,
   return(z_power)
 }
 
-# GTV test statistic, based on code from Enes
-gtv <- function(a,b,M=1e4,method = "pearson") {
-              # Two samples
-              n1 <- nrow(a)
-              n2 <- nrow(b)
-              
-              # Step 1: Compute sample correlation coefficients
-              r1 <- cor(a,method = method)[2,1]
-              r2 <- cor(b,method = method)[2,1]
-              r  <- c(r1,r2)
-              
-              # Step 2: Generate random numbers
-              V2     <- matrix(data=0, nrow = M, ncol = 2)
-              V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-              V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
-              
-              W2     <- matrix(data=0, nrow = M, ncol = 2)
-              W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-              W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-              
-              Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-              
-              # Compute test statistic
-              rstar <- r/sqrt(1-r^2)
-              top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
-              G     <- top / sqrt( top^2 + V2 )
-              
-              # Compute p value
-              Grho <- G[,1] - G[,2];
-              p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
-              return(p)
-              }
 
-gtv2 <- function(a,b,M=1e5,method = "pearson") {
+# Fishers Z test
+fz <- function(a,b,sidedness=2,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+   
+  # Step 1: Compute sample correlation coefficients
+  z1     <- atanh(cor(a,method = method)[2,1])
+  z2     <- atanh(cor(b,method = method)[2,1])
+  zdiff  <- z1-z2
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  # return(c(z_p,z_test))
+  return(z_p)
+}
+
+gtv <- function(a,b,M=1e5,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -134,8 +104,7 @@ gtv2 <- function(a,b,M=1e5,method = "pearson") {
   return(p)
 }
 
-# Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015; maybe based on Barndorff Nielsen 1991
-# note limitation that Rf (here, rstar.f)
+# SIgned Log-likelihood Ratio test (an 'unmodified' version of test described in Kazemi and Jafari / DiCiccio)
 
 slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
@@ -150,21 +119,73 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   p    <- 2 * (1 - pnorm(abs(slr))); 
   return(p)
 }
-a <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
-               corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-b <- genCorGen(50, nvars = 2, params1 = 0, params2 = 1, dist = "normal", 
-               corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
+
+
+pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+# Based on Efron and Tibshirani
+n  <- c(nrow(a),nrow(b))
+r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+z  <- atanh(r)
+# g <- c(rep("A",n[1]),rep("B",n[2]))
+v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
+rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
+rtest <- numeric(0)
+for (i in 1:M){
+  permute <- cbind(v,rbinom(sum(n),1,0.5))
+  rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
+               cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
+  zstar   <- atanh(rstar)
+  rtest   <- c(rtest,
+               abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
+  } 
+p <- mean(rtest)
+return(p)
+}
+
+# quick comparison of tests - fz is de facto gold standard
+n1 <- 1000
+n2 <- 1000
+r1 <- 0.2
+r2 <- 0.5
+p1 <- 0.5
+p2 <- 0.5
+dist <- "gamma"
+method <- "pearson"
+a <- genCorGen(n1, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+               corMatrix = matrix(c(1, r1, r1, 1), ncol = 2), wide = TRUE)[,2:3]
+b <- genCorGen(n2, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+               corMatrix = matrix(c(1, r2, r2, 1), ncol = 2), wide = TRUE)[,2:3]
+hist(unlist(a[,1]))
 corr <- c(cor(a)[1,2],cor(b)[1,2])
 cat("corr: ",corr,"diff: ", corr[1] - corr[2])
-t1 <- fz(a,b)
-t2 <- gtv(a,b)
-t3 <- gtv2(a,b)
-t4 <-slr(a,b)
-t1
-t2
-t3
-t4
-cat("slr/fz =",t3,"/",t1,"=",t3/t1)
+
+cat("test","\t","p"      ,"\n",
+    "fz_a","\t",fz_nosim(r1,r2,n1,n2,method = method,power=FALSE),"\n",
+    "fz"  ,"\t",  fz(a,b,method = method),"\n",
+    "gtv" ,"\t", gtv(a,b,method = method),"\n",
+    "slr" ,"\t", slr(a,b,method = method),"\n",
+    "pt"  ,"\t",  pt(a,b,method = method))
+
+
+
+# 
+# 
+# without replacement, take sample of size n1 to represent first
+# group,
+# I remaining sample of size n2 represents second group
+# I take difference in means
+# I repeat a large number of times
+# I Evaluate: does the original difference lie outside the middle
+# 100 × (1 − α)% of the re-sampled distribution? If yes, reject
+# H0.
+# I Permutation α is probability that the permutation replication
+# θˆ ≥ θˆ the sample difference, and is evaluated as the
+# proportion of occurances relative to total number of possible
+# permutations
+
+
+# Zou's confidence interval
+
 
 
 
