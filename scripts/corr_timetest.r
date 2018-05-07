@@ -93,23 +93,7 @@ enableJIT(0)
 # > enableJIT(0)
 # [1] 3
 
-## Define custom tests
-# Fishers Z test
-fz <- function(a,b,sidedness=2,method = "pearson") {
-  # Two samples
-  n1 <- nrow(a)
-  n2 <- nrow(b)
-  
-  # Step 1: Compute sample correlation coefficients
-  z1     <- atanh(cor(a,method = method)[2,1])
-  z2     <- atanh(cor(b,method = method)[2,1])
-  zdiff  <- z1-z2
-  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
-  z_test <- zdiff/z_se
-  z_p    <- sidedness*pnorm(-abs(z_test))
-  # return(c(z_p,z_test))
-  return(z_p)
-}
+## Define tests
 
 # Fishers Z test - no sim
 fz_nosim <- function(r1,r2,n1,n2,
@@ -131,40 +115,25 @@ fz_nosim <- function(r1,r2,n1,n2,
   return(z_power)
 }
 
-# GTV test statistic, based on code from Enes
-gtv <- function(a,b,M=1e5,method = "pearson") {
+
+# Fishers Z test
+fz <- function(a,b,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
   
   # Step 1: Compute sample correlation coefficients
-  r1 <- cor(a,method = method)[2,1]
-  r2 <- cor(b,method = method)[2,1]
-  r  <- c(r1,r2)
-  
-  # Step 2: Generate random numbers
-  V2     <- matrix(data=0, nrow = M, ncol = 2)
-  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
-  
-  W2     <- matrix(data=0, nrow = M, ncol = 2)
-  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-  
-  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-  
-  # Compute test statistic
-  rstar <- r/sqrt(1-r^2)
-  top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
-  G     <- top / sqrt( top^2 + V2 )
-  
-  # Compute p value
-  Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
-  return(p)
+  z1     <- atanh(cor(a,method = method)[2,1])
+  z2     <- atanh(cor(b,method = method)[2,1])
+  zdiff  <- z1-z2
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  # return(c(z_p,z_test))
+  return(z_p)
 }
 
-gtv2 <- function(a,b,M=1e5,method = "pearson") {
+gtv <- function(a,b,M=1e4,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -196,61 +165,97 @@ gtv2 <- function(a,b,M=1e5,method = "pearson") {
   return(p)
 }
 
-# Modified SIgned Log-likelihood Ratio test (Kazemi & Jafari, 2015; maybe based on Barndorff Nielsen 1991
-# note limitation that Rf (here, rstar.f)
-mslr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+# SIgned Log-likelihood Ratio test (an 'unmodified' version of test described in Kazemi and Jafari / DiCiccio)
+
+slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
-  n1 <- nrow(a)
-  n2 <- nrow(b)
+  n  <- c(nrow(a),nrow(b))
   
   # Step 1: Compute sample correlation coefficients
-  r1      <- cor(a,method = method)[2,1]
-  r2      <- cor(b,method = method)[2,1]
-  z1     <- atanh(r1)
-  z2     <- atanh(r2)
-  rf     <- tanh(mean(z1,z2))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  rf <- tanh(mean(z))
   
-  # Step 2: Generate random numbers
-  V2     <- matrix(data=0, nrow = M, ncol = 2)
-  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
-  
-  W2     <- matrix(data=0, nrow = M, ncol = 2)
-  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-  
-  N <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-  
-  
-  # Compute test statistic
-  rstar.f  <- rf/sqrt(1-rf^2)
-  rstar.top <- rstar.f * c(V2[,1],V2[,2]) + N
-  rstar     <- rstar.top / sqrt( rstar.top^2 + W2^2 )
-  
-  # non looping approach (but otherwise as per formula) which does not result in vector of slr
-  #  but a vector is required to calculate slr mean and variance
-  slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*r1)^2)/((1-r1^2)*(1-rf^2))),
-                                              n2*log(((1-rf*r2)^2)/((1-r2^2)*(1-rf^2))))))
-  
-  ## non-working attempt using rstar to recalculate rf as vector
-  # rf     <- tanh(rowMeans(atanh(rstar)))
-  # slr <- numeric(length = 0)
-  # for (i in 1:length(rf))   slr <- c(slr,sign(r1-r2)*sqrt(sum(c(n1*log(((1-rf[i]*r1)^2)/((1-r1^2)*(1-rf[i]^2))),
-  #                                                              n1*log(((1-rf[i]*r2)^2)/((1-r1^2)*(1-rf[i]^2)))))))
-  
-  ## non-working attempt, using rstar as vector
-  # slr <- sign(rstar[,1]-rstar[,2])*sqrt(sum(c(n1*log(((1-rf*rstar[,1])^2)/((1-rstar[,1]^2)*(1-rf^2))),
-  #                                            n2*log(((1-rf*rstar[,2])^2)/((1-rstar[,2]^2)*(1-rf^2))))))
-  
-  # 6. Repeat steps 3-5 for a large number of times (say M = 10,000).
-  ###### Shouldn't that be 2-5, so the RVs are redrawn?? Or is it just each i of length M?
-  # 7. Compute the sample mean and sample variance of SLR and compute   the MSLR in (9).
-  mslr      <- (slr_in - mean(slr))/sqrt(var(slr))
-
-  # Compute p value
-  p    <- 2 * (1 - pnorm(abs(mslr))); 
+  slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
+  p    <- 2 * (1 - pnorm(abs(slr))); 
   return(p)
 }
+
+
+pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+  # Based on Efron and Tibshirani
+  n  <- c(nrow(a),nrow(b))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  # g <- c(rep("A",n[1]),rep("B",n[2]))
+  v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
+  rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
+  rtest <- numeric(0)
+  for (i in 1:M){
+    permute <- cbind(v,rbinom(sum(n),1,0.5))
+    rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
+                 cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
+    zstar   <- atanh(rstar)
+    rtest   <- c(rtest,
+                 abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
+  } 
+  p <- mean(rtest)
+  return(p)
+}
+
+zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
+  # From Zou (2007) and used in Cocor (note typo for U in paper; should be '+')
+  #  However, really, this is equivalent to fz test for hypothesis testing purposes
+  # Not really any point simulating, I think?
+  n  <- c(nrow(a),nrow(b))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  zdiff  <- z[1]-z[2]
+  # Step 3: calculate standard error and test statistic
+  z_ref  <- qnorm(1-alpha/sidedness)
+  z_se   <- sqrt(1/(n-3))
+  ci_mat <- matrix(c(-1,-1,1,1),nrow = 2, ncol = 2, dimnames =list(c("Mz","Dz"),c("l","u")))
+  z_ci   <- z + ci_mat * z_se * z_ref
+  r_ci   <- tanh(z_ci)
+  L      <- r[1]-r[2] - sqrt((r[1]      - r_ci[1,1])^2 + (r_ci[2,2] - r[2]     )^2)
+  U      <- r[1]-r[2] + sqrt((r_ci[1,2] - r[1]     )^2 + (r[2]      - r_ci[2,1])^2)
+  r_diff_ci <- c(L,U)
+  ci_test <- (L < 0) && (0 < U)
+  return(c(ci_test,r_diff_ci))
+}
+
+## Could also get zou ci using
+# cocor_test <- cocor(~V1+V2|V1+V2,list(a,b))
+# zouci <- unlist(cocor_test@zou2007)
+# zou <- ((zouci[1]) < 0 && (0 < zouci[2])) 
+
+
+# quick comparison of tests - fz is de facto gold standard
+n1 <- 90
+n2 <- 90
+r1 <- 0.2
+r2 <- 0.5
+p1 <- 0
+p2 <- 1
+dist <- "normal"
+method <- "pearson"
+a <- genCorGen(n1, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+               corMatrix = matrix(c(1, r1, r1, 1), ncol = 2), wide = TRUE)[,2:3]
+b <- genCorGen(n2, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+               corMatrix = matrix(c(1, r2, r2, 1), ncol = 2), wide = TRUE)[,2:3]
+hist(unlist(a[,1]))
+corr <- c(cor(a)[1,2],cor(b)[1,2])
+cat("corr: ",corr,"diff: ", corr[1] - corr[2])
+
+cat("test","\t","p"      ,"\n",
+    "fz_a","\t", fz_nosim(r1,r2,n1,n2,method = method,power=FALSE),"\n",
+    "fz"  ,"\t", fz(a,b,method = method),"\n",
+    "gtv" ,"\t", gtv(a,b,method = method),"\n",
+    "pt"  ,"\t", pt(a,b,method = method),"\n",
+    "slr" ,"\t", slr(a,b,method = method),"\n",
+    "zou" ,"\t", zou(a,b,method = method))
+
+
 
 ## time custom tests
 
@@ -266,18 +271,56 @@ mslr(a,b, M=10000)
 
 fz_compiled <- cmpfun(fz)
 fz_ns_compiled <- cmpfun(fz_nosim)
-gtv_compiled <- cmpfun(gtv)
-fc_fz     <- function() for (i in 1:1000)      fz(a,b)
-fc_fz_ns  <- function() for (i in 1:1000)  fz_nosim(0.5,0.5,50,50)
-fc_gtv    <- function() for (i in 1:1000)     gtv_test(a,b)
-cfc_fz    <- function() for (i in 1:1000)  fz_compiled(a,b)
-cfc_fz_ns <- function() for (i in 1:1000) fz_ns_compiled(0.5,0.5,50,50)
-cfc_gtv   <- function() for (i in 1:1000) gtv_compiled(a,b)
-system.time(fc_fz())
-# > system.time(fc_fz())
-# user  system elapsed 
-# 1.42    0.02    1.48 
+slr_compiled <- cmpfun(slr)
+ pt_compiled <- cmpfun(pt)
+zou_compiled <- cmpfun(zou)
+fc_fz_ns  <- function() for (i in 1:100)  fz_nosim(0.5,0.5,50,50)
+fc_fz     <- function() for (i in 1:100)      fz(a,b)
+fc_gtv    <- function() for (i in 1:100)     gtv(a,b)
+fc_pt     <- function() for (i in 1:100)      pt(a,b)
+fc_slr    <- function() for (i in 1:100)     slr(a,b)
+fc_zou    <- function() for (i in 1:100)     zou(a,b)
+cfc_fz_ns <- function() for (i in 1:100) fz_ns_compiled(0.5,0.5,50,50)
+cfc_fz    <- function() for (i in 1:100)  fz_compiled(a,b)
+cfc_gtv   <- function() for (i in 1:100) gtv_compiled(a,b)
+cfc_pt    <- function() for (i in 1:100)  pt_compiled(a,b)
+cfc_slr   <- function() for (i in 1:100) slr_compiled(a,b)
+cfc_zou   <- function() for (i in 1:100) zou_compiled(a,b)
+# cbind(rbind("fc_fz_ns ",
+#             "fc_fz    ",
+#             "fc_gtv   ",
+#             "fc_pt    ",
+#             "fc_slr   ",
+#             "fc_zou   ",
+#             "cfc_fz_ns",
+#             "cfc_fz   ",
+#             "cfc_gtv  ",
+#             "cfc_pt   ",
+#             "cfc_slr  ",
+#             "cfc_zou  "),
+# test_time <- rbind(
 system.time(fc_fz_ns())
+system.time(fc_fz()     )
+system.time(fc_gtv()    )
+system.time(fc_pt()     )
+system.time(fc_slr()    )
+system.time(fc_zou()    )
+system.time(cfc_fz_ns())
+system.time(cfc_fz()    )
+system.time(cfc_gtv()   )
+system.time(cfc_pt()    )
+system.time(cfc_slr()   )
+system.time(cfc_zou()   )
+  
+   
+  
+  
+  
+  
+  
+  
+  
+  
 # > system.time(fc_fz_ns())
 # user  system elapsed 
 # 0.00    0.00    0.08 

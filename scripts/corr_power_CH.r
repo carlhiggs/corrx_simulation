@@ -29,9 +29,9 @@ sourceCpp('test.cpp')
 
 
 # # deploy to shinyapps.io
-library(rsconnect)
-rsconnect::deployApp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/corr_power_app')
-
+# library(rsconnect)
+# rsconnect::deployApp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/corr_power_app')
+# 
 
 ## Define tests
 
@@ -74,7 +74,7 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
   return(z_p)
 }
 
-gtv <- function(a,b,M=1e5,method = "pearson") {
+gtv <- function(a,b,M=1e4,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -144,14 +144,40 @@ p <- mean(rtest)
 return(p)
 }
 
+zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
+  # From Zou (2007) and used in Cocor (note typo for U in paper; should be '+')
+  #  However, really, this is equivalent to fz test for hypothesis testing purposes
+  n  <- c(nrow(a),nrow(b))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  zdiff  <- z[1]-z[2]
+  # Step 3: calculate standard error and test statistic
+  z_ref  <- qnorm(1-alpha/sidedness)
+  z_se   <- sqrt(1/(n-3))
+  ci_mat <- matrix(c(-1,-1,1,1),nrow = 2, ncol = 2, dimnames =list(c("Mz","Dz"),c("l","u")))
+  z_ci   <- z + ci_mat * z_se * z_ref
+  r_ci   <- tanh(z_ci)
+  L      <- r[1]-r[2] - sqrt((r[1]      - r_ci[1,1])^2 + (r_ci[2,2] - r[2]     )^2)
+  U      <- r[1]-r[2] + sqrt((r_ci[1,2] - r[1]     )^2 + (r[2]      - r_ci[2,1])^2)
+  r_diff_ci <- c(L,U)
+  ci_test <- (L < 0) && (0 < U)
+  return(c(ci_test,r_diff_ci))
+}
+
+
+  # cocor_test <- cocor(~V1+V2|V1+V2,list(a,b))
+  # zouci <- unlist(cocor_test@zou2007)
+  # zou <- ((zouci[1]) < 0 && (0 < zouci[2])) 
+
+
 # quick comparison of tests - fz is de facto gold standard
-n1 <- 1000
-n2 <- 1000
-r1 <- 0.2
+n1 <- 90
+n2 <- 90
+r1 <- -0.2
 r2 <- 0.5
-p1 <- 0.5
-p2 <- 0.5
-dist <- "gamma"
+p1 <- 0
+p2 <- 1
+dist <- "normal"
 method <- "pearson"
 a <- genCorGen(n1, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
                corMatrix = matrix(c(1, r1, r1, 1), ncol = 2), wide = TRUE)[,2:3]
@@ -162,37 +188,19 @@ corr <- c(cor(a)[1,2],cor(b)[1,2])
 cat("corr: ",corr,"diff: ", corr[1] - corr[2])
 
 cat("test","\t","p"      ,"\n",
-    "fz_a","\t",fz_nosim(r1,r2,n1,n2,method = method,power=FALSE),"\n",
-    "fz"  ,"\t",  fz(a,b,method = method),"\n",
+    "fz_a","\t", fz_nosim(r1,r2,n1,n2,method = method,power=FALSE),"\n",
+    "fz"  ,"\t", fz(a,b,method = method),"\n",
     "gtv" ,"\t", gtv(a,b,method = method),"\n",
+    "pt"  ,"\t", pt(a,b,method = method),"\n",
     "slr" ,"\t", slr(a,b,method = method),"\n",
-    "pt"  ,"\t",  pt(a,b,method = method))
+    "zou" ,"\t", zou(a,b,method = method))
 
 
 
-# 
-# 
-# without replacement, take sample of size n1 to represent first
-# group,
-# I remaining sample of size n2 represents second group
-# I take difference in means
-# I repeat a large number of times
-# I Evaluate: does the original difference lie outside the middle
-# 100 × (1 − α)% of the re-sampled distribution? If yes, reject
-# H0.
-# I Permutation α is probability that the permutation replication
-# θˆ ≥ θˆ the sample difference, and is evaluated as the
-# proportion of occurances relative to total number of possible
-# permutations
-
-
-# Zou's confidence interval
-
-
-
-
-fz_compiled <- cmpfun(fz)
+fz_compiled  <- cmpfun(fz)
 gtv_compiled <- cmpfun(gtv)
+pt_compiled  <- cmpfun(pt)
+slr_compiled <- cmpfun(slr)
 
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
                     param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
@@ -400,6 +408,57 @@ corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_in
 }
 
 corr_pplot_compiled <- cmpfun(corr_power_plot)
+sim_n <- c(15,30,60,120,240,480,960)
+sim_dist <- c("normal","gamma")
+sim_method <- c("pearson","spearman")
+sim_tests <- tests = c("fz_nosim","fz","gtv","pt","slr","zou")
+sim_res <- list()
+for (method in sim_method) {
+  for (dist in sim_dist) {
+    for (n1 in sim_n) {
+      for (n2 in sim_n) {
+        if (dist=="normal") {
+          param1a <- param1b <- c(0,0)
+          param2a <- param2b <- c(1,1)
+          system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)]][[paste0(n1,"_",n2)]] <- 
+            corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
+                                n = c(n1,n2),
+                                param1a = param1a,
+                                param1b = param1b,
+                                param2a = param2a,
+                                param2b = param2b,
+                                dist    = dist,
+                                method  = method))
+        }
+        if (dist=="gamma") {
+          param1a <- param1b <- c(1.5,1.5)
+          param2a <- param2b <- c(0.09,0.09)
+          system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)]][[paste0(n1,"_",n2)]] <- 
+                        corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
+                                            n = c(n1,n2),
+                                            param1a = param1a,
+                                            param1b = param1b,
+                                            param2a = param2a,
+                                            param2b = param2b,
+                                            dist    = dist,
+                                            method  = method))
+          param1a <- param1b <- c(1,1)
+          param2a <- param2b <- c(5,5)
+          system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)]][[paste0(n1,"_",n2)]] <- 
+                        corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
+                                            n = c(n1,n2),
+                                            param1a = param1a,
+                                            param1b = param1b,
+                                            param2a = param2a,
+                                            param2b = param2b,
+                                            dist    = dist,
+                                            method  = method))
+        }
+      }
+    }
+  }
+}
+
 
 system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
