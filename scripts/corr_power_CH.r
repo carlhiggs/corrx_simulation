@@ -1,8 +1,5 @@
 # R script to simulate power for difference in correlations (Pearson, Spearman, and later ... ICC)
 # Carl Higgs 2017
-#
-# Initial inspiration for corr_power_plot from https://janhove.github.io/design/2015/04/14/power-simulations-for-comparing-independent-correlations
-# Jan Vanhove 14 April 2015
 
 
 # Function to simulate two bivariate normal distributions based on respective population correlations.
@@ -16,9 +13,9 @@
 #    - output a single statistic (z_p, or z_power).
 #    - distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
 #    - given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
+#    - allow parameterisation to explore change in source pop mean and sd (unequal variance, etc)
 # To develop
 #    - accounting for clustering (ie. icc in twin studies)
-#    - allow parameterisation to explore change in source pop mean and sd (unequal variance, etc)
 
 # install.packages("Rcpp")
 # install.packages("simstudy")
@@ -28,14 +25,8 @@ require("simstudy")
 sourceCpp('test.cpp')
 
 
-# # deploy to shinyapps.io
-# library(rsconnect)
-# rsconnect::deployApp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/corr_power_app')
-# 
 
 ## Define tests
-
-
 # Fishers Z test - no sim
 fz_nosim <- function(r1,r2,n1,n2,
                      alpha = 0.05, sidedness=2,method = "pearson",
@@ -197,39 +188,7 @@ zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
   return(c(ci_test,r_diff_ci))
 }
 
-
-  # cocor_test <- cocor(~V1+V2|V1+V2,list(a,b))
-  # zouci <- unlist(cocor_test@zou2007)
-  # zou <- ((zouci[1]) < 0 && (0 < zouci[2])) 
-
-
-# # quick comparison of tests - fz is de facto gold standard
-# n1 <- 90
-# n2 <- 90
-# r1 <- -0.2
-# r2 <- 0.5
-# p1 <- 0
-# p2 <- 1
-# dist <- "normal"
-# method <- "pearson"
-# a <- genCorGen(n1, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
-#                corMatrix = matrix(c(1, r1, r1, 1), ncol = 2), wide = TRUE)[,2:3]
-# b <- genCorGen(n2, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
-#                corMatrix = matrix(c(1, r2, r2, 1), ncol = 2), wide = TRUE)[,2:3]
-# hist(unlist(a[,1]))
-# corr <- c(cor(a)[1,2],cor(b)[1,2])
-# cat("corr: ",corr,"diff: ", corr[1] - corr[2])
-# 
-# cat("test","\t","p"      ,"\n",
-#     "fz_a","\t", fz_nosim(r1,r2,n1,n2,method = method,power=FALSE),"\n",
-#     "fz"  ,"\t", fz(a,b,method = method),"\n",
-#     "gtv" ,"\t", gtv(a,b,method = method),"\n",
-#     "pt"  ,"\t", pt(a,b,method = method),"\n",
-#     "slr" ,"\t", slr(a,b,method = method),"\n",
-#     "zou" ,"\t", zou(a,b,method = method))
-
-
-
+# compile tests, noting that GTV function is already compiled using rccp (gtv_r is straight r)
 fz_ns_compiled <- cmpfun(fz_nosim)
 fz_compiled <- cmpfun(fz)
 gtv_compiled<- cmpfun(gtv_r)
@@ -269,26 +228,8 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   if ("zou"      %in% test) results[["zou"]]      <- zou_compiled(a,b)[1]
   return(rbind(results[test]))
 }
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz_nosim") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "gtv") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "pt") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "slr") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "zou") 
-# corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal") 
 
 corr_diff_test_compiled <- cmpfun(corr_diff_test)
-# cdt  <- function() for (i in 1:1000)  corr_diff_test(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
-# cdt_c  <- function() for (i in 1:1000)  corr_diff_test_compiled(rho = c(.2,.4), n = c(100,300), distr = "normal",test = "fz") 
-# system.time(cdt())
-# system.time(cdt_c())
-## No apparent speed benefits to compilation at the individual test stage
-# > system.time(cdt())
-# user  system elapsed 
-# 34.62    1.12   42.71 
-# > system.time(cdt_c())
-# user  system elapsed 
-# 35.02    1.22   44.27 
 
 # Corr power simulation
 corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
@@ -342,354 +283,10 @@ corr_power <- function(rho = c(.2,.5), n = c(30,90),distr = "normal",
 }
 
 corr_power_compiled <- cmpfun(corr_power)
-# cp  <- function() for (i in 1:10)  corr_power(power_only=TRUE)
-# cp_c  <- function() for (i in 1:10)  corr_power_compiled(power_only=TRUE)
-# system.time(cp())
-# system.time(cp_c())
-# > system.time(cp())
-# pearson 0.2 0.5 30 90 0.05 2 100 normal 	 0.38 0.4   
-# user  system elapsed 
-# 266.84   12.50  313.37 
-# > system.time(cp_c())
-# pearson 0.2 0.5 30 90 0.05 2 100 normal 	 0.35 0.37
-# user  system elapsed 
-# 263.76   12.39  307.74 
-## Pretty similar timing; still, i'll use just in case.
-
-# corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim","gtv"))
-# corr_power_compiled(power_only=TRUE, nsim = 10, test=c("gtv","gtvr"))
-# # fz  fz_nosim       gtv                                     
-# # 0.1000000 0.3494663 0.1000000 
-# ## NOTE - issue if only one simulation is processed - the rowMeans subcommand bugs out
-# # corr_power_compiled(power_only=TRUE, nsim = 10, test=c("fz","fz_nosim"))
-# # Error in rowMeans(replicate(nsims, corr_diff_test(rho = rho, n = n, distr = distr,  : 
-# # 'x' must be an array of at least two dimensions
-
-corr_power_plot_plot <- function(data, nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
-                            n = c(30,90),distr = "normal",
-                            param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-                            test = c("fz","gtv","pt","slr","zou"),
-                            alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
-                            names = c("Population A","Population B"),
-                            lower.tri = FALSE){
-  results <- plot
-  print(results)
-  # format method to proper case for plot
-  corr_type <- stringr::str_to_title(method)
-  # define target power (to mark on plot)
-  target <- 1 - beta
-  corrs <- round(seq(res_min, res_max, res_inc),2)
-  # plot power simulation results
-  out<-filled.contour(x = corrs, y = corrs, z = as.matrix(results), nlevels = 10,
-                                             xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                             plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results),
-                                                                  levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                                  add = TRUE, lwd = 3, col = "steelblue3");
-                                               abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                               abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                               axis(1, seq(-1,1,0.2))
-                                               axis(2, seq(-1,1,0.2))},
-                                             plot.title = title(main = paste0(test," test ~ ",
-                                                                              distr,"((",param1a,",",param2a,"),(",
-                                                                              param1b,",",param2b,"))","\n",
-                                                                              "Mz = ",n[1],
-                                                                              ", Dz = ",n[2],
-                                                                              ", alpha: ",alpha, ", sims: ",nsims),
-                                                                xlab = paste0("Correlation in ",names[1]),
-                                                                ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                             color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-    # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
-  return(out)
-}
-
-cp_plotplot <- cmpfun(corr_power_plot_plot)
-
-corr_power_plot <- function(nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
-                            n = c(30,90),distr = "normal",
-                            param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-                            tests = c("fz_nosim","fz","gtv","slr","zou"),
-                            alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
-                            names = c("Population A","Population B"),
-                            lower.tri = FALSE){
-  cat("\n","Correlation power plot simulation commenced at",as.character(Sys.time()),"\n")
-  results <- list()
-  results[["params"]] <- c("method" = method,"n1" = n[1], "n2" = n[2],
-                           "param1a" = param1a, "param1b" = param1b,"param2a" = param2a, "param2b" = param2b,
-                           "alpha" = alpha, "sidedness" = sidedness, 
-                           "nsims" = nsims, "distr" = distr)
-  results[["tests"]]  <- tests
-  results[["z_ref"]]  <- qnorm(1-alpha/sidedness)
-  corrs <- round(seq(res_min, res_max, res_inc),2)
-  
-  # create result holder matrices per test
-  for (test in results[["tests"]]) {
-    results[[test]] <- matrix(data = NA, nrow = length(corrs), ncol = length(corrs))
-    colnames(results[[test]]) <- rownames(results[[test]]) <- format(corrs, trim=TRUE)
-  }
-  # print header for corr_power output
-  cat("\tmethod","rho_1","rho_2","n1","n2","alpha","sides","nsims","distr","PowerXtests","\n",sep="\t")
-  cat("\t",rep("-",45),"\n")
-  # calculate pairwise results
-  for (r in corrs){
-    for (c in corrs){
-      temp <- corr_power_compiled(rho = c(r,c), n = c(n[1],n[2]),distr = distr,
-                                  param1a = param1a, param1b = param1b,param2a = param2a, param2b = param2b,
-                                  test = tests,
-                                  alpha = alpha, sidedness=sidedness,method=method,  
-                                  nsims = nsims,lower.tri = lower.tri, power_only = TRUE)  
-      for (test in results[["tests"]]) {
-        results[[test]][r == corrs,c == corrs] <- temp[test]
-      }
-    }         
-  }
-  
-  # format method to proper case for plot
-  corr_type <- stringr::str_to_title(method)
-  # define target power (to mark on plot)
-  target <- 1 - beta
-
-  # plot power simulation results
-   for (test in results[["tests"]]) {
-    results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
-                                xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-                                plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
-                                                     levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                                     add = TRUE, lwd = 3, col = "steelblue3");
-                                  abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                  abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                                  axis(1, seq(-1,1,0.2))
-                                  axis(2, seq(-1,1,0.2))},
-                                plot.title = title(main = paste0(test," test ~ ",
-                                                                 distr,"((",param1a,",",param2a,"),(",
-                                                                            param1b,",",param2b,"))","\n",
-                                                                 "Mz = ",results[["params"]][["n1"]],
-                                                                 ", Dz = ",results[["params"]][["n2"]],
-                                                                 ", alpha: ",alpha, ", sims: ",nsims),
-                                                   xlab = paste0("Correlation in ",names[1]),
-                                                   ylab = paste0("Correlation in ",names[2]), adj = 0),
-                                color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-   # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
-   }
-  cat("\n","Completed at ",as.character(Sys.time()),"\n")
-  return(results)
-}
-
-corr_pplot_compiled <- cmpfun(corr_power_plot)
-
-# run simulations
-sim_res <- list()
-
-# first run complete - Pearson, Normal(0,1), all tests except PT
-sim_n <- c(15,30,60,120,240,480,960)
-dist <- "normal"
-method <-"pearson"
-sim_tests <- c("fz_nosim","fz","gtv","slr","zou")
-param1a <- param1b <- c(0,0)
-param2a <- param2b <- c(1,1)
-for (n1 in sim_n) {
-  for (n2 in sim_n) {
-      system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]]][[paste0(n1,"_",n2)]] <- 
-                    corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
-                                        n = c(n1,n2),
-                                        param1a = param1a,
-                                        param1b = param1b,
-                                        param2a = param2a,
-                                        param2b = param2b,
-                                        dist    = dist,
-                                        tests   = sim_tests,
-                                        method  = method))
-  }
-}
 
 
-# 
-# # test using parallel processing 20180512
-# # install.packages("foreach")
-# # install.packages("doParallel")
-# library(foreach)
-# library(doParallel)
-# 
-# #setup parallel backend to use 8 processors
-# cl<-makeCluster(8)
-# registerDoParallel(cl)
-# 
-# # test a list to test this out
-# sim_corr_res2 <- list()
-# 
-# 
-# 
-# 
-# nsims <- 100
-# res <- c(-0.95,0.95,0.05)
+# corrs <- round(seq(-0.90,0.90,0.1),2)
 # sim_n <- c(15,30,60,120,240,480,960)
-# sim_groups <- expand.grid(sim_n,sim_n) 
-# # rccp compiled commands need to be treated in special way as per
-# # https://stackoverflow.com/questions/25062383/cant-run-rcpp-function-in-foreach-null-value-passed-as-symbol-address
-# # so using gtvr (i couldn't get the foreach .noexport option for rccp functions to work)
-# sim_tests <- c("fz_nosim","fz","gtvr","slr","zou")
-# 
-# # second run - Spearman, Normal(0,1), all tests except PT
-# method <-"spearman"
-# dist <- "normal"
-# param1a <- param1b <- c(0,0)
-# param2a <- param2b <- c(1,1)
-# paramstr <- paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]
-# # foreach(i =1:nrow(sim_groups)) %do%
-# sim_corr_res2[[method]][[dist]][[paramstr]][[]] <- foreach(i =1:nrow(sim_groups))  %dopar% {
-#     corr_pplot_compiled(nsims = nsims, res_min = res[1], res_max = res[2], res_inc = res[3], 
-#                                       n = as.numeric(sim_groups[i,]),
-#                                       param1a = param1a,
-#                                       param1b = param1b,
-#                                       param2a = param2a,
-#                                       param2b = param2b,
-#                                       dist    = dist,
-#                                       tests   = sim_tests,
-#                                       method  = method)
-# }
-# 
-# 
-# method <-"pearson"
-# dist <- "gamma"
-# param1a <- param1b <- c(1.5,1.5)
-# param2a <- param2b <- c(0.09,0.09)
-# paramstr <- paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]
-# # foreach(i =1:nrow(sim_groups)) %do%
-# sim_corr_res2[[method]][[dist]][[paramstr]] <- foreach(i =1:nrow(sim_groups))  %dopar% {
-#   # rccp compiled commands need to be treated in special way as per
-#   # https://stackoverflow.com/questions/25062383/cant-run-rcpp-function-in-foreach-null-value-passed-as-symbol-address
-#   
-#   corr_pplot_compiled(nsims = nsims, res_min = res[1], res_max = res[2], res_inc = res[3], 
-#                       n = as.numeric(sim_groups[i,]),
-#                       param1a = param1a,
-#                       param1b = param1b,
-#                       param2a = param2a,
-#                       param2b = param2b,
-#                       dist    = dist,
-#                       tests   = sim_tests,
-#                       method  = method)
-# }
-# 
-# method <-"spearman"
-# dist <- "gamma"
-# param1a <- param1b <- c(1.5,1.5)
-# param2a <- param2b <- c(0.09,0.09)
-# paramstr <- paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]
-# # foreach(i =1:nrow(sim_groups)) %do%
-# sim_corr_res2[[method]][[dist]][[paramstr]] <- foreach(i =1:nrow(sim_groups))  %dopar% {
-#   # rccp compiled commands need to be treated in special way as per
-#   # https://stackoverflow.com/questions/25062383/cant-run-rcpp-function-in-foreach-null-value-passed-as-symbol-address
-#   
-#   corr_pplot_compiled(nsims = nsims, res_min = res[1], res_max = res[2], res_inc = res[3], 
-#                       n = as.numeric(sim_groups[i,]),
-#                       param1a = param1a,
-#                       param1b = param1b,
-#                       param2a = param2a,
-#                       param2b = param2b,
-#                       dist    = dist,
-#                       tests   = sim_tests,
-#                       method  = method)
-# }
-# 
-# method <-"pearson"
-# dist <- "gamma"         
-# param1a <- param1b <- c(1,1)
-# param2a <- param2b <- c(5,5)
-# paramstr <- paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]
-# # foreach(i =1:nrow(sim_groups)) %do%
-# sim_corr_res2[[method]][[dist]][[paramstr]] <- foreach(i =1:nrow(sim_groups))  %dopar% {
-#   # rccp compiled commands need to be treated in special way as per
-#   # https://stackoverflow.com/questions/25062383/cant-run-rcpp-function-in-foreach-null-value-passed-as-symbol-address
-#   
-#   corr_pplot_compiled(nsims = nsims, res_min = res[1], res_max = res[2], res_inc = res[3], 
-#                       n = as.numeric(sim_groups[i,]),
-#                       param1a = param1a,
-#                       param1b = param1b,
-#                       param2a = param2a,
-#                       param2b = param2b,
-#                       dist    = dist,
-#                       tests   = sim_tests,
-#                       method  = method)
-# }
-# method <-"spearman"
-# dist <- "gamma"         
-# param1a <- param1b <- c(1,1)
-# param2a <- param2b <- c(5,5)
-# paramstr <- paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]
-# # foreach(i =1:nrow(sim_groups)) %do%
-# sim_corr_res2[[method]][[dist]][[paramstr]] <- foreach(i =1:nrow(sim_groups))  %dopar% {
-#   # rccp compiled commands need to be treated in special way as per
-#   # https://stackoverflow.com/questions/25062383/cant-run-rcpp-function-in-foreach-null-value-passed-as-symbol-address
-#   
-#   corr_pplot_compiled(nsims = nsims, res_min = res[1], res_max = res[2], res_inc = res[3], 
-#                       n = as.numeric(sim_groups[i,]),
-#                       param1a = param1a,
-#                       param1b = param1b,
-#                       param2a = param2a,
-#                       param2b = param2b,
-#                       dist    = dist,
-#                       tests   = sim_tests,
-#                       method  = method)
-# }
-# stopCluster(cl)
-
-# 
-# 
-# sim_n <- c(15,30,60,120,240,480,960)
-# sim_dist <- c("normal","gamma")
-# sim_method <- c("pearson","spearman")
-# sim_tests <- c("fz_nosim","fz","gtv","slr","zou")
-# sim_res <- list()
-# for (method in sim_method) {
-#   for (dist in sim_dist) {
-#     for (n1 in sim_n) {
-#       for (n2 in sim_n) {
-#         if (dist=="normal") {
-#           param1a <- param1b <- c(0,0)
-#           param2a <- param2b <- c(1,1)
-#           system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)[1]]][[paste0(n1,"_",n2)]] <- 
-#             corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
-#                                 n = c(n1,n2),
-#                                 param1a = param1a,
-#                                 param1b = param1b,
-#                                 param2a = param2a,
-#                                 param2b = param2b,
-#                                 dist    = dist,
-#                                 tests   = sim_tests,
-#                                 method  = method))
-#         }
-#         if (dist=="gamma") {
-#           param1a <- param1b <- c(1.5,1.5)
-#           param2a <- param2b <- c(0.09,0.09)
-#           system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)]][[paste0(n1,"_",n2)]] <- 
-#                         corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
-#                                             n = c(n1,n2),
-#                                             param1a = param1a,
-#                                             param1b = param1b,
-#                                             param2a = param2a,
-#                                             param2b = param2b,
-#                                             dist    = dist,
-#                                             method  = method))
-#           param1a <- param1b <- c(1,1)
-#           param2a <- param2b <- c(5,5)
-#           system.time(sim_res[[method]][[dist]][[paste0(param1a,"_",param1b,"_",param2a,"_",param2b)]][[paste0(n1,"_",n2)]] <- 
-#                         corr_pplot_compiled(nsims = 100, res_min = -.95, res_max = 0.95, res_inc = 0.05, 
-#                                             n = c(n1,n2),
-#                                             param1a = param1a,
-#                                             param1b = param1b,
-#                                             param2a = param2a,
-#                                             param2b = param2b,
-#                                             dist    = dist,
-#                                             method  = method))
-#         }
-#       }
-#     }
-#   }
-# }
-
-
-
-corrs <- round(seq(-0.90,0.90,0.1),2)
-sim_n <- c(15,30,60,120,240,480,960)
 # sim_groups <- expand.grid(sim_n,sim_n) 
 # sim_groups["n"] <- rowSums(sim_groups)
 # nrow(sim_groups)
@@ -705,6 +302,13 @@ sim_n <- c(15,30,60,120,240,480,960)
 # Extract results into long dataframe
 # > 2*3*5*49*1520
 # [1] 2234400  --- actually that's not so bad
+
+# but, we can have the tests in line, and we can amend the resolution (coarser corr seq)
+# > 2*3*49*361
+# [1] 106134
+
+corrs <- round(seq(-0.90,0.90,0.1),2)
+sim_n <- c(15,30,60,120,240,480,960) 
 methods <- c("pearson","spearman")
 # distributions <- c("normal_0_1","gamm_1.5_0.09","gamma_1_5")
 distributions <- c("normal","gamma","gamma")
@@ -742,6 +346,43 @@ system.time(dt[, tests:={
                       power_only = TRUE))
 },by = 1:nrow(dt)] )
 
+# 
+# corr_power_plot_plot <- function(data, nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
+#                                  n = c(30,90),distr = "normal",
+#                                  param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
+#                                  test = c("fz","gtv","pt","slr","zou"),
+#                                  alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
+#                                  names = c("Population A","Population B"),
+#                                  lower.tri = FALSE){
+#   results <- plot
+#   print(results)
+#   # format method to proper case for plot
+#   corr_type <- stringr::str_to_title(method)
+#   # define target power (to mark on plot)
+#   target <- 1 - beta
+#   corrs <- round(seq(res_min, res_max, res_inc),2)
+#   # plot power simulation results
+#   out<-filled.contour(x = corrs, y = corrs, z = as.matrix(results), nlevels = 10,
+#                       xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+#                       plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results),
+#                                            levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+#                                            add = TRUE, lwd = 3, col = "steelblue3");
+#                         abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+#                         abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+#                         axis(1, seq(-1,1,0.2))
+#                         axis(2, seq(-1,1,0.2))},
+#                       plot.title = title(main = paste0(test," test ~ ",
+#                                                        distr,"((",param1a,",",param2a,"),(",
+#                                                        param1b,",",param2b,"))","\n",
+#                                                        "Mz = ",n[1],
+#                                                        ", Dz = ",n[2],
+#                                                        ", alpha: ",alpha, ", sims: ",nsims),
+#                                          xlab = paste0("Correlation in ",names[1]),
+#                                          ylab = paste0("Correlation in ",names[2]), adj = 0),
+#                       color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+#   # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
+#   return(out)
+# }
 
 
 # 
