@@ -25,6 +25,11 @@ require("simstudy")
 sourceCpp('test.cpp')
 require(data.table)
 
+# to deploy R power app (code elsewhere
+
+# to deploy (in R < v3.5)
+# library(rsconnect)
+# deployApp(appDir = "C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/corr_power_app")
 
 
 ## Define tests

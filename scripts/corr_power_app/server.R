@@ -25,10 +25,10 @@ shinyServer(function(input, output) {
       zdiff     <- z1-z2
       # Step    3: calculate standard errmzor and test statistic
       tot_n         <- 15:maxn
-      mzdz_vec <- seq(0,1,0.01)
+      mzdz_vec <- seq(0,10,0.01)
       # n_p1         <- cbind(mz = tot_n*mzdz,dz = tot_n*(1-mzdz))
       n_p1         <- cbind(mz = tot_n/(mzdz+1)*mzdz,dz = tot_n/(mzdz+1))
-      n_p2         <- cbind(mz = maxn*mzdz_vec,dz = maxn*(1-mzdz_vec))
+      n_p2         <- cbind(mz = maxn/(mzdz_vec+1)*mzdz_vec,dz = maxn/(mzdz_vec+1))
       z_se_p1      <- sqrt(rowSums(1/(n_p1-3)))
       z_se_p2      <- sqrt(rowSums(1/(n_p2-3)))
       z_test_p1    <- zdiff/z_se_p1
@@ -76,11 +76,11 @@ shinyServer(function(input, output) {
   
   output$graph2 <- renderPlot({
     p <- ggplot(as.data.frame(mydata()[["data2"]]),
-                aes(x=mzdz_vec, y=power, group=as.character(round(ref,2))))
+                aes(x=mzdz_vec, y=power, group=as.character(round(ref,2))), log="x")
     p <- p +
       geom_line(aes(colour = as.character(round(ref,2))), size=1, alpha=.75) +
       ggtitle(paste0("Power estimate given parameters (",mydata()[["params2"]],")"))+
-      scale_x_continuous(name="MZ:DZ ratio")+
+      scale_x_continuous(name="MZ:DZ ratio (log scale)", trans='log',breaks=c(seq(0,1,0.2),seq(2,10,2)))+
       scale_y_continuous(labels = comma, name="Power",limits = c(0,1), expand = c(0,0) ) + 
       labs(colour = "Normal ordinate")
     print(p)
