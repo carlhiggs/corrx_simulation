@@ -133,7 +133,41 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
   return(z_p)
 }
 
-gtv <- function(a,b,M=1e4,method = "pearson") {
+# GTV test statistic, based on code from Enes Makalic
+gtv_r <- function(a,b,M=1e4,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+  
+  # Step 1: Compute sample correlation coefficients
+  r1 <- cor(a,method = method)[2,1]
+  r2 <- cor(b,method = method)[2,1]
+  r  <- c(r1,r2)
+  
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  # Compute test statistic
+  rstar <- r/sqrt(1-r^2)
+  top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+  G     <- top / sqrt( top^2 + V2 )
+  
+  # Compute p value
+  Grho <- G[,1] - G[,2];
+  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  return(p)
+}
+
+# gtv function using rccp code help from Koen Simons
+gtv_cpp <- function(a,b,M=1e4,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -271,56 +305,80 @@ mslr(a,b, M=10000)
 
 fz_compiled <- cmpfun(fz)
 fz_ns_compiled <- cmpfun(fz_nosim)
+gtv_r_compiled <- cmpfun(gtv_r)
 slr_compiled <- cmpfun(slr)
  pt_compiled <- cmpfun(pt)
 zou_compiled <- cmpfun(zou)
-fc_fz_ns  <- function() for (i in 1:100)  fz_nosim(0.5,0.5,50,50)
-fc_fz     <- function() for (i in 1:100)      fz(a,b)
-fc_gtv    <- function() for (i in 1:100)     gtv(a,b)
-fc_pt     <- function() for (i in 1:100)      pt(a,b)
-fc_slr    <- function() for (i in 1:100)     slr(a,b)
-fc_zou    <- function() for (i in 1:100)     zou(a,b)
-cfc_fz_ns <- function() for (i in 1:100) fz_ns_compiled(0.5,0.5,50,50)
-cfc_fz    <- function() for (i in 1:100)  fz_compiled(a,b)
-cfc_gtv   <- function() for (i in 1:100) gtv_compiled(a,b)
-cfc_pt    <- function() for (i in 1:100)  pt_compiled(a,b)
-cfc_slr   <- function() for (i in 1:100) slr_compiled(a,b)
-cfc_zou   <- function() for (i in 1:100) zou_compiled(a,b)
-# cbind(rbind("fc_fz_ns ",
-#             "fc_fz    ",
-#             "fc_gtv   ",
-#             "fc_pt    ",
-#             "fc_slr   ",
-#             "fc_zou   ",
-#             "cfc_fz_ns",
-#             "cfc_fz   ",
-#             "cfc_gtv  ",
-#             "cfc_pt   ",
-#             "cfc_slr  ",
-#             "cfc_zou  "),
-# test_time <- rbind(
-system.time(fc_fz_ns())
-system.time(fc_fz()     )
-system.time(fc_gtv()    )
-system.time(fc_pt()     )
-system.time(fc_slr()    )
-system.time(fc_zou()    )
-system.time(cfc_fz_ns())
-system.time(cfc_fz()    )
-system.time(cfc_gtv()   )
-system.time(cfc_pt()    )
-system.time(cfc_slr()   )
-system.time(cfc_zou()   )
-  
-   
-  
-  
-  
-  
-  
-  
-  
-  
+fc_fz_ns  <- function() for (i in 1:1000)  fz_nosim(0.5,0.5,50,50)
+fc_fz     <- function() for (i in 1:1000)      fz(a,b)
+fc_gtv_r    <- function() for (i in 1:1000)     gtv_r(a,b)
+fc_gtv_cpp    <- function() for (i in 1:1000) gtv_cpp(a,b)
+fc_pt     <- function() for (i in 1:1000)      pt(a,b)
+fc_slr    <- function() for (i in 1:1000)     slr(a,b)
+fc_zou    <- function() for (i in 1:1000)     zou(a,b)
+cfc_fz_ns <- function() for (i in 1:1000) fz_ns_compiled(0.5,0.5,50,50)
+cfc_fz    <- function() for (i in 1:1000)  fz_compiled(a,b)
+cfc_gtv_r   <- function() for (i in 1:1000) gtv_r_compiled(a,b)
+cfc_pt    <- function() for (i in 1:1000)  pt_compiled(a,b)
+cfc_slr   <- function() for (i in 1:1000) slr_compiled(a,b)
+cfc_zou   <- function() for (i in 1:1000) zou_compiled(a,b)
+
+test_time <- list()
+test_time[["fc_fz_ns"]]  <- system.time(fc_fz_ns()  )
+test_time[["fc_fz"]]     <- system.time(fc_fz()     )
+test_time[["fc_gtv_r"]]  <- system.time(fc_gtv_r()  )
+test_time[["fc_pt"]]     <- system.time(fc_pt()     )
+test_time[["fc_slr"]]    <- system.time(fc_slr()    )
+test_time[["fc_zou"]]    <- system.time(fc_zou()    )
+test_time[["cfc_fz_ns"]] <- system.time(cfc_fz_ns() )
+test_time[["cfc_fz"]]    <- system.time(cfc_fz()    )
+test_time[["cfc_gtv_r"]] <- system.time(cfc_gtv_r() )
+test_time[["cfc_pt"]]    <- system.time(cfc_pt()    )
+test_time[["cfc_slr"]]   <- system.time(cfc_slr()   )
+test_time[["cfc_zou"]]   <- system.time(cfc_zou()   )
+test_time[["fc_gtv_cpp"]]<- system.time(fc_gtv_cpp())
+
+time_table_simple <- round(rbind(test_time[["fc_fz_ns"]],
+                                 test_time[["fc_fz"]]     ,
+                                 test_time[["fc_gtv_r"]]  ,
+                                 test_time[["fc_pt"]]     ,
+                                 test_time[["fc_slr"]]    ,
+                                 test_time[["fc_zou"]])[,1:3],2)
+row.names(time_table_simple) <- c("Fisher's z (no sim)", "Fisher's Z", "GTV (r)", "permutation","SLR","Zou's CI")    
+
+time_table_compiled <- round(rbind(test_time[["cfc_fz_ns"]],
+                                   test_time[["cfc_fz"]]     ,
+                                   test_time[["cfc_gtv_r"]]  ,
+                                   test_time[["fc_gtv_cpp"]],
+                                   test_time[["cfc_pt"]]     ,
+                                   test_time[["cfc_slr"]]    ,
+                                   test_time[["cfc_zou"]])[,1:3],2)
+row.names(time_table_compiled) <- c("Fisher's z (no sim)", "Fisher's Z", "GTV (r)","GTV (R C++)","permutation","SLR","Zou's CI")
+
+
+
+print(time_table_simple)
+print(time_table_compiled)
+
+## at home
+# > print(time_table_simple)
+# user.self sys.self elapsed
+# Fisher's z (no sim)      0.03     0.00    0.03
+# Fisher's Z               0.56     0.00    0.62
+# GTV (r)                 18.65     0.05   21.31
+# permutation           2473.18     4.00 2858.01
+# SLR                      0.49     0.00    0.58
+# Zou's CI                 0.38     0.01    0.46
+# > print(time_table_compiled)
+# user.self sys.self elapsed
+# Fisher's z (no sim)      0.02     0.00    0.01
+# Fisher's Z               0.36     0.00    0.39
+# GTV (r)                 16.55     0.07   19.42
+# GTV (R C++)             12.08     0.02   12.80
+# permutation           2341.62     3.43 2665.24
+# SLR                      0.33     0.00    0.34
+# Zou's CI                 0.28     0.00    0.31
+
 # > system.time(fc_fz_ns())
 # user  system elapsed 
 # 0.00    0.00    0.08 
