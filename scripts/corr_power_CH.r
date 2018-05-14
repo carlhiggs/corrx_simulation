@@ -23,6 +23,7 @@ require(compiler)
 require(Rcpp)
 require("simstudy")
 sourceCpp('test.cpp')
+require(data.table)
 
 
 
@@ -328,7 +329,49 @@ dt[,("p2"):= param2[sdist], by = 1:nrow(dt)]
 
 setcolorder(dt,c("method","sdist","dist","p1","p2","n1","n2","rho1","rho2"))
 dt <- dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
-# test3 <- dt[1:5,]
+
+# example of calculating power for all simulation combinations
+test3 <- dt[1:100,]
+system.time(test3[,  c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2), 
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1), 
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2), 
+                              param2b = c(p2,p2),
+                              test    =  c( "fz_nosim","fz","gtv","slr","zou"),
+                              alpha   = 0.05, 
+                              sidedness=2,
+                              method=as.character(method),  
+                              nsims = 100,
+                              power_only = TRUE))
+},by = 1:nrow(test3)] )
+
+#     method   dist p1 p2 n1 n2 rho1 rho2  fz_nosim   fz  gtv  slr  zou
+# 1: pearson normal  0  1 15 15 -0.9 -0.9 0.0250000 0.12 0.12 0.14 0.12
+# 2: pearson normal  0  1 15 15 -0.9 -0.8 0.1480538 0.16 0.17 0.19 0.16
+# 3: pearson normal  0  1 15 15 -0.9 -0.7 0.3162464 0.31 0.33 0.35 0.31
+# 4: pearson normal  0  1 15 15 -0.9 -0.6 0.4794100 0.54 0.57 0.63 0.54
+# 5: pearson normal  0  1 15 15 -0.9 -0.5 0.6181794 0.65 0.66 0.72 0.63
+# 6: pearson normal  0  1 15 15 -0.9 -0.4 0.7285717 0.74 0.75 0.77 0.72
+
+# example extraction of plot
+filled.contour(x = seq(-0.9,-0.6,0.1), 
+               y = seq(-0.9,-0.6,0.1), 
+               z = matrix(unlist(test3[(method=="pearson")&
+                                         (dist=="normal")&
+                                         (p1==0)&
+                                         (p2==1)&
+                                         (n1==15)&
+                                         (n2==15)&
+                                         (rho1<=-0.6)&
+                                         (rho2<=-0.6),
+                                       "gtv"]),
+                          nrow=4,ncol=4, byrow = TRUE))
+
+# run main simulation study
 system.time(dt[, tests:={
   cat("\r",.GRP,"\r")
   as.list(corr_power_compiled(rho = c(rho1,rho2), 
@@ -346,108 +389,62 @@ system.time(dt[, tests:={
                       power_only = TRUE))
 },by = 1:nrow(dt)] )
 
-# 
-# corr_power_plot_plot <- function(data, nsims = 100, res_min = -0.95, res_max = 0.95, res_inc = 0.05, 
-#                                  n = c(30,90),distr = "normal",
-#                                  param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-#                                  test = c("fz","gtv","pt","slr","zou"),
-#                                  alpha = 0.05, beta = 0.2, sidedness=2,method="pearson",  
-#                                  names = c("Population A","Population B"),
-#                                  lower.tri = FALSE){
-#   results <- plot
-#   print(results)
-#   # format method to proper case for plot
-#   corr_type <- stringr::str_to_title(method)
-#   # define target power (to mark on plot)
-#   target <- 1 - beta
-#   corrs <- round(seq(res_min, res_max, res_inc),2)
-#   # plot power simulation results
-#   out<-filled.contour(x = corrs, y = corrs, z = as.matrix(results), nlevels = 10,
-#                       xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-#                       plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results),
-#                                            levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-#                                            add = TRUE, lwd = 3, col = "steelblue3");
-#                         abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                         abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                         axis(1, seq(-1,1,0.2))
-#                         axis(2, seq(-1,1,0.2))},
-#                       plot.title = title(main = paste0(test," test ~ ",
-#                                                        distr,"((",param1a,",",param2a,"),(",
-#                                                        param1b,",",param2b,"))","\n",
-#                                                        "Mz = ",n[1],
-#                                                        ", Dz = ",n[2],
-#                                                        ", alpha: ",alpha, ", sims: ",nsims),
-#                                          xlab = paste0("Correlation in ",names[1]),
-#                                          ylab = paste0("Correlation in ",names[2]), adj = 0),
-#                       color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-#   # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")                          
-#   return(out)
-# }
+## More examples - test runs for now to implement once dt is calculated
+# add in extra summary vars
+test3[,("ratio"):=n1/n2,by=1:nrow(test3)]
+test3[,("n"):=n1+n2,by=1:nrow(test3)]
+test3[,("diff"):=abs(rho1-rho2),by=1:nrow(test3)]
 
 
-# 
-# corr_power_compiled(rho = test2[1, c(rho1,rho2)], 
-#                     n = test2[1,c(n1,n2)],
-#                     distr = test2[1,dist],
-#                     param1a = test2[1,c(p1,p1)], 
-#                     param1b = test2[1,c(p1,p1)],
-#                     param2a = test2[1,c(p2,p2)], 
-#                     param2b = test2[1,c(p2,p2)],
-#                     test    = test2[1,test],
-#                     alpha   = 0.05, 
-#                     sidedness=2,
-#                     method =method,  
-#                     nsims = 100,
-#                     power_only = TRUE)
-# 
-# corr_power_compiled(rho = c(-0.95,-0.95), 
-#                     n = c(30,90),
-#                     distr = "normal",
-#                     param1a = c(0,0), 
-#                     param1b = c(0,0),
-#                     param2a = c(1,1), 
-#                     param2b = c(1,1),
-#                     test    = "fz_nosim",
-#                     alpha   = 0.05, 
-#                     sidedness=2,
-#                     method ="pearson",  
-#                     nsims = 100,
-#                     power_only = TRUE)
 
-# for (c = 1:nrow(sim_groups)) {
-#   c.a <- as.character(format(sim_groups[c,1],nsmall=2))
-#   c.b <- as.character(format(sim_groups[c,2],nsmall=2))
-#   # ratio_vec <- vector(length = 0)
-#   for(k = 1:nrow(sim_groups)) {
-#     i <- sim_groups[k,1]
-#     j <- sim_groups[k,2]
-#     n_str <- paste0(i,'_',j)
-#     # ratio_vec <- c(ratio_vec,paste0('(',i,',',j,')'))
-#     test_rec <- sim_res$pearson$normal$`0_0_1_1`[[n_str]]$tests
-#     for(test in test_rec){
-#       # cat(paste(n_str,test,c.a,c.b,'\n'))
-#       power_vec <- rbind(power_vec,
-#                          cbind(test = test,
-#                                method = method,
-#                                dist = dist,
-#                                n1 = i,
-#                                n2 = j,
-#                                n = i+j,
-#                                ratio = format(i/j,nsmall=2)))
-# nstr = paste0('(',i,',',j,')'),
-# power = sim_res$pearson$normal$`0_0_1_1`[[n_str]][[test]][c.a,c.b]))
-#   }
-# }
-# outtab <- matrix(power_vec,nrow=length(test_rec),ncol=length(sim_n))
-# rownames(outtab) <- test_rec
-# colnames(outtab) <- ratio_vec
-# 
-# library(ggplot2)
-# p <- ggplot(power_vec)  
-# p2 <- p + geom_point(aes(x = n2, y = power, colour = test), size = 3) 
-# p3 <- p2 + geom_smooth(aes(x = n2, y = power))
-# p3
-# 
+# convert to long
+t3.long <- melt(test3, measure.vars = tests, variable.name = "test", value.name = "power")
+
+# overall average power
+t3.long[,mean(power),by=test]
+
+# alternative plots
+library(ggplot2)
+p <- ggplot(t3.long[(method=="pearson")&
+                      (dist=="normal")&
+                      (p1==0)&
+                      (p2==1)&
+                      (n1==15)&
+                      (n2==15),])
+p2 <- p + geom_point(aes(x = diff, 
+                         y = power,
+                         colour = test), size = 3)
+p2
+# could do: colour = interaction(ratio,n,sep="-",lex.order=TRUE)
+p3 <- p + geom_smooth(aes(x = diff, y = power, colour = test))
+p3
+
+# Plot power by N, holding ratio and correlations constant
+p <- ggplot(t3.long[(method=="pearson")&
+                      (dist=="normal")&
+                      (p1==0)&
+                      (p2==1)&
+                      (ratio==1)&
+                      (rho1==-0.9)&
+                      (rho2==-0.6),])
+p2 <- p + geom_point(aes(x = n, 
+                         y = power,
+                         colour = test), size = 3)
+p2
+
+# Plot power by ratio, holding n and correlations constant
+p <- ggplot(t3.long[(method=="pearson")&
+                      (dist=="normal")&
+                      (p1==0)&
+                      (p2==1)&
+                      (n==30)&
+                      (rho1==-0.9)&
+                      (rho2==-0.6),])
+p2 <- p + geom_point(aes(x = ratio, 
+                         y = power,
+                         colour = test), size = 3)
+p2
+
 # system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 # # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
 # # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	

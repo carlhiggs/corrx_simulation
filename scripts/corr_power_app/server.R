@@ -26,7 +26,8 @@ shinyServer(function(input, output) {
       # Step    3: calculate standard errmzor and test statistic
       tot_n         <- 15:maxn
       mzdz_vec <- seq(0,1,0.01)
-      n_p1         <- cbind(mz = tot_n*mzdz,dz = tot_n*(1-mzdz))
+      # n_p1         <- cbind(mz = tot_n*mzdz,dz = tot_n*(1-mzdz))
+      n_p1         <- cbind(mz = tot_n/(mzdz+1)*mzdz,dz = tot_n/(mzdz+1))
       n_p2         <- cbind(mz = maxn*mzdz_vec,dz = maxn*(1-mzdz_vec))
       z_se_p1      <- sqrt(rowSums(1/(n_p1-3)))
       z_se_p2      <- sqrt(rowSums(1/(n_p2-3)))
@@ -54,11 +55,11 @@ shinyServer(function(input, output) {
          params2 = params2 )
     })
   
-  # output$datatable <- 
-  #   renderTable({
-  #     dt <- mydata()[["data"]]
-  #     dt
-  #   })
+  output$datatable <-
+    renderTable({
+      dt <- mydata()[["data"]]
+      dt
+    })
     
 
   output$graph1 <- renderPlot({
