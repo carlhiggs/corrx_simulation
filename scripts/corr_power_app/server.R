@@ -80,7 +80,7 @@ shinyServer(function(input, output) {
     p <- p +
       geom_line(aes(colour = as.character(round(ref,2))), size=1, alpha=.75) +
       ggtitle(paste0("Power estimate given parameters (",mydata()[["params2"]],")"))+
-      scale_x_continuous(name="MZ:DZ ratio (log scale)", trans='log',breaks=c(seq(0,1,0.2),seq(2,10,2)))+
+      scale_x_continuous(name="MZ:DZ ratio (log scale)", trans='log',limits = c(0.1,10),breaks=c(0.1,seq(0.2,1,0.2),seq(2,10,2)))+
       scale_y_continuous(labels = comma, name="Power",limits = c(0,1), expand = c(0,0) ) + 
       labs(colour = "Normal ordinate")
     print(p)
