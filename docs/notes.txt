@@ -1,3 +1,8 @@
+Twin placenta image
+
+Attribution: ChristinaT3 at English Wikipedia, licensed under the Creative Commons Attribution 3.0 Unported license.	Modified.
+
+
 The classic twin study can be used to estimate variation in traits attributable genetics, or heritability.  The estimates of heritability are conditional on key assumptions.  This chapter will define key genetic concepts, how these are exploited by the classic twin study to estimate the role of heridity for particular traits, and the assumptions which are relied upon in order to make such inferences.
 
 (cite Elston et al?)
@@ -40,7 +45,7 @@ Modern genomics
                     
                     Assumptions
                     (from Genetic Epi course, and Rabe-Hesketh presentation 2010)
- - the mz and dz twins have been sourced from populations with equivalent environments, such that the between twin shared environment effects are assumed equal.
+the mz and dz twins have been sourced from populations with equivalent environments, such that the between twin shared environment effects are assumed equal.
       - this allows us to make the further assumption upon observing high correlation in mz twin observations that this is due to their genetic similarity
             - Being an identical twin may influence one's treatment within and interaction with environment, so could be an important source of systematic difference from Dz twins, potentially.  However, we assume this is not the case.
  - trait is normally distributed

@@ -18,12 +18,15 @@
 #    - accounting for clustering (ie. icc in twin studies)
 
 # install.packages("Rcpp")
+# install.packages("data.table")
 # install.packages("simstudy")
+# install.packages("ggExtra")
 require(compiler)
 require(Rcpp)
 require("simstudy")
 sourceCpp('test.cpp')
 require(data.table)
+require(ggExtra)
 
 # to deploy R power app (code elsewhere
 
@@ -503,111 +506,160 @@ p2
 # arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
 # }
 # 
-# 
-# 
-# # Non-normal distribution simulation
-# # normal reference distribution
-# bivariate_distribution_normal_m0_s1_n50 <- ggExtra::ggMarginal(data = as.data.frame(a), x = "V1", y = "V2") 
-# plot(bivariate_distribution_normal_m0_s1_n50)
-# # gamma distribution example (mean/shape, and rate/dispersion)
-# # some positive skew (but distinctly non-normal)
-# gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma", 
-#                    corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# bivariate_distribution_gamma_m1.5_d0.09_n50 <- ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2") 
-# plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
-# 
-# # more gamma exploration, using our otherwise defaults
-# gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2") 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2") 
-# fz(gamma_a,gamma_b)
-# gtv(gamma_a,gamma_b)   
-# corr_power(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5), param2a = c(.09,.09), param2b = c(.09,.09))
-# # pearson	0.2	0.5	30	90	0.05	2	100	gamma	0.37	0.37$params        
-# # method     rho_1     rho_2        n1        n2     alpha sidedness     nsims     distr 
-# # "pearson"     "0.2"     "0.5"      "30"      "90"    "0.05"       "2"     "100"   "gamma" 
-# # 
-# # $additional
-# # param1a1 param1a2 param1b1 param1b2 param2a1 param2a2 param2b1 param2b2 
-# # 1.50     1.50     1.50     1.50     0.09     0.09     0.09     0.09 
-# # 
-# # $analytical
-# # fz_nosim 
-# # 0.3494663 
-# # 
-# # $power
-# # fz  gtv 
-# # 0.37 0.37 
-# 
-# # simulate using non-normal, Extreme positively skewed distribution
-# system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09)))
-# ## Note - run on work computer, so time is optimistic
-# # Correlation power plot simulation commenced at 2018-05-02 22:25:35 
-# # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
-# # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# #   pearson	0.95	0.95	30	90	0.05	2	100	gamma	0.025	0.07	0.07
-# # Completed at  2018-05-03 02:22:07 
-# # user   system  elapsed 
-# # 14169.60    64.91 14192.36 
-# ## about 3 hours and 54 minutes
-# # cp_plotplot(data = results[["fz"]],dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09))
-# corrs<- seq(-0.95,0.95,0.05)
-# nsims = 100 
-# n = c(30,90)
-# dist = "gamma"
-# param1a = c(1.5,1.5)
-# param1b = c(1.5,1.5)
-# param2a = c(.09,.09)
-# param2b = c(.09,.09)
-# tests = c("fz_nosim","fz","gtv")
-# alpha = 0.05
-# beta = 0.2
-# sidedness=2
-# target = 1-beta
-# method="pearson"  
-# names = c("Population A","Population B")
-# for (test in res_gamma[["tests"]]) {
-#   res_gamma[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]), nlevels = 10,
-#                                            xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-#                                            plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]),
-#                                                                 levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-#                                                                 add = TRUE, lwd = 3, col = "steelblue3");
-#                                              abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                              abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                              axis(1, seq(-1,1,0.2))
-#                                              axis(2, seq(-1,1,0.2))},
-#                                            plot.title = title(main = paste0(test," test ~ ",
-#                                                                             dist,"((",param1a,",",param2a,"),(",
-#                                                                             param1b,",",param2b,"))","\n",
-#                                                                             "Mz = ",n[1],
-#                                                                             ", Dz = ",n[2],
-#                                                                             ", alpha: ",alpha, ", sims: ",nsims),
-#                                                               xlab = paste0("Correlation in ",names[1]),
-#                                                               ylab = paste0("Correlation in ",names[2]), adj = 0),
-#                                            color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-#   arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
-# }
-# 
-# gamma_c <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
-# gamma_d <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_c), x = "V1", y = "V2") 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_d), x = "V1", y = "V2") 
-# 
-# system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1,1), param1b = c(1,1),param2a = c(5,5),param2b = c(5,5)))
-# 
-# 
-# 
-# 
-# #other mslrt exploration
-# # param1 are the probabilities
-# binary <- genCorGen(50, nvars = 2, params1 = c(.3, .5), dist = "binary", 
-#                     corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
+
+
+# Distribution images
+# normal reference distribution
+for (r in c(0.5,0.1,-0.8)){
+  for (n in c(20,90,1000)){
+    p1 <- 0
+    p2 <- 1
+    dist <- "normal"
+    method <- "pearson"
+    a <- genCorGen(n, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+                   corMatrix = matrix(c(1, r, r, 1), ncol = 2), wide = TRUE)[,2:3]
+    r_a <- round(cor(a)[2,1],2)
+    pdf(paste0('../figs/b',dist,'_',p1,'_',p2,'_n',n,'_r',r,'.pdf'),width=6,height=6,paper='special') 
+    p_a <- ggplot(a, aes(V1, V2)) + geom_point() +xlim(-4.5,4.5) +ylim(-4.5,4.5)+
+      ggtitle(bquote(bold('V')*'~N{'*mu*'('*.(p1)*','*.(p1)*'), '*sigma^2*'('*.(p2)*','*.(p2)*'), '*rho*' '*.(r)*'}: sample n = '*.(n)*', r = '*.(r_a)))
+    print(ggMarginal(p_a))
+    dev.off()
+  }
+}
+
+for (r in c(0.5,0.1,-0.8)){
+  for (n in c(20,90,1000)){
+    p1 <- 1.5
+    p2 <- 0.09
+    dist <- "gamma"
+    method <- "pearson"
+    a <- genCorGen(n, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+                   corMatrix = matrix(c(1, r, r, 1), ncol = 2), wide = TRUE)[,2:3]
+    r_a <- round(cor(a)[2,1],2)
+    pdf(paste0('../figs/b',dist,'_',p1,'_',p2,'_n',n,'_r',r,'.pdf'),width=6,height=6,paper='special') 
+    p_a <- ggplot(a, aes(V1, V2)) + geom_point() +xlim(0,4.5) +ylim(0,4.5)+
+      ggtitle(bquote(bold('V')*'~G{'*k*'('*.(p1)*','*.(p1)*'), '*theta*'('*.(p2)*','*.(p2)*'), '*rho*' '*.(r)*'}: sample n = '*.(n)*', r = '*.(r_a)))
+    print(ggMarginal(p_a))
+    dev.off()
+  }
+}
+
+for (r in c(0.5,0.1,-0.8)){
+  for (n in c(20,90,1000)){
+    p1 <- 1
+    p2 <- 5
+    dist <- "gamma"
+    method <- "pearson"
+    a <- genCorGen(n, nvars = 2, params1 = p1, params2 = p2, dist = dist, 
+                   corMatrix = matrix(c(1, r, r, 1), ncol = 2), wide = TRUE)[,2:3]
+    r_a <- round(cor(a)[2,1],2)
+    pdf(paste0('../figs/b',dist,'_',p1,'_',p2,'_n',n,'_r',r,'.pdf'),width=6,height=6,paper='special') 
+    p_a <- ggplot(a, aes(V1, V2)) + geom_point() +xlim(0,30) +ylim(0,30)+
+      ggtitle(bquote(bold('V')*'~G{'*k*'('*.(p1)*','*.(p1)*'), '*theta*'('*.(p2)*','*.(p2)*'), '*rho*' '*.(r)*'}: sample n = '*.(n)*', r = '*.(r_a)))
+    print(ggMarginal(p_a))
+    dev.off()
+  }
+}
+
+
+# gamma distribution example (mean/shape, and rate/dispersion)
+# some positive skew (but distinctly non-normal)
+gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma",
+                   corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2")
+
+# more gamma exploration, using our otherwise defaults
+gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+
+ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2")
+ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2")
+fz(gamma_a,gamma_b)
+gtv(gamma_a,gamma_b)
+corr_power(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5), param2a = c(.09,.09), param2b = c(.09,.09))
+# pearson	0.2	0.5	30	90	0.05	2	100	gamma	0.37	0.37$params
+# method     rho_1     rho_2        n1        n2     alpha sidedness     nsims     distr
+# "pearson"     "0.2"     "0.5"      "30"      "90"    "0.05"       "2"     "100"   "gamma"
+#
+# $additional
+# param1a1 param1a2 param1b1 param1b2 param2a1 param2a2 param2b1 param2b2
+# 1.50     1.50     1.50     1.50     0.09     0.09     0.09     0.09
+#
+# $analytical
+# fz_nosim
+# 0.3494663
+#
+# $power
+# fz  gtv
+# 0.37 0.37
+
+# simulate using non-normal, Extreme positively skewed distribution
+system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09)))
+## Note - run on work computer, so time is optimistic
+# Correlation power plot simulation commenced at 2018-05-02 22:25:35
+# method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#   pearson	0.95	0.95	30	90	0.05	2	100	gamma	0.025	0.07	0.07
+# Completed at  2018-05-03 02:22:07
+# user   system  elapsed
+# 14169.60    64.91 14192.36
+## about 3 hours and 54 minutes
+# cp_plotplot(data = results[["fz"]],dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09))
+corrs<- seq(-0.95,0.95,0.05)
+nsims = 100
+n = c(30,90)
+dist = "gamma"
+param1a = c(1.5,1.5)
+param1b = c(1.5,1.5)
+param2a = c(.09,.09)
+param2b = c(.09,.09)
+tests = c("fz_nosim","fz","gtv")
+alpha = 0.05
+beta = 0.2
+sidedness=2
+target = 1-beta
+method="pearson"
+names = c("Population A","Population B")
+for (test in res_gamma[["tests"]]) {
+  res_gamma[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]), nlevels = 10,
+                                           xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+                                           plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]),
+                                                                levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                                                add = TRUE, lwd = 3, col = "steelblue3");
+                                             abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                             abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                                             axis(1, seq(-1,1,0.2))
+                                             axis(2, seq(-1,1,0.2))},
+                                           plot.title = title(main = paste0(test," test ~ ",
+                                                                            dist,"((",param1a,",",param2a,"),(",
+                                                                            param1b,",",param2b,"))","\n",
+                                                                            "Mz = ",n[1],
+                                                                            ", Dz = ",n[2],
+                                                                            ", alpha: ",alpha, ", sims: ",nsims),
+                                                              xlab = paste0("Correlation in ",names[1]),
+                                                              ylab = paste0("Correlation in ",names[2]), adj = 0),
+                                           color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+  arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")
+}
+
+gamma_c <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
+gamma_d <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+
+ggExtra::ggMarginal(data = as.data.frame(gamma_c), x = "V1", y = "V2")
+ggExtra::ggMarginal(data = as.data.frame(gamma_d), x = "V1", y = "V2")
+
+system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1,1), param1b = c(1,1),param2a = c(5,5),param2b = c(5,5)))
+
+
+
+
+#other mslrt exploration
+# param1 are the probabilities
+binary <- genCorGen(50, nvars = 2, params1 = c(.3, .5), dist = "binary",
+                    corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
 
 
