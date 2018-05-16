@@ -46,21 +46,25 @@
 
    
   \section{Heritability and the classic twin study}
+  
+    \begin{frame}
+    \frametitle{The classic twin study}
+    The classic twin study exploits the differing degrees of genetic relatedness in identical twins and non-identical twins in order to draw inferences on the heritability of traits
+    % In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+  \end{frame} 
+  
   \begin{frame}
     \frametitle{Heritability}
     Variation in traits or phenotypes attributable to genetics
     % In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
   \end{frame}   
-  \begin{frame}
-    \frametitle{The classic twin study}
-    The classic twin study exploits the differing degrees of genetic relatedness in identical twins and non-identical twins in order to draw inferences on the heritability of traits
-    % In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
-  \end{frame}    
+   
   
   \begin{frame}
     \frametitle{Twins and heritability}
     \begin{center}
       \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{{../figs/twin_images/Identical-fraternal-sperm-egg_modified2}.pdf}
+      \hspace*{15pt}\hbox{\scriptsize Credit: ChristinaT3 at English Wikipedia, CC3.0. Modified.}
     \end{center}
     % The word zygote refers to the fertilised cell arising from the union of a sperm and an egg.  Identical twins are referred to as monozygotic as they develop from one zygote, and most often also share a placenta and on rare occasions the amnotic sack. Non-identical or fraternal twins develop from two zygotes.  In short, identical twins share a copy of an identical genome, while non-identical twins don't.
   \end{frame}  
@@ -203,14 +207,16 @@
     \begin{center}
       % \includegraphics{../figs/r_to_z.pdf}
     \begin{figure}[!htb]
-    \minipage{0.32\textwidth}
+    \minipage{0.49\textwidth}
       \includegraphics[width=\linewidth]{{../figs/bnormal_0_1_n1000_r0.5}.pdf}
     \endminipage\hfill
-    \minipage{0.32\textwidth}
-      \includegraphics[width=\linewidth]{{../figs/bnormal_0_1_n90_r0.5}.pdf}
+    \minipage{0.24\textwidth}
+      \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_sample_mz1}.pdf}
+      \caption*{$V1_i$}
     \endminipage\hfill
-    \minipage{0.32\textwidth}%
-      \includegraphics[width=\linewidth]{{../figs/bnormal_0_1_n20_r0.5}.pdf}
+    \minipage{0.24\textwidth}%
+      \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_sample_mz2}.pdf}
+      \caption*{$V2_i$}
     \endminipage
     \end{figure}
     \end{center}
@@ -311,8 +317,6 @@
 
   \begin{frame}
     \frametitle{Pearson correlation coefficient}
-    \[y \sim N(\mu,\sigma)\] \\
-    \[x \sim N(\mu,\sigma)\] \\
     The population correlation, an index of linear change in y as x varies is formed of the (assumed) bivariate normal distribution of the respective variables \footfullcite{David1938} \\
     \[\rho = \frac{\Cov(x,y)}{\sigma_x \sigma_y} \]
     and is estimated by \(r\)
@@ -325,7 +329,7 @@
 
   \begin{frame}
     \frametitle{Spearman correlation coefficient}
-    The Spearman correlation coefficient is calculated using the rank ordered variables for each group; subsequent steps are as per the Pearons correlation coefficient.
+    The Spearman correlation coefficient is calculated using the rank ordered variables for each group; as such it is robust to non-normality.  Subsequent steps are as per the Pearons correlation coefficient.
   \end{frame}   
   \subsection{Map \it{r} to \it{z}} 
   \begin{frame}
@@ -403,7 +407,7 @@
   
  
   
-  \section{Other approaches to NHST}
+  % \section{Other approaches to NHST}
   \subsection{Permutation test}
   \begin{frame}
     \frametitle{Permutation test \footfullcite{Efron1993}}  
@@ -453,6 +457,14 @@
     \end{center}
   \end{frame}  
 
+  \section{Interactive power calculator web app} 
+  \begin{frame}
+    \frametitle{Interactive power calculator web app}
+    \begin{center}
+      \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{../figs/my_power_calc.pdf}
+    \end{center}
+  \end{frame}    
+  
   \begin{frame}[allowframebreaks]
     \frametitle{Bibliography}
     \printbibliography
