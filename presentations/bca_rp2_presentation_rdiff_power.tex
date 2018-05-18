@@ -314,149 +314,61 @@
    
   
   \section{Correlation}
-
-  \begin{frame}
-    \frametitle{Pearson correlation coefficient}
-    The population correlation, an index of linear change in y as x varies is formed of the (assumed) bivariate normal distribution of the respective variables \footfullcite{David1938} \\
-    \[\rho = \frac{\Cov(x,y)}{\sigma_x \sigma_y} \]
-    and is estimated by \(r\)
-  \end{frame}  
+  \subsection{Pearson}
+  \subsection{Spearman}
+  \subsection{ICC}
+  \subsection{Partial}
   
-  \begin{frame}
-    \frametitle{Pearson correlation coefficient}
-    \[r = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}\]
-  \end{frame}
-
-  \begin{frame}
-    \frametitle{Spearman correlation coefficient}
-    The Spearman correlation coefficient is calculated using the rank ordered variables for each group; as such it is robust to non-normality.  Subsequent steps are as per the Pearons correlation coefficient.
-  \end{frame}   
-  \subsection{Map \it{r} to \it{z}} 
-  \begin{frame}
-    \frametitle{Map \(r\) from \((-1,+1)\) to \((-\infty,+\infty)\) as Fisher's \(z\) \footfullcite{Fisher1915}}
-    \[z     = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r} \]
-    \begin{center}
-      \includegraphics{../figs/r_to_z.pdf}
-    \end{center}
-  \end{frame}
-
+  \section{Tests for difference in correlation}
+  \subsection{Fisher's Z - formula}
+  \subsection{Fisher's Z - simulation}
+  \subsection{Zou's confidence interval}
+  \subsection{Generalised Test Variable (GTV)}
+  \subsection{Signed Log-likelihood ratio (SLR)}
+  \subsection{Permutation test}
+  
+  \section{Power to detect a true difference}
   \subsection{Type 1 and Type 2 error}
-  \begin{frame}
-    \frametitle{Type 1 and Type 2 error \footfullcite{Cohen1988}}  
-    \(\alpha\)
-    \begin{itemize}
-      \item expected proportion of null hypotheses to be rejected when true 
-      \item type 1 error
-      \item the classic '0.05' (5\%)\; but 0.1 or any other number may also be chosen 
-    \end{itemize}
-    
-    \(\beta\)
-    \begin{itemize}
-      \item expected proportion of null hypotheses not rejected when false 
-      \item type 2 error
-      \item 0.2 (20\%) is a classic choice; gunning for power of \(1 - \beta = 80\)
-    \end{itemize}
-  \end{frame} 
+  \subsection{formula}
+  \subsection{simulation}
+  
+  \section{Simulation and efficiency}
+  \subsection{Complexity: cats in sacks with mice and lice...}
+  \subsection{Time testing}
+  \subsection{Analysis plan}
+  
+  \section{results}
 
-  \subsection{Hypothesis test for difference in \it{r}}  
   \begin{frame}
-    \frametitle{Hypothesis test for difference in correlations  \footfullcite{Cohen1988, Aberson2010}}
-    \[\theta     = \arctanh(r_1) - \arctanh(r_2)          \]
-    \[se_\theta  = \sqrt{\frac{1}{n_1-3}+\frac{1}{n_2-3}} \]
-    \[c_\theta   = q / se_q                               \] 
-    Under the null hypothesis, we evaluate \(c_\theta\) against the standard normal distribution for the probability of observing an effect size of such mangitude:
-    \[p(\theta)  =  \Phi_{c_\theta/2}^{-1}                \]
-      - note: two sided p value; could be onesided
-  \end{frame}   
+    \frametitle{Remaining slides}
 
-  \subsection{Confidence interval for difference in \it{r}}   
-  \begin{frame}
-    \frametitle{Confidence interval for difference in correlations}  
-    In the scale of \(z\):
-    \[\ci_{100(1-\alpha)\%} =\theta \pm c_0 \times se_\theta \] 
-    or back in the scale of \(r\):
-    \[\ci_{100(1-\alpha)\%} =\tanh \bigg( \theta \pm c_0 \times se_\theta \bigg) \] 
+  Correlation
+  Pearson
+  Spearman
+  ICC
+  Partial
+  
+  Tests for difference in correlation
+  Fisher's Z - formula
+  Fisher's Z - simulation
+  Zou's confidence interval
+  Generalised Test Variable (GTV)
+  Signed Log-likelihood ratio (SLR)
+  Permutation test
+  
+  Power to detect a true difference
+  Type 1 and Type 2 error
+  formula
+  simulation
+  
+  Simulation and efficiency
+  Complexity: cats in sacks with mice and lice...
+  Time testing
+  Analysis plan
   \end{frame}    
   
-  \subsection{Power for difference in correlations}   
-  \begin{frame}
-    \frametitle{Power for difference in correlations \footfullcite{Cohen1988, Aberson2010}}  
-    \[\theta     = \arctanh(r_1) - \arctanh(r_2)            \]
-    \[se_\theta    = \sqrt{\frac{1}{n_1-3}+\frac{1}{n_2-3}} \]
-    \[c_\theta     = q / se_q                               \] 
-    \[c_0   =  \Phi_{\alpha/2}^{-1}                         \]
-    \[\beta = \Phi \bigg( c_0 - c_\theta \bigg)             \]
-    and
-    \[ \power(\theta) = 1 - \beta                           \]
-  \end{frame}
   
-  \begin{frame}
-    \frametitle{Power for difference in correlations}  
-    \[ \power = 1- \Phi \bigg(\Phi_{\alpha/2}^{-1} - \frac{\arctanh(r_1) - \arctanh(r_2)}{\sqrt{(n_1-3)^{-1} + (n_2-3)^{-1}}} \bigg) \]
-  \end{frame}
-
-  \begin{frame}
-    \frametitle{Judging magnitude}  
-      \begin{itemize}         
-				\item \(r^2\) is the proportion of variance of one variable which can be explained by that of the other.
-	      \item \(r^2 \times 100\%\) of the variance in \(y\) is attributable to magnitude of \(x\)    
- 	      \item \(\tanh(\theta)^2 \times 100\%\) is the magnitude of difference in variance explained by one group compared with the other.  Although, by squaring we lose the sign indicating direction of effect; this could be restored.
-        \item Cohen \footfullcite{Cohen1988} recommends use of \(r^2\) to inform choice of effect size for detection in power calculations (with subject matter knowledge from literature).
-      \end{itemize}
-  \end{frame}
   
- 
-  
-  % \section{Other approaches to NHST}
-  \subsection{Permutation test}
-  \begin{frame}
-    \frametitle{Permutation test \footfullcite{Efron1993}}  
-    \begin{itemize}
-		  \item take order statistic (ranked, no ties) representation of combined group correlations \(r_1\) and \(r_2\) 
-	  	\item break ties using a Bernoulli trial
-	  	\item two vectors:
-      \begin{itemize}
-				\item \(v\) is vector of order statistics: \(v = \{v_1, v_2,\ldots, v_N\}\)
-			  \item \(v\) is corresponding ordered vector of group membership: \(g = \{g_1, g_2,\ldots, g_N\}\)
-      \end{itemize}
-    \end{itemize}
-  \end{frame} 
-  
-  \begin{frame}
-    \frametitle{Permutation test \footfullcite{Efron1993}}  
-    \begin{itemize}
-	  	\item Permutation lemma: \it{"Under \(H_0: \rho_1 = \rho_2\), the vector g has probability \(1/\binom{N}{n}\) of equaling any one of its possible values"}
-      \item so, assuming \(H_0\) of no difference, all permuations of \(z_1\) and \(z_2\) are equally likely
-  		\item combine \(n_1 + n_2\) observations from two groups together
-      \begin{itemize}
-        \item reduces the two sample situation to a single distribution assumed true under \(H_0\).
-	    	\item if no difference, should be no discernible pattern of this difference in distributions when re-sampled a sufficiently large number of times
-      \end{itemize}
-    \end{itemize}
-  \end{frame} 
-      
-  \begin{frame}
-    \frametitle{Permutation test \footfullcite{Efron1993}}  
-    \begin{itemize}
-  		\item without replacement, take sample of size \(n_1\) to represent first group, 
-  		\item remaining sample of size \(n_2\) represents second group
-	  	\item take difference in means
-		  \item repeat a large number of times
-		  \item Evaluate: \it{does the original difference lie outside the middle \(100\times(1-\alpha)\)\%  of the re-sampled distribution?} If yes, reject \(H_0\). 
-  		\item Permutation \(\alpha\) is probability that the permutation replication \(\hat{\theta}^{\*} \geq \hat{\theta}\) the sample difference, and is evaluated as the proportion of occurances relative to total number of possible permutations
-		\item often approximated using Monte Carlo methods
-    \end{itemize}
-  \end{frame}  
-
-  \subsection{Approach taken by R package cocor} 
-  \begin{frame}
-    \frametitle{Approach taken by R package cocor}
-    cocor \footfullcite{Diedenhofen2015} is a recent implementation of a flexible calculator for inferences on differences in \(r\)
-    \begin{center}
-      \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{../figs/Diedenfohen_Musch_cocor_flowchart_2015.pdf}
-    \end{center}
-  \end{frame}  
-
   \section{Interactive power calculator web app} 
   \begin{frame}
     \frametitle{Interactive power calculator web app}

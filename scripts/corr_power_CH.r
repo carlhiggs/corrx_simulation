@@ -390,11 +390,11 @@ system.time(dt_normal[, tests:={
                       param1b = c(p1,p1),
                       param2a = c(p2,p2), 
                       param2b = c(p2,p2),
-                      test    = tests,
+                      test    = c( "fz_nosim","fz","gtv","slr","zou"),
                       alpha   = 0.05, 
                       sidedness=2,
                       method=as.character(method),  
-                      nsims = 100,
+                      nsims = 1000,
                       power_only = TRUE))
 },by = 1:nrow(dt_normal)] )
 
@@ -412,7 +412,7 @@ system.time(dt_gamma1[, tests:={
                               alpha   = 0.05, 
                               sidedness=2,
                               method=as.character(method),  
-                              nsims = 100,
+                              nsims = 1000,
                               power_only = TRUE))
 },by = 1:nrow(dt_gamma1)] )
 
@@ -430,49 +430,39 @@ system.time(dt_gamma2[, tests:={
                               alpha   = 0.05, 
                               sidedness=2,
                               method=as.character(method),  
-                              nsims = 100,
+                              nsims = 1000,
                               power_only = TRUE))
 },by = 1:nrow(dt_gamma2)] )
 
 
 ## More examples - test runs for now to implement once dt is calculated
 # add in extra summary vars
-test3[,("ratio"):=n1/n2,by=1:nrow(test3)]
-test3[,("n"):=n1+n2,by=1:nrow(test3)]
-test3[,("diff"):=abs(rho1-rho2),by=1:nrow(test3)]
-
-tmp.env <- new.env() # create a temporary environment
-load("r_power_work_partial_dt.RData", envir=tmp.env) # load workspace into temporary environment
-x <- get("dt", pos=tmp.env) # get the objects you need into your globalenv()
-#x <- tmp.env$x # equivalent to previous line
-rm(tmp.env) # remove the temporary environment to free up memory
-
-# example extraction of plot
-filled.contour(x = seq(-0.9,0.9,0.1), 
-               y = seq(-0.9,0.9,0.1), 
-               z = matrix(unlist(x[(method=="pearson")&
-                                         (dist=="gamma")&
-                                         (p1==1)&
-                                         (p2==5)&
-                                         (n1==60)&
-                                         (n2==120),
-                                       "gtv"]),
-                          nrow=19,ncol=19, byrow = TRUE))
+dt[,("ratio"):=n1/n2,by=1:nrow(dt)]
+dt[,("n"):=n1+n2,by=1:nrow(dt)]
+dt[,("diff"):=abs(rho1-rho2),by=1:nrow(dt)]
 
 
-x[,("ratio"):=n1/n2,by=1:nrow(x)]
-x[,("n"):=n1+n2,by=1:nrow(x)]
-x[,("diff"):=abs(rho1-rho2),by=1:nrow(x)]
+### scratch code for getting results processed from environment on work computer
+# tmp.env <- new.env() # create a temporary environment
+# load("r_power_work_partial_dt.RData", envir=tmp.env) # load workspace into temporary environment
+# x <- get("dt", pos=tmp.env) # get the objects you need into your globalenv()
+# #x <- tmp.env$x # equivalent to previous line
+# rm(tmp.env) # remove the temporary environment to free up memory
+# dt <- rbind(other[is.na(fz_nosim)==FALSE,],dt_test)
+
 
 # convert to long
-t3.long <- melt(x[method=="pearson",], measure.vars = tests, variable.name = "test", value.name = "power")
+dt.long <- melt(dt, measure.vars = tests, variable.name = "test", value.name = "power")
 
 # overall average power
-t3.long[,mean(power),by=test]
+dt.long[method=="pearson",mean(power),by=test]
+dt.long[method=="spearman",mean(power),by=test]
+
+
 
 # alternative plots
 library(ggplot2)
-p <- ggplot(t3.long[(method=="pearson")&
+p <- ggplot(dt.long[(method=="pearson")&
                       (dist=="normal")&
                       (p1==0)&
                       (p2==1)&
@@ -486,8 +476,19 @@ p2
 p3 <- p + geom_smooth(aes(x = diff, y = power, colour = test))
 p3
 
+# plot of test by method
+p <- ggplot(dt.long[(dist=="normal")&
+                      (p1==0)&
+                      (p2==1)&
+                      (n1==15)&
+                      (n2==15)&
+                      (test=="fz"),])
+# could do: colour = interaction(ratio,n,sep="-",lex.order=TRUE)
+p3 <- p + geom_smooth(aes(x = diff, y = power, colour = method))
+p3
+
 # Plot power by N, holding ratio and correlations constant
-p <- ggplot(t3.long[(method=="pearson")&
+p <- ggplot(dt.long[(method=="pearson")&
                       (dist=="normal")&
                       (p1==0)&
                       (p2==1)&
@@ -500,17 +501,88 @@ p2 <- p + geom_point(aes(x = n,
 p2
 
 # Plot power by ratio, holding n and correlations constant
-p <- ggplot(t3.long[(method=="pearson")&
+p <- ggplot(dt.long[(method=="pearson")&
                       (dist=="normal")&
                       (p1==0)&
                       (p2==1)&
-                      (n==30)&
                       (rho1==-0.9)&
                       (rho2==-0.6),])
-p2 <- p + geom_point(aes(x = ratio, 
+p <- p + geom_point(aes(x = ratio, 
                          y = power,
                          colour = test), size = 3)
-p2
+
+p <- p + geom_tile(aes(fill=n))
+
+
+
+
+dt.long[(method=="pearson")&
+          (dist=="normal")&
+          (p1==0)&
+          (p2==1)&
+          (n1==15)&
+          (n2==15),mean(power),by=test]
+
+dt.long[(method=="spearman")&
+          (dist=="normal")&
+          (p1==0)&
+          (p2==1)&
+          (n1==15)&
+          (n2==15),mean(power),by=test]
+
+dt[, lapply(.SD, sum, na.rm=TRUE), by=category ]
+
+dt.long[(dist=="normal")&
+          (p1==0)&
+          (p2==1)&
+          (ratio==1),
+        mean(power),by=list(method,test,n)]
+
+
+# Scratch approach towards getting cross hairs on 0.8 power
+# challenge is the x-axis; works by fitting a non-linear model
+# using a quadratic function of log(n)
+um <- dt.long[(dist=="normal")&
+                (method=="pearson")&
+                (p1==0)&
+                (p2==1)&
+                (ratio==1),
+              mean(power),by=list(method,test,n)]
+power <- um$V1
+n     <- um$n
+fit <-lm(power~poly(log(n),2))
+newx <-data.frame(n=seq(0,2000,1))
+fitline = predict(fit, newdata=newx)
+est <-data.frame(newx,fitline)
+
+plot(power~n,lwd=1)
+abline(h=0.8, col="red")
+lines(est, col="blue",lwd=2)
+
+cross <-est[which.min(abs(0.8-est$fitline)),] #find closest to 1
+plot(power~n,lwd=1)
+lines(est, col="blue",lwd=1)
+abline(h=0.8)
+abline(v=cross[1], col="black")
+
+
+
+
+
+ggplot(um, aes(x = n, y = V1, colour = test, group = test))+ 
+  geom_point() + 
+  geom_line() +
+  scale_x_log10("N, log 10-scale", breaks = unique(um$n)) +
+  geom_segment(aes(xend=0, yend=mean), color="blue") 
+
+
+  geom_hline(yintercept = 0.8)  +
+  geom_hline(yintercept = 0.8)
+
+  stat_smooth(aes(x = seq(length(unique(n)))), # continuous x-axis
+              se = F, method = "lm", formula = y ~ poly(x, 2)) +
+  scale_x_continuous(breaks = seq(length(unique(um$n))), 
+                     labels = levels(um$n)) # original labels
 
 # system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 # # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
@@ -673,3 +745,40 @@ p2
 #                     corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
 
 
+# 
+# ggplotly(p)
+# 
+# colors <- c('#4AC6B7', '#1972A4', '#965F8A', '#FF7070', '#C61951')
+# colors2 <- c(rev(colors),colors[2:5])
+# 
+# p <- plot_ly(dt.long[(method=="pearson")&
+#                   (dist=="normal")&
+#                   (p1==0)&
+#                   (p2==1)&
+#                   (test=="zou"),], 
+#              x = ~n1, y = ~n2, z = ~diff, color = ~power, size = ~n, colors = rev(colors),
+#              marker = list(symbol = 'circle', sizemode = 'diameter'), sizes = c(1, 10),
+#              text = ~paste('Power:', power, '<br>Dz correlation:', rho2, '<br>Mz correlation:', rho1,
+#                            '<br>Twin pairs:', n)) %>%
+#   layout(title = 'Power by correlation and group size',
+#          scene = list(xaxis = list(title = 'Mz twins',
+#                                    gridcolor = 'rgb(255, 255, 255)',
+#                                    # range = c(2.003297660701705, 5.191505530708712),
+#                                    zerolinewidth = 1,
+#                                    ticklen = 5,
+#                                    gridwidth = 2),
+#                       yaxis = list(title = 'Dz twins',
+#                                    gridcolor = 'rgb(255, 255, 255)',
+#                                    # type = 'log',
+#                                    # range = c(36.12621671352166, 91.72921793264332),
+#                                    zerolinewidth = 1,
+#                                    ticklen = 5,
+#                                    gridwith = 2),
+#                       zaxis = list(title = 'Difference in r',
+#                                    gridcolor = 'rgb(255, 255, 255)',
+#                                    zerolinewidth = 1,
+#                                    ticklen = 5,
+#                                    gridwith = 2)),
+#          paper_bgcolor = 'rgb(243, 243, 243)',
+#          plot_bgcolor = 'rgb(243, 243, 243)')
+# ggplotly(p)
