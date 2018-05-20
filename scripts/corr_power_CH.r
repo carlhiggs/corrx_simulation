@@ -539,51 +539,70 @@ dt.long[(dist=="normal")&
         mean(power),by=list(method,test,n)]
 
 
-# Scratch approach towards getting cross hairs on 0.8 power
-# challenge is the x-axis; works by fitting a non-linear model
-# using a quadratic function of log(n)
+# plot power curve given parameters
 um <- dt.long[(dist=="normal")&
                 (method=="pearson")&
                 (p1==0)&
                 (p2==1)&
+                (rho1==0.2)&
+                (rho2==0.5)&
+                (ratio==1)&
+                (test=='zou'),
+              power,by=list(n)]
+
+threshold <- 0.8
+# interpolate power curve
+fit <- cbind(data.table("n" = min(um$n):max(um$n)),
+             data.table("power" = splinefun(um$n, 
+                                            um$power,
+                                            method = "monoH.FC")(min(um$n):max(um$n))))
+
+# find point of y which satisfied f(y) = desired power (e.g. 0.8)
+cross <-fit[which.min(abs(threshold-fit$power)),] #find closest to Y intercept (0.8)
+# plots results
+plot(um,lwd=1)
+lines(fit, lwd = 2)
+abline(h=threshold)
+abline(v=cross[[1]])
+
+
+# plot power curve given parameters
+um <- dt.long[(dist=="normal")&
+                (method=="pearson")&
+                (p1==0)&
+                (p2==1)&
+                (rho1==0.2)&
+                (rho2==0.5)&
                 (ratio==1),
-              mean(power),by=list(method,test,n)]
-power <- um$V1
-n     <- um$n
-fit <-lm(power~poly(log(n),2))
-newx <-data.frame(n=seq(0,2000,1))
-fitline = predict(fit, newdata=newx)
-est <-data.frame(newx,fitline)
+              power,by=list(n,test)]
+um[,"log_n":=log2(n),by=1:nrow(um)]
+fit <- data.table()
+for(x in levels(um$test)) {
+  fit <- rbind(fit,
+               cbind("test" = x,
+                     "n"    = min(um$n):max(um$n),
+                     "power" = splinefun(um[test %in% x,log_n], 
+                                         um[test %in% x,power],
+                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+}
 
-plot(power~n,lwd=1)
-abline(h=0.8, col="red")
-lines(est, col="blue",lwd=2)
+fit$n <- as.integer(fit$n)
+fit$power <- as.double(fit$power)
 
-cross <-est[which.min(abs(0.8-est$fitline)),] #find closest to 1
-plot(power~n,lwd=1)
-lines(est, col="blue",lwd=1)
-abline(h=0.8)
-abline(v=cross[1], col="black")
+cross <- data.table()
+for(x in levels(um$test)) {
+  cross <- rbind(cross, 
+                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+}
+ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), breaks = unique(um$n)) +
+  scale_y_continuous(bquote(Power~(1-beta)), breaks = seq(0,1,0.2)) +
+  geom_point(data = um)  +
+  geom_line(data = fit, lwd = 1) +
+  geom_hline(yintercept = 0.8) +
+  geom_vline(aes(xintercept = cross$n, colour = cross$test))
 
-
-
-
-
-ggplot(um, aes(x = n, y = V1, colour = test, group = test))+ 
-  geom_point() + 
-  geom_line() +
-  scale_x_log10("N, log 10-scale", breaks = unique(um$n)) +
-  geom_segment(aes(xend=0, yend=mean), color="blue") 
-
-
-  geom_hline(yintercept = 0.8)  +
-  geom_hline(yintercept = 0.8)
-
-  stat_smooth(aes(x = seq(length(unique(n)))), # continuous x-axis
-              se = F, method = "lm", formula = y ~ poly(x, 2)) +
-  scale_x_continuous(breaks = seq(length(unique(um$n))), 
-                     labels = levels(um$n)) # original labels
-
+  
 # system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 # # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
 # # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
