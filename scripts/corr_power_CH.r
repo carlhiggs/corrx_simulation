@@ -24,6 +24,7 @@ require(Rcpp)
 require("simstudy")
 sourceCpp('test.cpp')
 require(data.table)
+require(ggplot2)
 
 # to deploy R power app (code elsewhere
 
@@ -539,7 +540,7 @@ dt.long[(dist=="normal")&
         mean(power),by=list(method,test,n)]
 
 
-# plot power curve given parameters
+# plot power curve given parameters - Normal
 um <- dt.long[(dist=="normal")&
                 (method=="pearson")&
                 (p1==0)&
@@ -565,8 +566,7 @@ lines(fit, lwd = 2)
 abline(h=threshold)
 abline(v=cross[[1]])
 
-
-# plot power curve by N given parameters
+# plot power curve by N given parameters  - Normal
 um <- dt.long[(dist=="normal")&
                 (method=="pearson")&
                 (p1==0)&
@@ -575,7 +575,124 @@ um <- dt.long[(dist=="normal")&
                 (rho2==0.5)&
                 (ratio==1),
               power,by=list(n,test)]
-threshold <- 0.8
+
+
+
+um[,"log_n":=log2(n),by=1:nrow(um)]
+fit <- data.table()
+for(x in levels(um$test)) {
+  fit <- rbind(fit,
+               cbind("test" = x,
+                     "n"    = min(um$n):max(um$n),
+                     "power" = splinefun(um[test %in% x,log_n], 
+                                         um[test %in% x,power],
+                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+}
+
+fit$n <- as.integer(fit$n)
+fit$power <- as.double(fit$power)
+
+cross <- data.table()
+for(x in levels(um$test)) {
+  cross <- rbind(cross, 
+                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+}
+
+cross$label <- c("FZ (no sim.)",
+                 "FZ",
+                 "GTV",
+                 "SLR",
+                 "Zou's CI")
+cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+cross <- cross[order(+rank(n))]
+
+ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
+                     breaks = unique(um$n),
+                     limits = c(30,1920)) +
+  scale_y_continuous(bquote(Power~(1-beta)), 
+                     breaks = seq(0,1,0.1),
+                     limits = c(0,1)) +
+  geom_point(data = um)  +
+  geom_line(data = fit, lwd = 1) +
+  geom_hline(yintercept = 0.8) +
+  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
+  scale_colour_discrete(name="Tests",
+                        breaks=cross$test,
+                        labels=cross$label)  +
+  theme(panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) 
+
+
+# plot power curve by N given parameters - Gamma, subtle
+um <- dt.long[(dist=="gamma")&
+                (method=="pearson")&
+                (p1==1.5)&
+                (p2==0.09)&
+                (rho1==0.2)&
+                (rho2==0.5)&
+                (ratio==1),
+              power,by=list(n,test)]
+
+
+
+um[,"log_n":=log2(n),by=1:nrow(um)]
+fit <- data.table()
+for(x in levels(um$test)) {
+  fit <- rbind(fit,
+               cbind("test" = x,
+                     "n"    = min(um$n):max(um$n),
+                     "power" = splinefun(um[test %in% x,log_n], 
+                                         um[test %in% x,power],
+                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+}
+
+fit$n <- as.integer(fit$n)
+fit$power <- as.double(fit$power)
+
+cross <- data.table()
+for(x in levels(um$test)) {
+  cross <- rbind(cross, 
+                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+}
+
+cross$label <- c("FZ (no sim.)",
+                 "FZ",
+                 "GTV",
+                 "SLR",
+                 "Zou's CI")
+cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+cross <- cross[order(+rank(n))]
+
+ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
+                     breaks = unique(um$n),
+                     limits = c(30,1920)) +
+  scale_y_continuous(bquote(Power~(1-beta)), 
+                     breaks = seq(0,1,0.1),
+                     limits = c(0,1)) +
+  geom_point(data = um)  +
+  geom_line(data = fit, lwd = 1) +
+  geom_hline(yintercept = 0.8) +
+  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
+  scale_colour_discrete(name="Tests",
+                        breaks=cross$test,
+                        labels=cross$label)  +
+  theme(panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) 
+
+
+# plot power curve by N given parameters - Gamma, extreme
+um <- dt.long[(dist=="gamma")&
+                (method=="pearson")&
+                (p1==1)&
+                (p2==5)&
+                (rho1==0.2)&
+                (rho2==0.5)&
+                (ratio==1),
+              power,by=list(n,test)]
 
 
 
@@ -605,6 +722,7 @@ cross$label <- c("FZ (no sim.)",
                     "SLR",
                     "Zou's CI")
 cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+cross <- cross[order(+rank(n))]
 
 ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
   scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
@@ -626,7 +744,21 @@ ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+
 
 
 
-# plot power curve by difference given parameters
+# # plot power curve by difference given parameters
+# dist      <- "normal"
+# method    <- "pearson"
+# ratio     <- 1
+# n         <- 240
+# threshold <- 0.8
+# 
+# um <- dt.long[(dist==dist)&
+#                 (method==method)&
+#                 (p1==0)&
+#                 (p2==1)&
+#                 (ratio==ratio)&
+#                 (n==n),
+#               power,by=list(test,rho1,rho2,diff)]
+
 um <- dt.long[(dist=="normal")&
                 (method=="pearson")&
                 (p1==0)&
@@ -634,12 +766,71 @@ um <- dt.long[(dist=="normal")&
                 (ratio==1)&
                 (n==240),
               power,by=list(test,rho1,rho2,diff)]
-threshold <- 0.8
 
 um[,"z1":=atanh(rho1), by = 1:nrow(um)]
 um[,"z2":=atanh(rho2), by = 1:nrow(um)]
+um[,"diff1":=tanh(z1-z2), by = 1:nrow(um)]
 um[,"diff2":=abs(tanh(z1-z2)), by = 1:nrow(um)]
 
+# Plots to clarify why the use of tanh(atanh(difference)) is important
+# Power estimates are not monotonic here using just corr differences
+ggplot(um[(test %in% "fz")],aes(x = diff,y = power,group = rho1, colour = rho1))+geom_point()+theme_bw()
+
+# Here we see that the differences are ordered when considered by tanh(atanh(diff))
+ggplot(um[(test %in% "fz")],aes(x = diff,y = diff1,group = rho1, colour = rho1))+geom_point()+theme_bw()
+
+# Here we see that the differences are ordered when considered by and simplified by |tanh(atanh(diff))|
+ggplot(um[(test %in% "fz")],aes(x = diff,y = diff2,group = rho1, colour = rho1))+geom_point()+theme_bw()
+
+# Here we see that power increases as diff increases, but not equally across series of (rho1,rho2) combinations
+ggplot(um[(test %in% "fz")],aes(x = diff,y = diff2,group = power, colour = power))+geom_point()+theme_bw()
+
+
+# Rho by Rho showing power; with squiggly line analogue of our filled conotur
+ggplot(um,aes(x = rho1,
+                                y = rho2, 
+                                group = power, 
+                                colour = power))+
+  geom_point()+
+  geom_line()+
+  theme_bw() 
+
+# Here, we see how the assymetrical tanh(atanh(diff)) works; fixed rho, fixed test
+ggplot(um[(test=="fz")&(rho1==0.5),],aes(x = diff1,
+              y = power, 
+              group = test, 
+              colour = test))+
+  geom_point()+
+  theme_bw() 
+
+# power by diff1;  fixed rho, series by test
+ggplot(um[(rho1==0.5),],aes(x = diff1,
+                                         y = power, 
+                                         group = test, 
+                                         colour = test))+
+  geom_point()+
+  theme_bw() 
+
+# power by diff2;  fixed rho, series by test
+ggplot(um[(rho1==0.5),],aes(x = diff2,
+                            y = power, 
+                            group = test, 
+                            colour = test))+
+  geom_point()+
+  theme_bw() 
+
+# amazing abstract picture  -- how??!
+ggplot(um[(test %in% "fz")],aes(x = rho1,y = power,group = rho2, colour = rho2))+
+  geom_point()+
+  geom_line()+
+  theme_bw()
+
+ggplot(um[(test %in% "fz")],aes(x = z1,y = power,group = z2, colour = z2))+
+  geom_point()+
+  geom_line()+
+  theme_bw()
+
+# fit by averaging over differences arising from differen rho combinations
 fit <- data.table()
 for(x in levels(um$test)) {
   spline <- with(um[test %in% x,], smooth.spline(diff2, 
@@ -656,31 +847,10 @@ for(x in levels(um$test)) {
 fit$diff2 <- as.double(fit$diff2)
 fit$power <- as.double(fit$power)
 
-# 
-# with(um,plot(diff2,power))
-# 
-# spline <- spline(um[test %in% x,diff2], 
-#           um[test %in% x,power],
-#           n = 100)
-# lines(spline)
-# 
-# 
-# fit <-lm(power~poly(atanh(diff2),4),data =um)
-# newx <-data.frame(diff2=seq(0,1,0.001))
-# fitline = predict(fit, newdata=newx)
-# est <-data.frame(newx,fitline)
-# 
-# plot(um$diff2,um$power)
-# abline(h=0.8, col="red")
-# lines(est, col="blue",lwd=2)
-# 
-# fit$diff2 <- as.integer(fit$diff2)
-# fit$power <- as.double(fit$power)
-
 cross <- data.table()
 for(x in levels(um$test)) {
   cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+                 fit[(test %in% x)][which.min(abs(0.8-fit[(test %in% x),power]))])
 }
 
 cross$label <- c("FZ (no sim.)",
@@ -690,6 +860,11 @@ cross$label <- c("FZ (no sim.)",
                  "Zou's CI")
 cross[,"label":= paste0(label," (",round(diff2,2),")"),by=1:nrow(cross)]
 cross <- cross[order(+rank(diff2))]
+
+title <- paste0("Power to detect difference in ",method," correlations",
+         dist,"((",0,",",0,"),(",1,",",1,"))","\n",
+       "N: ",n,
+       "; Mz to Dz ratio: ",ratio, "; sims: ",100)
 
 ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+ 
   scale_x_continuous(bquote("|"~tanh(atanh(rho[1])-atanh(rho[2]))~"|"), 
@@ -708,6 +883,7 @@ ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+
   theme(panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
         axis.line = element_line(colour = "black")) 
+  ggtitle(title)
   
 # system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
 # # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
