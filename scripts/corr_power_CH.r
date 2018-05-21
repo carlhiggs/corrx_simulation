@@ -456,12 +456,68 @@ dt[,("diff"):=abs(rho1-rho2),by=1:nrow(dt)]
 dt.long <- melt(dt, measure.vars = tests, variable.name = "test", value.name = "power")
 
 # overall average power
-dt.long[method=="pearson",mean(power),by=test]
-dt.long[method=="spearman",mean(power),by=test]
+dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
+dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1.5"),round(mean(power),2),by=test]
+dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),round(mean(power),2),by=test]
+
+require(Publish)
+dt.long[(method=="pearson")&(dist=="normal"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
+                                                  p25=round(quantile(power, .025, na.rm=TRUE),2),
+                                                  p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
+dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1.5"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
+                                                             p25=round(quantile(power, .25, na.rm=TRUE),2),
+                                                             p75=round(quantile(power, .75, na.rm=TRUE),2)),by=test]
+dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
+                                                           p25=round(quantile(power, .025, na.rm=TRUE),2),
+                                                           p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
 
 
+lparam1a <- 0
+lparam1b <- 0
+lparam2a <- 1
+lparam2b <- 1
+ln1 <- 120
+ln2 <- 120
+lalpha <- 0.05
+lthreshold <- 0.8
+lnsims <- 100
+ltest <- "slr"
+ldist <- "normal"
+lmethod <-"pearson"
+lnames <- c("Mz twins","Dz twins")
+corrxplot <- matrix(unlist(dt.long[(method==lmethod)&
+                   (dist==ldist)&
+                   (p1==lparam1a)&
+                   (p2==lparam2a)&
+                   (n1==ln1)&
+                   (n2==ln2)&
+                   (test==ltest),
+                   power]),
+                 nrow=19,ncol=19, byrow = TRUE)
+test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
+                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
 
-# alternative plots
+filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 10,
+               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
+                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                    add = TRUE, lwd = 3, col = "steelblue3");
+                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 axis(1, seq(-1,1,0.2))
+                 axis(2, seq(-1,1,0.2))},
+               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
+                                       ldist,"((",lparam1a,",",lparam2a,"),(",
+                                                                          lparam1b,",",lparam2b,"))","\n",
+                                                "Mz = ",ln1,
+                                                ", Dz = ",ln2,
+                                                ", alpha: ",lalpha, ", sims: ",lnsims),
+                                  xlab = paste0("Correlation in ",lnames[1]),
+                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
+               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+               arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+               
+# alternative plots 
 library(ggplot2)
 p <- ggplot(dt.long[(method=="pearson")&
                       (dist=="normal")&

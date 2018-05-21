@@ -29,6 +29,7 @@ require(compiler)
 require("simstudy")
 require(Rcpp)
 sourceCpp('C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/test.cpp')
+require(ggplot2)
 
 # Time genCorGen (result - not worthwhile compiling)
 genCorGen_compiled <- cmpfun(genCorGen)
@@ -771,5 +772,3 @@ system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1,1), par
 # param1 are the probabilities
 binary <- genCorGen(50, nvars = 2, params1 = c(.3, .5), dist = "binary", 
                     corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
-
-

@@ -10,16 +10,25 @@
 \usepackage{bm}
 \usepackage{xcolor}
 \usepackage{caption}
+\usepackage{booktabs}
 \DeclareMathOperator\arctanh{arctanh}
 \DeclareMathOperator\ci{CI}
+\DeclareMathOperator\abs{abs}
 \DeclareMathOperator\power{power}
 \newcommand{\E}{\mathrm{E}}
 \newcommand{\Var}{\mathrm{Var}}
 \newcommand{\Cov}{\mathrm{Cov}}
 
 \definecolor{rgr}{RGB}{28,144,153}
-
-
+% custom commands
+\newcommand*{\lcd}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
+% \newcommand{\bvn}[1]{\begin{equation*} \sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {#1} \\ {#1} & 1\end{smallmatrix}\right] \bigg)\end{equation*}}
+   
+ % \newcommand{\bvg1}[1]{\begin{equation*} \sim \mathcal{Gamma}\bigg(\left[\begin{smallmatrix}1.5\\ 1.5\end{smallmatrix}\right],\, \left[\begin{smallmatrix}.09 & {#1} \\ {#1} & .09\end{smallmatrix}\right] \bigg)\end{equation*}}
+       
+   
+ % \newcommand{\bvg2}[1]{\begin{equation*} \sim \mathcal{Gamma}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {#1} \\ {#1} & 5\end{smallmatrix}\right] \bigg)\end{equation*}}
+       
 % turn off mavigation 
 \setbeamertemplate{navigation symbols}{}
 
@@ -43,44 +52,101 @@
   \begin{frame}
     \frametitle{Research question}
       % This should be the first overhead or slide of your presentation and should clearly state a specific question that you addressed during your research.
+    Power to detect a difference in correlations between samples of identical (monozygotic) and non-identical (dizygotic) twin pairs
+    % \begin{itemize}
+      % \item What are the existing methods?
+      % \item How do these compare and can they be improved upon?  
+      % This question will be addressed through a literature review, and comparison of methods using both theory and simulation.
+    % \end{itemize}
+    \begin{center}
+  \begin{figure}[!htb]
+        \minipage{0.49\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        \endminipage\hfill
+        \minipage{0.49\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
+        \endminipage
+    \end{figure}
+    \end{center}
+  \end{frame} 
+  
+  
+  \section{Background}  
+  \begin{frame}
+    \frametitle{Background}
+    Let's assume that...
     \begin{itemize}
-      \item What are the existing methods for estimating power to detect a difference in correlations between identical (monozygotic) and non-identical (dizygotic) twins?
-      \item How do these compare and can they be improved upon?  
-      \item This question will be addressed through a literature review, and comparison of methods using both theory and simulation.
+      \item each pair of twin siblings share the same environmental history
+      \item zygosity doesn't influence environmental interactions
+      \item trait is normally distributed
+      \item accurate classification of zygosity
+      \item accurate measurement of trait
+      \item No dominant genetic variance (where one allele reliably masks the expression of the other when the two co-occur at a particular locus)
+      \item mz and dz twins have been sourced from equivalent populations
     \end{itemize}
   \end{frame} 
-
-  \section{Background}
-  \begin{frame}
-    \frametitle{Background: The classic twin study}
-      % 2 slides:
-      
-      % This should convince the audience that you understand the issue (e.g. disease and/or risk factors) that you studied, the gaps in knowledge, and that your project is important. That is, why did you do the study?
-
-      % You should discuss what is known about the public health issue and what is unknown? 
-
-      % How will your proposed study address what is unknown and fill any gaps?
-
-      % When applicable, it is important to describe findings and methodological problems from any previous similar studies and how your research will differ from previous studies.
-
-      % \begin{quote}
-      % A recent publication described a method of calculating the power to detect each of these variance components {\normalfont[additive, dominant, and shared environmental]} under certain assumptions.
-      % \end{quote}
-      % \begin{quote}
-      % However, this method did not address \textcolor{rgr}{power to detect differences in correlations between identical and non-identical twins}, which is an important first step in fitting variance components models. 
-      % \end{quote}
-      % \begin{quote}
-      % \textcolor{rgr}{This project will develop methods for estimating power for this first step, using both theory and simulations}.
-      % \end{quote}
-    The classic twin study exploits the differing degrees of genetic relatedness in identical twins and non-identical twins in order to draw inferences on the heritability of traits
-    % In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
   
-    Verhulst title
-  \end{frame} 
+   % 2 slides:
+  
+  % This should convince the audience that you understand the issue (e.g. disease and/or risk factors) that you studied, the gaps in knowledge, and that your project is important. That is, why did you do the study?
+
+  % You should discuss what is known about the public health issue and what is unknown? 
+
+  % How will your proposed study address what is unknown and fill any gaps?
+
+  % When applicable, it is important to describe findings and methodological problems from any previous similar studies and how your research will differ from previous studies.
+
+  % \begin{quote}
+  % A recent publication described a method of calculating the power to detect each of these variance components {\normalfont[additive, dominant, and shared environmental]} under certain assumptions.
+  % \end{quote}
+  % \begin{quote}
+  % However, this method did not address \textcolor{rgr}{power to detect differences in correlations between identical and non-identical twins}, which is an important first step in fitting variance components models. 
+  % \end{quote}
+  % \begin{quote}
+  % \textcolor{rgr}{This project will develop methods for estimating power for this first step, using both theory and simulations}.
+  % \end{quote}
+  
+  \begin{frame}
+    \frametitle{Background}
+    Let $x_{zjk}$ be the value of trait $x$ in the $k$th member of the $j$th twin pair having zygosity $z\in\{\text{mz},\text{dz}\}$
+    % cite Falconer 1960
+    \begin{center}
+      % \includegraphics{../figs/r_to_z.pdf}
+    \begin{figure}[!htb]
+        \minipage{0.39\textwidth}
+           \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
+           \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
+           \[\hat{\delta} = r_{mz} - r_{dz}\]
+           \[\text{heritability} = 2\delta\]
+        \endminipage\hfill
+        \minipage{0.3\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        \endminipage\hfill
+        \minipage{0.3\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
+        \endminipage
+    \end{figure}
+    \begin{table}\centering
+    \begin{tabular}{rcc}
+        \toprule
+        \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
+        \cmidrule(lr){2-3} 
+         & \textbf{Monozygotic (mz)} & \textbf{Dizogotic (dz)}				\\
+        \midrule										
+        genetic         &$r_{mz} = 1$& $r_{dz} = 0.5$       \\
+        shared env.     &$r_{mz} = 1$& $r_{dz} = 1$         \\  
+        individual env. &$r_{mz} = 0$& $r_{dz} = 0$         \\  
+        combination     &$0 < r_{mz} < 1$& $0 < r_{dz} < 1$ \\
+         \bottomrule 
+    \end{tabular}
+    \end{table}
+    \end{center}
+  \end{frame}  
+
 
   \section{Methods}
   \begin{frame}
-    \frametitle{Broad sketch}
+    \frametitle{A skip through the literature}
     % 3) HOW YOU ADDRESSED THE RESEARCH QUESTION (3 slides)
     % This should inform the audience as to what you did during your research to complete your project.
     % You should put a primary emphasis on explaining the statistical issues that you addressed in the project, with clear presentation of models and methods of analysis that you used.
@@ -88,16 +154,99 @@
     % bivariate data
     % tests
     % simulation code  Complexity and simulation time
+    \begin{columns}[t]
+      \column[T]{.4\textwidth}
+        \begin{itemize}
+          \item Galton, F.  1888
+          \item Pearson, K.  1895
+          \item Fisher, RA. 1915
+          \item David, FN. 1938
+          \item Falconer, DS. 1960
+          \item Cohen, J.  1988
+          \item Neale, M. et al. 1994
+          \item Visscher, PM. 2004
+          \item Verhulst, B. 2017
+          % \item Efron B. & Tibshirani RJ. 1994
+          % \item Kazemi M.R & Jafari 
+        \end{itemize} 
+      \column[T]{.6\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/david_corr_bands}.pdf}
+    \end{columns}
   \end{frame}   
 
+
+  \subsection{Power for difference in correlations}   
+  \begin{frame}
+    \frametitle{Power for difference in correlations \footfullcite{Cohen1988}}  
+    \textbf{Frequentist NHST paradigm} \\
+    $\alpha$ (Type I error) and $\beta$ (Type II error); Power is $1-\beta$
+    \linebreak
+    \linebreak
+    \textbf{Fisher's $Z$ formula approach}
+    \linebreak
+    $ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{mz}) - \arctanh(r_{dz})}{\sqrt{(n_{mz}-3)^{-1} + (n_{dz}-3)^{-1}}}  \bigg)  \Bigg) $ 
+    \linebreak
+    \textbf{Simulation approach}
+    \begin{itemize}
+      \item implement hypothesis test(s) for difference in correlations
+      \item take $m$ draws from simulated bivariate mz and dz populations
+      \item run hypothesis test(s) on each pair of draws
+      \item power given parameters is proportion of tests where $p < \alpha$      
+    \end{itemize} 
+  \end{frame}  
   
   \begin{frame}
-    \frametitle{Tests}
+    \frametitle{Simulations}
+    Using $r_{mz}$ and $r_{dz}$ derived from simulated bivariate normal and non-normal populations with covariance $\left[\begin{smallmatrix}1 & \rho\\ \rho & 1\end{smallmatrix}\right] $, the following hypothesis tests were run:
+    \linebreak
+    \begin{itemize}
+    \item Fisher's Z: $\frac{\arctanh(r_{mz}) - \arctanh(r_{dz})}{\sqrt{(n_{mz}-3)^{-1} + (n_{dz}-3)^{-1}}}$
+    \item Generalized Variable Test (GVT) \footfullcite{Krishnamoorthy2014}
+    \item Signed log-likelihood ratio test \footfullcite{Krishnamoorthy2014}  
+    \item Permutation test \footfullcite{Efron1994}
+    \item Zou's confidence interval \footfullcite{Zou2007}
+    \end{itemize}
+    \linebreak
+    \linebreak
+   \textbf{Plan} 
+   1000 simulations of all mz dz combinations of $rho$ and $n$ using three distinct distributions and re-run using Spearman correlation (rank based, non-parametric)...
   \end{frame}   
 
   \section{results}
   \begin{frame}
-    \frametitle{Main findings}
+    \frametitle{Preliminary results: simulation times}
+    \linebreak
+    $1000\times39^2\times7^2\times6\times3\times2 = 2,234,400,000$ simulations...
+    \textbf{Optimisation approach}\footnotemark
+    \begin{itemize}
+    \item hand coded
+    \item functions compiled using either JIT compiler or RCCP 
+    \end{itemize}
+    \begin{table}\centering
+    \begin{tabular}{rcc}
+        \toprule
+        \textbf{Test} &	\multicolumn{2}{c}{\textbf{Time/1000 runs (secs)}} \\
+        \cmidrule(lr){2-3} 
+         & \textbf{as is} & \textbf{compiled}				\\
+        \midrule										
+        Fisher's z (no sim) &         0.03 &   0.02 \\
+        Fisher's Z          &         0.56 &   0.36 \\
+        GTV (r)             &        18.65 &  16.55 \\
+        GTV (R C++)         &              &  12.08 \\
+        Permutation (PT)    &      2473.18 &2341.62 \\
+        SLR                 &         0.49 &   0.33 \\
+        Zou's CI            &         0.38 &   0.28 \\
+        \midrule
+        \multicolumn{1}{l}{Total (sans r-compiled GTV)} & 2493.29  & 2354.69 \\
+        \multicolumn{1}{l}{$\times 1520 \times 49 \times 3 \times 2/60/60/24/365$}  & 35 years  & 33 years \\
+        \multicolumn{1}{l}{$-\text{PT}: \times 361 \times 49\times 3 \times 2 /60/60/24$}  & 25 days  & 16 days \\
+    \bottomrule 
+    \end{tabular}
+    \end{table}
+
+    
+    
+    \footnotetext[1]{Thanks to Koen Simons for advice}
     % 4) RESULTS (2-3 slides)
     % This should inform the audience as to what you found during your research to complete your project.
     % You need to present a summary of the analysis. This could include tables and figures of results and text, again with a primary focus on statistical issues, e.g. possible effects of decisions taken during the modelling and choice of estimation methods.
@@ -105,12 +254,48 @@
 
   \begin{frame}
     \frametitle{Main findings}
-   % something else
+    106,134 sets of power estimates comparing 5 tests (wide form)
+    \linebreak
+    \textbf{Example}
+    \linebreak
+    Power to detect $\hat\delta_{\rho}$ in Mz and Dz twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
+    \begin{center}
+      \begin{figure}[!htb]
+        \minipage{0.49\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example}.pdf}
+        \endminipage\hfill
+        \minipage{0.49\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/power_n_plot_example}.pdf}
+        \endminipage
+      \end{figure}
+    \end{center}
   \end{frame}   
 
   \begin{frame}
+    \frametitle{Main findings}
+    106,134 sets of power estimates comparing 5 tests (wide form)
+    \linebreak
+    \textbf{Example}
+    \linebreak
+    Power to detect $\hat\delta_{\rho}$ in Mz and Dz twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$
+    \begin{center}
+      \begin{figure}[!htb]
+        \minipage{0.49\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example2}.pdf}
+        \endminipage\hfill
+        \minipage{0.49\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/power_n_plot_example2}.pdf}
+        \endminipage
+      \end{figure}
+    \end{center}
+  \end{frame}     
+  
+  \begin{frame}
     \frametitle{Limitations}
    %  any limitations – concerning either the data and substantive question or the statistical methods.
+   \begin{itemize}
+     \item
+   \end{itemize}
   \end{frame}   
   
   \begin{frame}
