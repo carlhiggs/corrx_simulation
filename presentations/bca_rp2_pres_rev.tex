@@ -11,6 +11,7 @@
 \usepackage{xcolor}
 \usepackage{caption}
 \usepackage{booktabs}
+\usepackage{tikz}
 \DeclareMathOperator\arctanh{arctanh}
 \DeclareMathOperator\ci{CI}
 \DeclareMathOperator\abs{abs}
@@ -294,18 +295,35 @@
     \frametitle{Limitations}
    %  any limitations – concerning either the data and substantive question or the statistical methods.
    \begin{itemize}
-     \item
+     \item Analysis not yet complete
+     \item 100 simulations for each parameter combinations
+     \begin{itemize}
+       \item 1000 is currently processing
+     \end{itemize}
+     \item ICC not currently implemented
+     \item Partial correlations are important, and not yet covered
+     \begin{itemize}
+       \item incorporation of evaluation of correlation using mixed effects regression approaches could address above two issues
+     \end{itemize}
+     \item Included tests are not exhaustive
+     \item Code could be more efficient, allowing higher resolution estimation
+     \begin{itemize}
+       \item e.g. original intent of -0.95 through 0.95 in 0.05 increments
+     \end{itemize}
    \end{itemize}
   \end{frame}   
   
   \begin{frame}
     \frametitle{Sum up and next steps}
+    \tikz\node[opacity=0.3] {\includegraphics[height=\paperheight,width=\paperwidth]{{../figs/webapp_example}.pdf}}
+
+    We have developed an architecture for detecting differences in correlations and comparison of methods which is readily extensible for future applications (new tests, specific requests, new distributions, etc).
    %  This slide(s) should summarise in 2 or 3 sentences your overall findings. It should include a conclusion and possibly a recommendation for further research, 
   \end{frame}  
     
-  \begin{frame}[allowframebreaks]
-    \frametitle{Bibliography}
-    \printbibliography
-  \end{frame}
+  % \begin{frame}[allowframebreaks]
+    % \frametitle{Bibliography}
+    % \printbibliography
+  % \end{frame}
   
 \end{document}
