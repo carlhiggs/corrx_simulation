@@ -73,6 +73,7 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 }
 
 ## Using rccp - but this doesn't play nice with parallelisation
+### NOTE!! YOu don't need to do the simulation within this test --- duh
 gtv <- function(a,b,M=1e4,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
@@ -155,6 +156,8 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
 
 
 pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+### WAIT! Don't do this as a f-ing vector--- just single, and return test
+# Then treat as per other tests--- do similar refactoring of GTV
 # Based on Efron and Tibshirani
 n  <- c(nrow(a),nrow(b))
 r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
@@ -472,17 +475,17 @@ dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(po
                                                            p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
 
 
-lparam1a <- 0
-lparam1b <- 0
-lparam2a <- 1
-lparam2b <- 1
-ln1 <- 120
+lparam1a <- 1
+lparam1b <- 1
+lparam2a <- 5
+lparam2b <- 5
+ln1 <- 60
 ln2 <- 120
 lalpha <- 0.05
 lthreshold <- 0.8
 lnsims <- 100
 ltest <- "slr"
-ldist <- "normal"
+ldist <- "gamma"
 lmethod <-"pearson"
 lnames <- c("Mz twins","Dz twins")
 corrxplot <- matrix(unlist(dt.long[(method==lmethod)&
@@ -629,7 +632,7 @@ um <- dt.long[(dist=="normal")&
                 (p2==1)&
                 (rho1==0.2)&
                 (rho2==0.5)&
-                (ratio==1),
+                (ratio==0.5),
               power,by=list(n,test)]
 
 
@@ -667,7 +670,7 @@ dist <- "normal"
 p <- c(0,1)
 rho1 <- 0.2
 rho2 <- 0.5
-ratio <- 1
+ratio <- 0.5
 title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
                 dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
                 "rho: (",rho1,",",rho2,")",
@@ -769,7 +772,7 @@ um <- dt.long[(dist=="gamma")&
                 (p2==5)&
                 (rho1==0.2)&
                 (rho2==0.5)&
-                (ratio==1),
+                (ratio==0.5),
               power,by=list(n,test)]
 
 
@@ -808,7 +811,7 @@ dist <- "gamma"
 p <- c(1,5)
 rho1 <- 0.2
 rho2 <- 0.5
-ratio <- 1
+ratio <- 0.5
 title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
                 dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
                 "rho: (",rho1,",",rho2,")",
