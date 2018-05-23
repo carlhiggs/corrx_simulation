@@ -29,7 +29,7 @@ I was not able to find specific existing power analyses for detecting a differen
 
 We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearsons, using the same formula on the rank ordered variables rather than their raw values.
 
-I considered the efficiency of tests, which I will discuss further when introducing the tests used. Other important considerations were the data structure of output from the custom functions I was implementing in the R programming environment. In a simulation project it is essential that the parameterisations used across each run are stored in a way that is easy to retrieve, make sense of, and apply in a variety of outputs as required.
+Other important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  
 
 5. Power analysis of difference in correlations 
 Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5% and 20%, and this is the parameterisation adopted for the results presented here.
@@ -67,27 +67,27 @@ To undertake the simulations as planned for combinations of
 7. Main findings
 Despite the reduced parameter set, our results are comprised of more than half a million power estimates which can be accessed to answer specific questions.
 
-While the main use of such results are for considering particular scenarios, we can average over these for marginal estimates; under approximate normality the SLR test was estimated to have 82% power on average, while the other tests had approximately 75%.  This result which is reflected in this plot here for example, with the higher power estimate from SLR estimate suggesting a smaller required sample size, is surprising and should be questioned.  When no difference in correlations is present we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20%.  This suggests its estimates here are in fact upwardly biased.
+While the main use of such results are for considering particular scenarios, we can average over these for marginal estimates; under approximate normality the SLR test was estimated to have 82% power on average, while the other tests had approximately 75%.  This result which is reflected in this plot here for example, with the higher power estimate from SLR estimate suggesting a smaller required sample size, is surprising.
 
 The fitted contour plot on the left here compares power to detect a difference using all correlation combinations given groups sizes, in this example, under a bivariate normal distribution.  The blue line indicates the 80% power threshold.
 
 On the right sample size estimates to achieve 80% power given population correlation coefficients of 0.2 and 0.5 are compared across the 5 implemented tests.  Stata produces two correlation power estimates with plots like these using the Fisher Z formula.  We often assume that our tests are robust to departures from normality, but it is interesting to ask how would this perform if normality assumption were severely violated?
 
 8. Main findings
-We can see here the extreme under estimation in sample size required to achieve 80% power in this scenario using an extreme positively skewed bivariate distribution.  I picked an extreme example to highlight the issue here, but also the flexibility of the tools we have developed to draw upon our approximately 500,000 pre-calculated power estimates to answer questions for scenarios as required.
+We can see here the extreme under estimation in sample size required to achieve 80% power given an extreme positively skewed bivariate distribution when using the formula based approach compared with the simulation-based tests. 
 
-The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- is this a systematic bias, and perhaps innacurate rather than truly improved performance?  This is a surprising result which requires more thought.
+The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- does this reflect a systematic bias, and perhaps innacurate rather than truly improved performance?  
 
-10. Limitations 
-There are a number of limitations to this project, which has taken longer than anticipated.  There is more we can do, and I have some ideas about how these things can be done.
+When no difference in correlations is present under bivariate normal distribution we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20%.  This suggests its estimates here are in fact upwardly biased.
 
-11. Sum up and next steps
-To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the lookup of the pre-processed database results into this to allow comparison of tests using archived simulation results on the fly. approximately 500,000 pre-calculated power estimates to answer questions for scenarios as required.
+After the SLR test the GTV was the next most powerful under approximate normality, but appeared to perform equivalent to the Fishers'Z simulation under extreme violations. 
 
-The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- is this a systematic bias, and perhaps innacurate rather than truly improved performance?  This is a surprising result which requires more thought.
+10. Strengths and Limitations
+We developed a flexible and extensible architecture which is geared to solving future problems.
 
-10. Limitations 
-There are a number of limitations to this project, which has taken longer than anticipated.  There is more we can do, and I have some ideas about how these things can be done.
+However, the programming and analysis took longer than anticipated.  As such the results I have shown today were processed using 100 simulations per parameter combination.  The 1000 simulation results should be completed to update my results in a day or so.
+
+There is more we can do to make this of more particular use in the twin context, and I have some ideas about how to achieve this.
 
 11. Sum up and next steps
 To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the lookup of the pre-processed database results into this to allow comparison of tests using archi
