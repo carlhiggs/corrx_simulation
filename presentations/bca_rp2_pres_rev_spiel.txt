@@ -1,0 +1,93 @@
+1. Research question
+Power is the probability of detecting a true effect, a key consideration when planning a study.
+
+Given a question like How much power do we have to detect a difference in correlations between samples of identical and non-identical twin pairs? We might respond, well that depends.  Intuitively, we will expect a range of possible parameters to influence our power: the sample size, the ratio of MZ to DZ twins, our decisions on how to define what is a meaningful difference, how strong are these correlations, how are you measuring the difference?
+
+Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating such factors.  The setting in which this analysis is to be used is the classical twin study.
+
+The classic twin study exploits the differing degrees of genetic relatedness in identical twins and non-identical twins in order to draw inferences on the heritability of traits
+
+In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+
+Identical twins arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings.  
+
+2. 
+
+The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to for example have a better understanding of the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
+
+Contemporary twin studies use mixed effects and structural equation modelling to evaluate differences in variance components for a particular trait between mono and dizygotic twins accounting for differential within pair similarities related to zygosity.  A recent article reported on the development of R commands which can be used to estimate the power to detect a difference in correlations using such models.  
+
+However, a routine preliminary step undertaken by researchers in this field is the calculation and comparison of Pearson correlations across the two twin groups.  This research project focuses on the reported needs of researchers undertaking this early analysis step.
+
+In undertaking a twin study we make certain assumptions, understanding that these likely do not strictly hold in practice, but the key one for the purposes of this power analysis is that our data is approximately normally distributed.
+
+4. Plan
+
+As a starting point, I conducted a review of the literature relating to twins, correlations, power and simulations in order to adequately understand the task ahead to develop a plan for our analysis.  The history of correlation and genetics is very much entwined with that of modern statistics, and although interest I won't go into this today.
+
+I was not able to find specific existing power analyses for detecting a difference in correlations in the classic twin study context, other than that concerning intra-class correlation coefficients and variance component modelling which were beyond this projects scope.
+
+We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearsons, using the same formula on the rank ordered variables rather than their raw values.
+
+I considered the efficiency of tests, which I will discuss further when introducing the tests used. Other important considerations were the data structure of output from the custom functions I was implementing in the R programming environment. In a simulation project it is essential that the parameterisations used across each run are stored in a way that is easy to retrieve, make sense of, and apply in a variety of outputs as required.
+
+5. Power analysis of difference in correlations 
+Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5% and 20%, and this is the parameterisation adopted for the results presented here.
+
+A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in programs in Stata and R.
+
+To estimate the power using this approach, you first take the difference between a normal reference score given the chosen type 1 error rate and the absolute value of the test statistic. The type 2 error rate is the probability of observing a value of at least this magnitude on the normal distribution.  And 1 minus this value is the power.
+
+Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
+
+So where in our formula we might plug in anticipated or observed coefficients of 0.2 and 0.5, in the simulation we use these values to represent the supposed true correlations in the underlying population from which we draw our random samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
+
+6. Simulations
+
+The R programming environment was used for all of our analysis, and the tests we identified and developed for inclusion in addition to the formula approach were 
+
+- the simulation equivalent of the Fisher's Z test already discussed
+
+- Zou's confidence interval approach which evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, which it is theoretically identical to.  The main reason for inclusion was evaluation of how much faster might be to do this.
+
+We also included three tests considered to be robust to departures from normality:
+
+- The GVT test involves tranformation of the simulated sample correlations into so-called generalised pivotal quantities the difference of which is then use to calculate a test statistic and p-value.
+
+- The signed log likelihood ratio test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods.
+
+- The permutation test is a non-parametric approach which compares the absolute difference of the Z-transformed sample correlations with correlations from a series of group membership permutations using the sample rank orders as values.
+
+To undertake the simulations as planned for combinations of 
+- correlations from -0.95 to 0.95 at 0.05 intervals 
+- exponentially increasing group sizes of 15 through 960
+- three bivariate distribution types being normal, and gamma with mild skew and extreme skew
+- and two approaches to correlation measurement with 1000 simulations per combination would have resulted in more than 2 billion results and taken 33 years; instead I reduced my ambition to correlations from -0.9 through 0.9 at a 0.1 resolution and dropped the permutation test which whose implementation was problematic to get this to 16 days.
+
+7. Main findings
+Despite the reduced parameter set, our results are comprised of more than half a million power estimates which can be accessed to answer specific questions.
+
+While the main use of such results are for considering particular scenarios, we can average over these for marginal estimates; under approximate normality the SLR test was estimated to have 82% power on average, while the other tests had approximately 75%.  This result which is reflected in this plot here for example, with the higher power estimate from SLR estimate suggesting a smaller required sample size, is surprising and should be questioned.  When no difference in correlations is present we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20%.  This suggests its estimates here are in fact upwardly biased.
+
+The fitted contour plot on the left here compares power to detect a difference using all correlation combinations given groups sizes, in this example, under a bivariate normal distribution.  The blue line indicates the 80% power threshold.
+
+On the right sample size estimates to achieve 80% power given population correlation coefficients of 0.2 and 0.5 are compared across the 5 implemented tests.  Stata produces two correlation power estimates with plots like these using the Fisher Z formula.  We often assume that our tests are robust to departures from normality, but it is interesting to ask how would this perform if normality assumption were severely violated?
+
+8. Main findings
+We can see here the extreme under estimation in sample size required to achieve 80% power in this scenario using an extreme positively skewed bivariate distribution.  I picked an extreme example to highlight the issue here, but also the flexibility of the tools we have developed to draw upon our approximately 500,000 pre-calculated power estimates to answer questions for scenarios as required.
+
+The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- is this a systematic bias, and perhaps innacurate rather than truly improved performance?  This is a surprising result which requires more thought.
+
+10. Limitations 
+There are a number of limitations to this project, which has taken longer than anticipated.  There is more we can do, and I have some ideas about how these things can be done.
+
+11. Sum up and next steps
+To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the lookup of the pre-processed database results into this to allow comparison of tests using archived simulation results on the fly. approximately 500,000 pre-calculated power estimates to answer questions for scenarios as required.
+
+The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- is this a systematic bias, and perhaps innacurate rather than truly improved performance?  This is a surprising result which requires more thought.
+
+10. Limitations 
+There are a number of limitations to this project, which has taken longer than anticipated.  There is more we can do, and I have some ideas about how these things can be done.
+
+11. Sum up and next steps
+To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the lookup of the pre-processed database results into this to allow comparison of tests using archi

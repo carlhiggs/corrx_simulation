@@ -35,31 +35,36 @@
 
 \title{Power to detect a difference in correlations}
 \subtitle{Applications for twin studies}
-\author{Carl~Higgs\inst{1}}
+\author{Carl~Higgs\inst{}}
 \institute[Affiliation] % (optional)
 {
-  \inst{1}%
+  \inst{}%
   Centre for Epidemiology and Biostatistics\\
   School of Population and Global Health\\
   University of Melbourne
 }
-\date[March 2018] % (optional)
-
+\date{\\[2em]
+{\footnotesize Supervisors: Katrina Scurrah, Enes Makalic and Elasma Milanzi}
+}
 
 \begin{document}
+  \begin{frame}
+  \titlepage
+  \end{frame}
 
   \section{Research question}
-  
+
   \begin{frame}
-    \frametitle{Research question}
+    \frametitle{}
       % This should be the first overhead or slide of your presentation and should clearly state a specific question that you addressed during your research.
-    Power to detect a difference in correlations between samples of identical (monozygotic) and non-identical (dizygotic) twin pairs
+      \begin{center}
+    How much power do we have to detect a difference \\ in correlations between samples of \\ identical (monozygotic, MZ) and non-identical (dizygotic, DZ) \\ twin pairs?
     % \begin{itemize}
       % \item What are the existing methods?
       % \item How do these compare and can they be improved upon?  
       % This question will be addressed through a literature review, and comparison of methods using both theory and simulation.
     % \end{itemize}
-    \begin{center}
+   
   \begin{figure}[!htb]
         \minipage{0.49\textwidth}
           \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
@@ -72,20 +77,20 @@
   \end{frame} 
   
   
-  \section{Background}  
-  \begin{frame}
-    \frametitle{Background}
-    Let's assume that...
-    \begin{itemize}
-      \item each pair of twin siblings share the same environmental history
-      \item zygosity doesn't influence environmental interactions
-      \item trait is normally distributed
-      \item accurate classification of zygosity
-      \item accurate measurement of trait
-      \item No dominant genetic variance (where one allele reliably masks the expression of the other when the two co-occur at a particular locus)
-      \item mz and dz twins have been sourced from equivalent populations
-    \end{itemize}
-  \end{frame} 
+  % \section{Background}  
+  % \begin{frame}
+    % \frametitle{Background}
+    % Let's assume that...
+    % \begin{itemize}
+      % \item each pair of twin siblings share the same environmental history
+      % \item zygosity doesn't influence twin's social interactions
+      % \item trait is normally distributed
+      % \item accurate classification of zygosity
+      % \item accurate measurement of trait
+      % % if there is a difference it may indicate presence of dominance
+      % \item MZ and DZ twins have been sourced from equivalent populations
+    % \end{itemize}
+  % \end{frame} 
   
    % 2 slides:
   
@@ -108,20 +113,20 @@
   % \end{quote}
   
   \begin{frame}
-    \frametitle{Background}
-    Let $x_{zjk}$ be the value of trait $x$ in the $k$th member of the $j$th twin pair having zygosity $z\in\{\text{mz},\text{dz}\}$
+    \frametitle{}
+    Let $x_{zjk}$ be the value of trait $x$ in the $k$th member of the $j$th twin pair having zygosity $z\in\{\text{MZ},\text{DZ}\}$
     % cite Falconer 1960
     \begin{center}
       % \includegraphics{../figs/r_to_z.pdf}
     \begin{figure}[!htb]
+        \minipage{0.3\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        \endminipage\hfill
         \minipage{0.39\textwidth}
            \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
            \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
-           \[\hat{\delta} = r_{mz} - r_{dz}\]
+           \[\hat{\delta} = r_{MZ} - r_{DZ}\]
            \[\text{heritability} = 2\delta\]
-        \endminipage\hfill
-        \minipage{0.3\textwidth}
-          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
         \endminipage\hfill
         \minipage{0.3\textwidth}%
           \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
@@ -132,12 +137,12 @@
         \toprule
         \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
         \cmidrule(lr){2-3} 
-         & \textbf{Monozygotic (mz)} & \textbf{Dizogotic (dz)}				\\
+         & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
         \midrule										
-        genetic         &$r_{mz} = 1$& $r_{dz} = 0.5$       \\
-        shared env.     &$r_{mz} = 1$& $r_{dz} = 1$         \\  
-        individual env. &$r_{mz} = 0$& $r_{dz} = 0$         \\  
-        combination     &$0 < r_{mz} < 1$& $0 < r_{dz} < 1$ \\
+        genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
+        shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
+        individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
+        combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
          \bottomrule 
     \end{tabular}
     \end{table}
@@ -147,7 +152,7 @@
 
   \section{Methods}
   \begin{frame}
-    \frametitle{A skip through the literature}
+    \frametitle{Plan}
     % 3) HOW YOU ADDRESSED THE RESEARCH QUESTION (3 slides)
     % This should inform the audience as to what you did during your research to complete your project.
     % You should put a primary emphasis on explaining the statistical issues that you addressed in the project, with clear presentation of models and methods of analysis that you used.
@@ -158,16 +163,23 @@
     \begin{columns}[t]
       \column[T]{.4\textwidth}
         \begin{itemize}
-          \item Galton, F.  1888
-          \item Pearson, K.  1895
-          \item Fisher, RA. 1915
-          \item David, FN. 1938
-          \item Falconer, DS. 1960
-          \item Neale, M. et al. 1994
-          \item Visscher, PM. 2004
-          \item Verhulst, B. 2017
-          % \item Efron B. & Tibshirani RJ. 1994
-          % \item Kazemi M.R & Jafari 
+          \item Review literature
+            \begin{itemize}
+              \item Twins
+              \item Correlations
+              \item Power
+              \item Simulations
+            \end{itemize} 
+          \item Analysis plan
+             \begin{itemize}
+               \item Efficiency
+               \item Data structure
+               \item Outputs
+             \end{itemize} 
+          \item Simulations
+          \item Analysis
+          \item Write up
+          \item Dissemination
         \end{itemize} 
       \column[T]{.6\textwidth}
           \includegraphics[width=\linewidth]{{../figs/david_corr_bands}.pdf}
@@ -177,72 +189,75 @@
 
   \subsection{Power for difference in correlations}   
   \begin{frame}
-    \frametitle{Power for difference in correlations \footfullcite{Cohen1988}}  
+    \frametitle{Power for difference in correlations}  
     \textbf{Frequentist NHST paradigm} \\
     $\alpha$ (Type I error) and $\beta$ (Type II error); Power is $1-\beta$
     \linebreak
     \linebreak
-    \textbf{Fisher's $Z$ formula approach}
+    \textbf{Fisher's $Z$ formula approach (David, 1938; Cohen 1988)}
     \linebreak
-    $ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{mz}) - \arctanh(r_{dz})}{\sqrt{(n_{mz}-3)^{-1} + (n_{dz}-3)^{-1}}}  \bigg)  \Bigg) $ 
+    $ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $ 
     \linebreak
     \textbf{Simulation approach}
     \begin{itemize}
-      \item implement hypothesis test(s) for difference in correlations
-      \item take $m$ draws from simulated bivariate mz and dz populations
-      \item run hypothesis test(s) on each pair of draws
+      \item implement hypothesis tests for difference in correlations
+      \item $M$ times
+        \begin{itemize}
+          \item draw from simulated bivariate MZ and DZ populations
+          \item run hypothesis tests for difference in sample correlations
+        \end{itemize}
       \item power given parameters is proportion of tests where $p < \alpha$      
     \end{itemize} 
   \end{frame}  
   
   \begin{frame}
     \frametitle{Simulations}
-    Using $r_{mz}$ and $r_{dz}$ derived from simulated bivariate normal and non-normal populations with covariance $\left[\begin{smallmatrix}1 & \rho\\ \rho & 1\end{smallmatrix}\right] $, the following hypothesis tests were run:
+    Using $r_{MZ}$ and $r_{DZ}$ derived from simulated bivariate normal and non-normal populations with respective covariance $\left[\begin{smallmatrix}1 & \rho\\ \rho & 1\end{smallmatrix}\right] $, the following hypothesis tests were run:
     \linebreak
     \begin{itemize}
-    \item Fisher's Z: $\frac{\arctanh(r_{mz}) - \arctanh(r_{dz})}{\sqrt{(n_{mz}-3)^{-1} + (n_{dz}-3)^{-1}}}$
-    \item Generalized Variable Test (GVT) \footfullcite{Krishnamoorthy2014,KazemiJafari2016}
-    \item Signed log-likelihood ratio test \footfullcite{DiCiccio2001,KazemiJafari2016}  
-    \item Permutation test \footfullcite{Efron1994}
-    \item Zou's confidence interval \footfullcite{Zou2007}
+    \item Fisher's Z: $\frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$ {\footnotesize{(David, 1938)}}
+    \item Zou's confidence interval  {\footnotesize{(Zou, 2007)}}
+    \item Generalized Variable Test {\footnotesize{(GVT; Krishnamoorthy {\&} Lee 2014; Kazemi {\&} Jafari, 2016)}}
+    \item Signed log-likelihood ratio test {\footnotesize{(SLR; DiCiccio, 2001; Kazemi {\&} Jafari, 2016)}}
+    \item Permutation test {\footnotesize{(PT; Efron {\&} Tibshirani, 1994)}}
     \end{itemize}
     \linebreak
     \linebreak
    \textbf{Plan} 
-   1000 simulations of all mz dz combinations of $rho$ and $n$ using three distinct distributions and re-run using Spearman correlation (rank based, non-parametric)...
+   1000 simulations of all MZ DZ combinations of $rho$ and $n$ using three distinct distributions two correlation methods... 33 years? Fewer correlations, no PT test: 16 days
   \end{frame}   
 
   \section{results}
-  \begin{frame}
-    \frametitle{Preliminary results: simulation times}
-    \linebreak
-    $1000\times39^2\times7^2\times6\times3\times2 = 2,234,400,000$ simulations...
-    \textbf{Optimisation approach}\footnotemark
-    \begin{itemize}
-    \item hand coded
-    \item functions compiled using either JIT compiler or RCCP 
-    \end{itemize}
-    \begin{table}\centering
-    \begin{tabular}{rcc}
-        \toprule
-        \textbf{Test} &	\multicolumn{2}{c}{\textbf{Time/1000 runs (secs)}} \\
-        \cmidrule(lr){2-3} 
-         & \textbf{as is} & \textbf{compiled}				\\
-        \midrule										
-        Fisher's z (no sim) &         0.03 &   0.02 \\
-        Fisher's Z          &         0.56 &   0.36 \\
-        GTV (r)             &        18.65 &  16.55 \\
-        GTV (R C++)         &              &  12.08 \\
-        Permutation (PT)    &      2473.18 &2341.62 \\
-        SLR                 &         0.49 &   0.33 \\
-        Zou's CI            &         0.38 &   0.28 \\
-        \midrule
-        \multicolumn{1}{l}{Total (sans r-compiled GTV)} & 2493.29  & 2354.69 \\
-        \multicolumn{1}{l}{$\times 1520 \times 49 \times 3 \times 2/60/60/24/365$}  & 35 years  & 33 years \\
-        \multicolumn{1}{l}{$-\text{PT}: \times 361 \times 49\times 3 \times 2 /60/60/24$}  & 25 days  & 16 days \\
-    \bottomrule 
-    \end{tabular}
-    \end{table}
+  % \begin{frame}
+    % \frametitle{Preliminary results: simulation times}
+    % \linebreak
+    % $1000\times39^2\times7^2\times6\times3\times2 = 2,234,400,000$ simulations...
+    % \textbf{Optimisation approach}\footnotemark
+    % \begin{itemize}
+    % \item hand coded
+    % \item functions compiled using either JIT compiler or RCCP 
+    % \end{itemize}
+    % \begin{table}\centering
+    % \begin{tabular}{rcc}
+        % \toprule
+        % \textbf{Test} &	\multicolumn{2}{c}{\textbf{Time/1000 runs (secs)}} \\
+        % \cmidrule(lr){2-3} 
+         % & \textbf{as is} & \textbf{compiled}				\\
+        % \midrule										
+        % Fisher's z (no sim) &         0.03 &   0.02 \\
+        % Fisher's Z          &         0.56 &   0.36 \\
+        % Zou's CI            &         0.38 &   0.28 \\
+        % GTV (r)             &        18.65 &  16.55 \\
+        % GTV (R C++)         &              &  12.08 \\
+        % Permutation (PT)    &      2473.18 &2341.62 \\
+        % SLR                 &         0.49 &   0.33 \\
+        % \midrule
+        % \multicolumn{1}{l}{Total (sans r-compiled GTV)} & 2493.29  & 2354.69 \\
+        % \multicolumn{1}{l}{$\times 1520 \times 49 \times 3 \times 2/60/60/24/365$}  & 35 years  & 33 years \\
+        % \multicolumn{1}{l}{$-\text{PT}: \times 361 \times 49\times 3 \times 2 /60/60/24$}  & 25 days  & 16 days \\
+    % \bottomrule 
+    % \end{tabular}
+    % \end{table}
 
     
     
@@ -254,11 +269,12 @@
 
   \begin{frame}
     \frametitle{Main findings}
-    106,134 sets of power estimates comparing 5 tests (wide form)
+    \begin{itemize}
+      \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
+      \item Under approximate normality / mild skew, on average: \\SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
+    \end{itemize}
     \linebreak
-    \textbf{Example}
-    \linebreak
-    Power to detect $\hat\delta_{\rho}$ in Mz and Dz twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
+    \small{Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$}
     \begin{center}
       \begin{figure}[!htb]
         \minipage{0.49\textwidth}
@@ -273,11 +289,12 @@
 
   \begin{frame}
     \frametitle{Main findings}
-    106,134 sets of power estimates comparing 5 tests (wide form)
+    \begin{itemize}
+      \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
+      \item Under extreme skew: \\Fisher's Z formula underestimates req. sample size by $ \sim 50\%$
+    \end{itemize}
     \linebreak
-    \textbf{Example}
-    \linebreak
-    Power to detect $\hat\delta_{\rho}$ in Mz and Dz twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$
+    \small{Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$}
     \begin{center}
       \begin{figure}[!htb]
         \minipage{0.49\textwidth}
@@ -291,38 +308,40 @@
   \end{frame}     
   
   \begin{frame}
-    \frametitle{Limitations}
+    \frametitle{Strengths and Limitations}
    %  any limitations – concerning either the data and substantive question or the statistical methods.
+  We developed
    \begin{itemize}
-     \item Analysis not yet complete
+     \item a flexible, extensible architecture
+     \item solves future problems
+   \end{itemize}  
+  But analysis is still in progress:
+  \begin{itemize}
      \item 100 simulations for each parameter combinations
-     \begin{itemize}
-       \item 1000 is currently processing
-     \end{itemize}
-     \item ICC not currently implemented
-     \item Partial correlations are important, and not yet covered
+     \item 1000 is currently processing
+   \end{itemize}
+  Yet to be implemented:
+  \begin{itemize}
+     \item Intraclass correlations
+     \item Partial correlations 
      \begin{itemize}
        \item incorporation of evaluation of correlation using mixed effects regression approaches could address above two issues
      \end{itemize}
-     \item Included tests are not exhaustive
-     \item Code could be more efficient, allowing higher resolution estimation
-     \begin{itemize}
-       \item e.g. original intent of -0.95 through 0.95 in 0.05 increments
-     \end{itemize}
+     \item Improve efficiency to allow higher resolution estimation
    \end{itemize}
   \end{frame}   
   
   \begin{frame}
     \frametitle{Sum up and next steps}
-    \tikz\node[opacity=0.3] {\includegraphics[height=\paperheight,width=\paperwidth]{{../figs/webapp_example}.pdf}}
+    % \tikz\node[minimum width=\paperwidth, minimum height=\paperheight, anchor=north west] {\includegraphics[height=\paperheight,width=\paperwidth]{{../figs/webapp_example}.pdf}}
 
     We have developed an architecture for detecting differences in correlations and comparison of methods which is readily extensible for future applications (new tests, specific requests, new distributions, etc).
    %  This slide(s) should summarise in 2 or 3 sentences your overall findings. It should include a conclusion and possibly a recommendation for further research, 
-  \end{frame}  
     
-  % \begin{frame}[allowframebreaks]
-    % \frametitle{Bibliography}
-    % \printbibliography
-  % \end{frame}
+ % \makebox[\textwidth][c]{\begin{tikzpicture}
+    % \node[minimum width=\paperwidth, minimum height=\paperheight, anchor=north west] (a) {{../figs/webapp_example}.pdf};
+  % \end{tikzpicture}
+  % }
   
+  \end{frame}  
 \end{document}

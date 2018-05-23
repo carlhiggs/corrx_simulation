@@ -463,6 +463,15 @@ dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1.5"),round(mean(power),2),by=test]
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),round(mean(power),2),by=test]
 
+
+# concerning that SLR has 22% power to detect difference when no difference....
+dt.long[(method=="pearson")&
+          (dist=="normal")&
+          (rho1==0)&
+          (rho2==0),round(mean(power),2),by=test]
+
+
+
 require(Publish)
 dt.long[(method=="pearson")&(dist=="normal"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
                                                   p25=round(quantile(power, .025, na.rm=TRUE),2),
