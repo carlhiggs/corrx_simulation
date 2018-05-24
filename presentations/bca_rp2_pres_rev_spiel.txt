@@ -1,19 +1,18 @@
-1. Research question
+1. >>>>
 Power is the probability of detecting a true effect, a key consideration when planning a study.
 
 Given a question like How much power do we have to detect a difference in correlations between samples of identical and non-identical twin pairs? We might respond, well that depends.  Intuitively, we will expect a range of possible parameters to influence our power: the sample size, the ratio of MZ to DZ twins, our decisions on how to define what is a meaningful difference, how strong are these correlations, how are you measuring the difference?
 
-Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating such factors.  The setting in which this analysis is to be used is the classical twin study.
-
-The classic twin study exploits the differing degrees of genetic relatedness in identical twins and non-identical twins in order to draw inferences on the heritability of traits
-
-In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
 
 Identical twins arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings.  
 
-2. 
+The classic twin study, which is the setting of interest for this power analysis, exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits
 
-The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to for example have a better understanding of the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
+In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+
+2. >>>>
+The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
 
 Contemporary twin studies use mixed effects and structural equation modelling to evaluate differences in variance components for a particular trait between mono and dizygotic twins accounting for differential within pair similarities related to zygosity.  A recent article reported on the development of R commands which can be used to estimate the power to detect a difference in correlations using such models.  
 
@@ -21,17 +20,14 @@ However, a routine preliminary step undertaken by researchers in this field is t
 
 In undertaking a twin study we make certain assumptions, understanding that these likely do not strictly hold in practice, but the key one for the purposes of this power analysis is that our data is approximately normally distributed.
 
-4. Plan
-
-As a starting point, I conducted a review of the literature relating to twins, correlations, power and simulations in order to adequately understand the task ahead to develop a plan for our analysis.  The history of correlation and genetics is very much entwined with that of modern statistics, and although interest I won't go into this today.
-
-I was not able to find specific existing power analyses for detecting a difference in correlations in the classic twin study context, other than that concerning intra-class correlation coefficients and variance component modelling which were beyond this projects scope.
+4. >>>>
+I conducted a review of the literature relating to twins, correlations, power and simulations to inform development of a plan for our analysis.  The history of correlation and genetics is very much entwined with that of modern statistics, and although very interesting I won't go into this today.
 
 We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearsons, using the same formula on the rank ordered variables rather than their raw values.
 
 Other important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  
 
-5. Power analysis of difference in correlations 
+5. >>>>
 Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5% and 20%, and this is the parameterisation adopted for the results presented here.
 
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in programs in Stata and R.
@@ -42,8 +38,7 @@ Using a simulation approach we take our hypothesis tests and apply them to draws
 
 So where in our formula we might plug in anticipated or observed coefficients of 0.2 and 0.5, in the simulation we use these values to represent the supposed true correlations in the underlying population from which we draw our random samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
 
-6. Simulations
-
+6. >>>>
 The R programming environment was used for all of our analysis, and the tests we identified and developed for inclusion in addition to the formula approach were 
 
 - the simulation equivalent of the Fisher's Z test already discussed
@@ -64,7 +59,7 @@ To undertake the simulations as planned for combinations of
 - three bivariate distribution types being normal, and gamma with mild skew and extreme skew
 - and two approaches to correlation measurement with 1000 simulations per combination would have resulted in more than 2 billion results and taken 33 years; instead I reduced my ambition to correlations from -0.9 through 0.9 at a 0.1 resolution and dropped the permutation test which whose implementation was problematic to get this to 16 days.
 
-7. Main findings
+7. >>>>
 Despite the reduced parameter set, our results are comprised of more than half a million power estimates which can be accessed to answer specific questions.
 
 While the main use of such results are for considering particular scenarios, we can average over these for marginal estimates; under approximate normality the SLR test was estimated to have 82% power on average, while the other tests had approximately 75%.  This result which is reflected in this plot here for example, with the higher power estimate from SLR estimate suggesting a smaller required sample size, is surprising.
@@ -73,7 +68,7 @@ The fitted contour plot on the left here compares power to detect a difference u
 
 On the right sample size estimates to achieve 80% power given population correlation coefficients of 0.2 and 0.5 are compared across the 5 implemented tests.  Stata produces two correlation power estimates with plots like these using the Fisher Z formula.  We often assume that our tests are robust to departures from normality, but it is interesting to ask how would this perform if normality assumption were severely violated?
 
-8. Main findings
+8. >>>>
 We can see here the extreme under estimation in sample size required to achieve 80% power given an extreme positively skewed bivariate distribution when using the formula based approach compared with the simulation-based tests. 
 
 The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- does this reflect a systematic bias, and perhaps innacurate rather than truly improved performance?  
@@ -82,12 +77,14 @@ When no difference in correlations is present under bivariate normal distributio
 
 After the SLR test the GTV was the next most powerful under approximate normality, but appeared to perform equivalent to the Fishers'Z simulation under extreme violations. 
 
-10. Strengths and Limitations
+10. >>>>
 We developed a flexible and extensible architecture which is geared to solving future problems.
 
 However, the programming and analysis took longer than anticipated.  As such the results I have shown today were processed using 100 simulations per parameter combination.  The 1000 simulation results should be completed to update my results in a day or so.
 
 There is more we can do to make this of more particular use in the twin context, and I have some ideas about how to achieve this.
 
-11. Sum up and next steps
-To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the lookup of the pre-processed database results into this to allow comparison of tests using archi
+11. >>>>
+To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the pre-processed database into this application to allow comparison of these tests on the fly based on pre-processed results.
+
+Acknowledgements

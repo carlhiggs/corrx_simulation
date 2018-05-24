@@ -465,12 +465,33 @@ dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),round(mean(power),2),by=te
 
 
 # concerning that SLR has 22% power to detect difference when no difference....
+# Then again, this is beta - probability of not rejecting when false --- 20%..
+# hmmm.. no its not, it should be alpha which is 5% - hence other tests
+# ie. probability of rejecting when H0 is true
 dt.long[(method=="pearson")&
           (dist=="normal")&
           (rho1==0)&
           (rho2==0),round(mean(power),2),by=test]
 
 
+dt.long[(method=="pearson")&
+          (dist=="normal")&
+          (rho1==-0.2)&
+          (rho2==-0.2),round(mean(power),2),by=test]
+
+dt.long[(method=="pearson")&
+          (dist=="normal")&
+          (rho1==0.9)&
+          (rho2==0.9),round(mean(power),2),by=test]
+
+
+dt[(method=="pearson")&
+          (dist=="normal"),list("fz_nosim" = round(mean(fz_nosim),2),
+                               "fz" = round(mean(fz),2),
+                               "zou" = round(mean(zou),2),
+                               "gtv" = round(mean(gtv),2),
+                               "slr" = round(mean(slr),2))
+                               ,by=list(ratio)]
 
 require(Publish)
 dt.long[(method=="pearson")&(dist=="normal"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
