@@ -2,9 +2,104 @@
 \markboth{Methods}{}
 \setcounter{chapter}{2}
 \setcounter{section}{0}
-\addcontentsline{toc}{chapter}{2.\quad\ Methods}
+\addcontentsline{toc}{chapter}{2. Methods}
 
 
 \section{section title}
+
+I conducted a review of the literature relating to twins, correlations, power and simulations to inform development of a plan for our analysis.  
+
+We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearson's, using the same formula on the rank ordered variables rather than their raw values.
+
+Other important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  
+
+The R programming environment was used for all of our analyses.
+
+    \begin{center}
+      % \includegraphics{../figs/r_to_z.pdf}
+    \begin{figure}[!htb]
+        \minipage{0.3\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        \endminipage\hfill
+        \minipage{0.39\textwidth}
+           \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
+           \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
+           \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
+           \[\text{heritability} = 2\delta_{\rho}\]
+        \endminipage\hfill
+        \minipage{0.3\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
+        \endminipage
+    \end{figure}
+    \begin{table}\centering
+    \begin{tabular}{rcc}
+        \toprule
+        \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
+        \cmidrule(lr){2-3} 
+         & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
+        \midrule										
+        genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
+        shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
+        individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
+        combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
+         \bottomrule 
+    \end{tabular}
+    \end{table}
+    \end{center}
+
+\section{Frequentist NHST paradigm} 
+    $\alpha$ (Type I error) and $\beta$ (Type II error); Power is $1-\beta$
+    \linebreak
+    \linebreak
+    \textbf{Fisher's $Z$ formula approach (David, 1938; Cohen 1988)}
+    \linebreak
+    $ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $ 
+    \linebreak
+    \section{Simulation approach}
+    \begin{itemize}
+      \item implement hypothesis tests for difference in correlations
+      \item $M$ times
+        \begin{itemize}
+          \item draw from simulated bivariate MZ and DZ populations
+          \item run hypothesis tests for difference in sample correlations
+        \end{itemize}
+      \item power given parameters is proportion of tests where $p < \alpha$      
+    \end{itemize} 
+    
+\subsection{Formula based hypothesis test}
+
+\subsection{Simulation based hypothesis test}
+The tests we identified and developed for inclusion were 
+
+\subsubsection{Fisher's Z test}
+the simulation equivalent of the Fisher's Z test already discussed
+ $$\frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
+\subsubsection{Zou's confidence interval}
+Zou's confidence interval approach which evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
+
+\subsubsection{Generalised Variable Test}
+
+The GVT test involves tranformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value.
+
+
+\subsubsection{Signed log-likelihood ratio test}
+The signed log likelihood ratio test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods.
+
+
+\subsubsection{Permutation test}
+The permutation test is a non-parametric approach which compares the absolute difference of the Z-transformed sample correlations with correlations from a series of group membership permutations using the sample rank orders as values.
+
+\subsection{Efficiency}
+To undertake the simulations as planned for combinations of 
+\begin{itemize}
+  \item correlations at .05 intervals 
+  \item exponentially increasing group sizes of 15 through 960
+  \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
+  \item two approaches to correlation measurement 
+  \item across 6 tests
+  \item with 1000 simulations per combination 
+\end{itemize}
+would have resulted in more than 2 billion results and taken 33 years.  Instead, I reduced my ambition using a .1 correlation resolution and dropped the permutation test which was implemented inefficiently to get this to 16 days.
+  
 
 

@@ -2,9 +2,35 @@
 \markboth{Discussion}{}
 \setcounter{chapter}{4}
 \setcounter{section}{0}
-\addcontentsline{toc}{chapter}{4.\quad\ Discussion}
+\addcontentsline{toc}{chapter}{4. Discussion}
 % put in comments for each paragraph to remind yourself to stay on topic!!
 
 % \cite{Price2007,Rahimi2014,Naing2014}
 
 \section{section title}
+Despite the reduced parameter set, our results are comprised of more than half a million power estimates which can be accessed to answer specific questions.
+
+While the main use of such results are for considering particular scenarios, we can average over these for marginal estimates; under approximate normality the SLR test was estimated to have 82% power on average, while the other tests had approximately 75%.  This result which is reflected in this plot here for example, with the higher power estimate from SLR estimate suggesting a smaller required sample size, is surprising.
+
+The fitted contour plot on the left here compares power to detect a difference using all correlation combinations given groups sizes, in this example, under a bivariate normal distribution.  The blue line indicates the 80% power threshold.
+
+On the right sample size estimates to achieve 80% power given population correlation coefficients of 0.2 and 0.5 are compared across the 5 implemented tests.  Stata produces two correlation power estimates with plots like these using the Fisher Z formula.  We often assume that our tests are robust to departures from normality, but it is interesting to ask how would this perform if normality assumption were severely violated?
+
+We can see here the extreme under estimation in sample size required to achieve 80% power given an extreme positively skewed bivariate distribution when using the formula based approach compared with the simulation-based tests. 
+
+The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- does this reflect a systematic bias, and perhaps innacurate rather than truly improved performance?  
+
+When no difference in correlations is present under bivariate normal distribution we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20\%.  This suggests its estimates here are upwardly biased.
+
+After the SLR test the GTV was the next most powerful, but only marginally moreso than the Fisher's Z based tests.
+
+
+
+We developed a flexible and extensible architecture geared to solving future problems.
+
+
+However, the programming and analysis took longer than anticipated.  The results I have shown today were processed using 100 simulations per parameter combination.  The 1000 simulation results should be completed to update my results in a day or so.
+
+There is more we can do to make this of more particular use in the twin context, for example by evaluating correlations in simulations using multivariable regression methods we could account for partial correlations; if we did this using mixed effects methods we could also consider power for difference in intra-class correlations.
+
+Improve efficiency to allow higher resolution estimation

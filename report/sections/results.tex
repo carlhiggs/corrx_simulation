@@ -2,8 +2,44 @@
 \markboth{Results}{}
 \setcounter{chapter}{3}
 \setcounter{section}{0}
-\addcontentsline{toc}{chapter}{3.\quad\ Results}
+\addcontentsline{toc}{chapter}{3. Results}
 
 \section{section title}
 
 
+    \begin{itemize}
+      \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
+      \item Under approximate normality / mild skew, on average: \\SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
+    \end{itemize}
+    
+    
+    Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
+    
+     \begin{center}
+      \begin{figure}[!htb]
+        \minipage{0.49\textwidth}
+          \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example}.pdf}
+        \endminipage\hfill
+        \minipage{0.49\textwidth}%
+          \includegraphics[width=\linewidth]{{../figs/power_n_plot_example}.pdf}
+        \endminipage
+      \end{figure}
+    \end{center}
+    
+    
+   % \begin{itemize}
+      % \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
+      % \item Under extreme skew: \\Fisher's Z formula underestimates req. sample size by $ \sim 50\%$
+    % \end{itemize}
+    % \linebreak
+    % \small{Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$}
+    % \begin{center}
+      % \begin{figure}[!htb]
+        % \minipage{0.49\textwidth}
+          % \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example2}.pdf}
+        % \endminipage\hfill
+        % \minipage{0.49\textwidth}%
+          % \includegraphics[width=\linewidth]{{../figs/power_n_plot_example2}.pdf}
+        % \endminipage
+      % \end{figure}
+    % \end{center}

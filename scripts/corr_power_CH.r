@@ -106,6 +106,38 @@ gtv <- function(a,b,M=1e4,method = "pearson") {
   return(p)
 }
 
+gtv_alt <- function(a,b,M=1,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+  
+  # Step 1: Compute sample correlation coefficients
+  r1 <- cor(a,method = method)[2,1]
+  r2 <- cor(b,method = method)[2,1]
+  r  <- c(r1,r2)
+  
+  # Step 2: Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq_cpp(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq_cpp(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq_cpp(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq_cpp(M, df = n2-2, ncp = 1)
+  
+  Z <-matrix(data = rnorm_cpp(2*M,0,1), nrow=M, ncol = 2)
+  
+  # Compute test statistic
+  rstar <- r/sqrt(1-r^2)
+  top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+  G     <- top / sqrt( top^2 + V2 )
+  
+  # Compute p value
+  Grho <- G[,1] - G[,2];
+  p    <- 2*min( mean(Grho<0), mean(Grho>0) );
+  return(p)
+}
+
 # GTV test statistic, redefined not using rccp
 gtv_r <- function(a,b,M=1e4,method = "pearson") {
   # Two samples
@@ -445,6 +477,208 @@ dt[,("ratio"):=n1/n2,by=1:nrow(dt)]
 dt[,("n"):=n1+n2,by=1:nrow(dt)]
 dt[,("diff"):=abs(rho1-rho2),by=1:nrow(dt)]
 
+## There was a very big fuck up; for each distribution I prepared code like this
+# system.time(dt_gamma2[, tests:={
+#   cat("\r",.GRP,"\r")
+#   as.list(corr_power_compiled(rho = c(rho1,rho2), 
+#                               n = c(n1,n2),
+#                               distr = dist,
+#                               param1a = c(p1,p1), 
+#                               param1b = c(p1,p1),
+#                               param2a = c(p2,p2), 
+#                               param2b = c(p2,p2),
+#                               test    = tests,
+#                               alpha   = 0.05, 
+#                               sidedness=2,
+#                               method=as.character(method),  
+#                               nsims = 1000,
+#                               power_only = TRUE))
+# },by = 1:nrow(dt_gamma2)] )
+#
+## But which should have looked something like this:
+# system.time(dt_gamma2[, c( "fz_nosim","fz","gtv","slr","zou"):={
+#   cat("\r",.GRP,"\r")
+#   as.list(corr_power_compiled(rho = c(rho1,rho2), 
+#                               n = c(n1,n2),
+#                               distr = dist,
+#                               param1a = c(p1,p1), 
+#                               param1b = c(p1,p1),
+#                               param2a = c(p2,p2), 
+#                               param2b = c(p2,p2),
+#                               test    = tests,
+#                               alpha   = 0.05, 
+#                               sidedness=2,
+#                               method=as.character(method),  
+#                               nsims = 1000,
+#                               power_only = TRUE))
+# },by = 1:nrow(dt_gamma2)] )
+
+
+## Now, time is slim and to get results I think I need to focus on specific scenarios
+
+## How does ratio impact with Pearsons/Spearmans?
+# Scenario A1
+#  n1 == 60 and n2 == 120
+# nrow(dtk[(n1==60)&(n2==120),)
+# 2166 rows
+dt_sA1 <- dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+
+system.time(dt_sA1[, c( "fz_nosim","fz","gtv","slr","zou"):={
+    cat("\r",.GRP,"\r")
+    as.list(corr_power_compiled(rho = c(rho1,rho2),
+                                n = c(n1,n2),
+                                distr = dist,
+                                param1a = c(p1,p1),
+                                param1b = c(p1,p1),
+                                param2a = c(p2,p2),
+                                param2b = c(p2,p2),
+                                test    = tests,
+                                alpha   = 0.05,
+                                sidedness=2,
+                                method=as.character(method),
+                                nsims = 1000,
+                                power_only = TRUE))
+  },by = 1:nrow(dt_sA1)] )
+# user   system  elapsed 
+# 48278.95   673.58 48780.27 
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA1_20180527.RData")
+
+
+dt_sA1_10k <- dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+
+system.time(dt_sA1_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 10000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA1_10k)] )
+
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA1_10k_20180527.RData")
+# Scenario A2 
+# n1 == 90 and n2 == 90
+# Note - this doesn't exist; I'll have to fabricate it
+dt_sA2 <-  dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+dt_sA2$n1 <- 90
+dt_sA2$n2 <- 90
+
+system.time(dt_sA2[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 1000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA2)] )
+
+# user   system  elapsed 
+# 48350.98   736.72 48922.11 
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA2_20180527.RData")
+
+dt_sA2_10k <-  dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+dt_sA2_10k$n1 <- 90
+dt_sA2_10k$n2 <- 90
+
+system.time(dt_sA2_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 10000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA2_10k)] )
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA2_10k_20180527.RData")
+# Scenario B1
+# rho1 == 0.2 && rho2 == 0.5
+# nrow(dtk[(rho1==0.2)&(rho2==0.5),])
+# 294 rows
+dt_sA3 <-  dt[(rho1==0.2)&(rho2==0.5),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+
+system.time(dt_sA3[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 1000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA3)] )
+# user  system elapsed 
+# 6834.87   92.21 6921.39 
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_20180527.RData")
+
+dt_sA3_10k <-  dt[(rho1==0.2)&(rho2==0.5),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+
+system.time(dt_sA3_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 10000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA3_10k)] )
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_10k_20180527.RData")
+
+# Hero attempt
+dt_hero <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+system.time(dt_hero[, c( "fz_nosim","fz","gtv","slr","zou"):={
+  cat("\r",.GRP,"\r")
+  as.list(corr_power_compiled(rho = c(rho1,rho2),
+                              n = c(n1,n2),
+                              distr = dist,
+                              param1a = c(p1,p1),
+                              param1b = c(p1,p1),
+                              param2a = c(p2,p2),
+                              param2b = c(p2,p2),
+                              test    = tests,
+                              alpha   = 0.05,
+                              sidedness=2,
+                              method=as.character(method),
+                              nsims = 1000,
+                              power_only = TRUE))
+},by = 1:nrow(dt_sA3)] )
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_20180527.RData")
+
 
 ### scratch code for getting results processed from environment on work computer
 # tmp.env <- new.env() # create a temporary environment
@@ -454,9 +688,47 @@ dt[,("diff"):=abs(rho1-rho2),by=1:nrow(dt)]
 # rm(tmp.env) # remove the temporary environment to free up memory
 # dt <- rbind(other[is.na(fz_nosim)==FALSE,],dt_test)
 
+tmp.env <- new.env() # create a temporary environment
+load("r_power_work_dt_normal_20180526.RData", envir=tmp.env) # load workspace into temporary environment
+dtk_normal <- get("dt_normal", pos=tmp.env) # get the objects you need into your globalenv()
+load("r_power_work_dt_gamma1_20180526.RData", envir=tmp.env) # load workspace into temporary environment
+dtk_gamma1 <- get("dt_gamma1", pos=tmp.env) # get the objects you need into your globalenv()
+load("r_power_work_dt_gamma2_20180526.RData", envir=tmp.env) # load workspace into temporary environment
+dtk_gamma2 <- get("dt_gamma2", pos=tmp.env) # get the objects you need into your globalenv()
+rm(tmp.env) # remove the temporary environment to free up memory
+#x <- tmp.env$x # equivalent to previous line
+dtk <- rbind(dtk_normal,dtk_gamma1,dtk_gamma2)
+
+
+tmp.env <- new.env() # create a temporary environment
+load("r_power_work_dt_sA1_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA1 <- get("dt_sA1", pos=tmp.env) # get the objects you need into your globalenv()
+load("r_power_work_dt_sA2_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA2 <- get("dt_sA2", pos=tmp.env) # get the objects you need into your globalenv()
+load("r_power_work_dt_sA3_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA3 <- get("dt_sA3", pos=tmp.env) # get the objects you need into your globalenv()
+rm(tmp.env) # remove the temporary environment to free up memory
+#x <- tmp.env$x # equivalent to previous line
+
+# additional summary statistics
+dt_sA1[,("ratio"):=n1/n2,by=1:nrow(dt_sA1)]
+dt_sA1[,("n"):=n1+n2,by=1:nrow(dt_sA1)]
+dt_sA1[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA1)]
+dt_sA2[,("ratio"):=n1/n2,by=1:nrow(dt_sA2)]
+dt_sA2[,("n"):=n1+n2,by=1:nrow(dt_sA2)]
+dt_sA2[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA2)]
+dt_sA3[,("ratio"):=n1/n2,by=1:nrow(dt_sA3)]
+dt_sA3[,("n"):=n1+n2,by=1:nrow(dt_sA3)]
+dt_sA3[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA3)]
 
 # convert to long
+# 100 sims
 dt.long <- melt(dt, measure.vars = tests, variable.name = "test", value.name = "power")
+# 1000 sims
+dtk.long <- melt(dtk, measure.vars = tests, variable.name = "test", value.name = "power")
+dt_s1.long <- melt(dt_sA1, measure.vars = tests, variable.name = "test", value.name = "power")
+dt_s2.long <- melt(dt_sA2, measure.vars = tests, variable.name = "test", value.name = "power")
+dt_s3.long <- melt(dt_sA3, measure.vars = tests, variable.name = "test", value.name = "power")
 
 # overall average power
 dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
@@ -486,7 +758,9 @@ dt.long[(method=="pearson")&
 
 
 dt[(method=="pearson")&
-          (dist=="normal"),list("fz_nosim" = round(mean(fz_nosim),2),
+          (dist=="normal"),list("mean_n1" = round(mean(n1),0),
+                                "mean_n2" = round(mean(n2),0),
+                              "fz_nosim" = round(mean(fz_nosim),2),
                                "fz" = round(mean(fz),2),
                                "zou" = round(mean(zou),2),
                                "gtv" = round(mean(gtv),2),
@@ -505,17 +779,17 @@ dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(po
                                                            p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
 
 
-lparam1a <- 1
-lparam1b <- 1
-lparam2a <- 5
-lparam2b <- 5
+lparam1a <- 0
+lparam1b <- 0
+lparam2a <- 1
+lparam2b <- 1
 ln1 <- 60
 ln2 <- 120
 lalpha <- 0.05
 lthreshold <- 0.8
 lnsims <- 100
 ltest <- "slr"
-ldist <- "gamma"
+ldist <- "normal"
 lmethod <-"pearson"
 lnames <- c("Mz twins","Dz twins")
 corrxplot <- matrix(unlist(dt.long[(method==lmethod)&
@@ -549,7 +823,99 @@ filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 10,
                                   ylab = paste0("Correlation in ",lnames[2]), adj = 0),
                color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
                arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
-               
+# Scenario 1  - 1000 sims 60:120
+lparam1a <- 0
+lparam1b <- 0
+lparam2a <- 1
+lparam2b <- 1
+ln1 <- 60
+ln2 <- 120
+lalpha <- 0.05
+lthreshold <- 0.8
+lnsims <- 1000
+ltest <- "slr"
+ldist <- "normal"
+lmethod <-"pearson"
+lnames <- c("Mz twins","Dz twins")
+corrxplot <- matrix(unlist(dt_s1.long[(method==lmethod)&
+                                     (dist==ldist)&
+                                     (p1==lparam1a)&
+                                     (p2==lparam2a)&
+                                     (n1==ln1)&
+                                     (n2==ln2)&
+                                     (test==ltest),
+                                   power]),
+                    nrow=19,ncol=19, byrow = TRUE)
+test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
+                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+
+filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 100,
+               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
+                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                    add = TRUE, lwd = 3, col = "steelblue3");
+                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 axis(1, seq(-1,1,0.2))
+                 axis(2, seq(-1,1,0.2))},
+               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
+                                                ldist,"((",lparam1a,",",lparam2a,"),(",
+                                                lparam1b,",",lparam2b,"))","\n",
+                                                "Mz = ",ln1,
+                                                ", Dz = ",ln2,
+                                                ", alpha: ",lalpha, ", sims: ",lnsims),
+                                  xlab = paste0("Correlation in ",lnames[1]),
+                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
+               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+# Scenario 2  - 1000 sims 90:90
+lparam1a <- 0
+lparam1b <- 0
+lparam2a <- 1
+lparam2b <- 1
+ln1 <- 90
+ln2 <- 90
+lalpha <- 0.05
+lthreshold <- 0.8
+lnsims <- 1000
+ltest <- "slr"
+ldist <- "normal"
+lmethod <-"pearson"
+lnames <- c("Mz twins","Dz twins")
+corrxplot <- matrix(unlist(dt_s2.long[(method==lmethod)&
+                                        (dist==ldist)&
+                                        (p1==lparam1a)&
+                                        (p2==lparam2a)&
+                                        (n1==ln1)&
+                                        (n2==ln2)&
+                                        (test==ltest),
+                                      power]),
+                    nrow=19,ncol=19, byrow = TRUE)
+test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
+                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+
+filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 100,
+               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
+               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
+                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
+                                    add = TRUE, lwd = 3, col = "steelblue3");
+                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                 axis(1, seq(-1,1,0.2))
+                 axis(2, seq(-1,1,0.2))},
+               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
+                                                ldist,"((",lparam1a,",",lparam2a,"),(",
+                                                lparam1b,",",lparam2b,"))","\n",
+                                                "Mz = ",ln1,
+                                                ", Dz = ",ln2,
+                                                ", alpha: ",lalpha, ", sims: ",lnsims),
+                                  xlab = paste0("Correlation in ",lnames[1]),
+                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
+               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")  
+
+
+
 # alternative plots 
 library(ggplot2)
 p <- ggplot(dt.long[(method=="pearson")&
@@ -724,6 +1090,74 @@ ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+
         axis.line = element_line(colour = "black")) +
   ggtitle(title)
 
+# plot power curve by N given parameters  - Normal - Scenario 3 - 1000sim
+um <- dt_s3.long[(dist=="normal")&
+                (method=="pearson")&
+                (p1==0)&
+                (p2==1)&
+                (ratio==0.5),
+              power,by=list(n,test)]
+
+
+
+um[,"log_n":=log2(n),by=1:nrow(um)]
+fit <- data.table()
+for(x in levels(um$test)) {
+  fit <- rbind(fit,
+               cbind("test" = x,
+                     "n"    = min(um$n):max(um$n),
+                     "power" = splinefun(um[test %in% x,log_n], 
+                                         um[test %in% x,power],
+                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+}
+
+fit$n <- as.integer(fit$n)
+fit$power <- as.double(fit$power)
+
+cross <- data.table()
+for(x in levels(um$test)) {
+  cross <- rbind(cross, 
+                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+}
+
+cross$label <- c("FZ (no sim.)",
+                 "FZ",
+                 "GTV",
+                 "SLR",
+                 "Zou's CI")
+cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+cross <- cross[order(+rank(n))]
+
+method <- "pearson"
+dist <- "normal"
+p <- c(0,1)
+rho1 <- 0.2
+rho2 <- 0.5
+ratio <- 0.5
+title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
+                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
+                "rho: (",rho1,",",rho2,")",
+                "; Mz to Dz ratio: ",ratio, "; sims: ",1000)
+ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
+                     breaks = unique(um$n),
+                     limits = c(30,1920)) +
+  scale_y_continuous(bquote(Power~(1-beta)), 
+                     breaks = seq(0,1,0.1),
+                     limits = c(0,1)) +
+  geom_point(data = um)  +
+  geom_line(data = fit, lwd = 1) +
+  geom_hline(yintercept = 0.8) +
+  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
+  scale_colour_discrete(name="Tests",
+                        breaks=cross$test,
+                        labels=cross$label)  +
+  theme(panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  ggtitle(title)
+
+
 
 # plot power curve by N given parameters - Gamma, subtle
 um <- dt.long[(dist=="gamma")&
@@ -842,10 +1276,11 @@ p <- c(1,5)
 rho1 <- 0.2
 rho2 <- 0.5
 ratio <- 0.5
+nsims <- 100
 title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
                 dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
                 "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",100)
+                "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
 
 ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
   scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
@@ -866,6 +1301,78 @@ ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+
         axis.line = element_line(colour = "black")) +
   ggtitle(title)
 
+
+# plot power curve by N given parameters - Gamma, extreme - Scenario 3 1000 sims
+um <- dt_s3.long[(dist=="gamma")&
+                (method=="pearson")&
+                (p1==1)&
+                (p2==5)&
+                (rho1==0.2)&
+                (rho2==0.5)&
+                (ratio==0.5),
+              power,by=list(n,test)]
+
+
+
+um[,"log_n":=log2(n),by=1:nrow(um)]
+fit <- data.table()
+for(x in levels(um$test)) {
+  fit <- rbind(fit,
+               cbind("test" = x,
+                     "n"    = min(um$n):max(um$n),
+                     "power" = splinefun(um[test %in% x,log_n], 
+                                         um[test %in% x,power],
+                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+}
+
+fit$n <- as.integer(fit$n)
+fit$power <- as.double(fit$power)
+
+cross <- data.table()
+for(x in levels(um$test)) {
+  cross <- rbind(cross, 
+                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+}
+
+cross$label <- c("FZ (no sim.)",
+                 "FZ",
+                 "GTV",
+                 "SLR",
+                 "Zou's CI")
+cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+cross <- cross[order(+rank(n))]
+
+
+method <- "pearson"
+dist <- "gamma"
+p <- c(1,5)
+rho1 <- 0.2
+rho2 <- 0.5
+ratio <- 0.5
+nsims <- 1000
+title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
+                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
+                "rho: (",rho1,",",rho2,")",
+                "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
+
+ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
+                     breaks = unique(um$n),
+                     limits = c(30,1920)) +
+  scale_y_continuous(bquote(Power~(1-beta)), 
+                     breaks = seq(0,1,0.1),
+                     limits = c(0,1)) +
+  geom_point(data = um)  +
+  geom_line(data = fit, lwd = 1) +
+  geom_hline(yintercept = 0.8) +
+  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
+  scale_colour_discrete(name="Tests",
+                        breaks=cross$test,
+                        labels=cross$label)  +
+  theme(panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  ggtitle(title)
 
 
 # # plot power curve by difference given parameters

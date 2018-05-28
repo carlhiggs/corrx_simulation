@@ -20,14 +20,14 @@ However, a routine preliminary step undertaken by researchers in this field is t
 
 In undertaking a twin study we make certain assumptions, understanding that these likely do not strictly hold in practice, but the key one for the purposes of this power analysis is that our data is approximately normally distributed.
 
-4. >>>>
+3. >>>>
 I conducted a review of the literature relating to twins, correlations, power and simulations to inform development of a plan for our analysis.  
 
 We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearson's, using the same formula on the rank ordered variables rather than their raw values.
 
 Other important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  
 
-5. >>>>
+4. >>>>
 Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5% and 20%, and this is the parameterisation adopted for the results presented here.
 
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in functions found in Stata and R.
@@ -38,7 +38,7 @@ Using a simulation approach we take our hypothesis tests and apply them to draws
 
 So where in our formula we might plug in anticipated or observed coefficients of .2 and .5, in the simulation we use these values to represent the supposed true correlations in the underlying population from which we draw our random samples.  Over a large number of simulations the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
 
-6. >>>>
+5. >>>>
 The R programming environment was used for all of our analysis, and the tests we identified and developed for inclusion in addition to the formula approach were 
 
 - the simulation equivalent of the Fisher's Z test already discussed
@@ -75,18 +75,18 @@ We can see here the extreme under estimation in sample size required to achieve 
 
 The SLR test appears a strong performer here - but its systematic elevation at tails of distribution is concerning -- does this reflect a systematic bias, and perhaps innacurate rather than truly improved performance?  
 
-When no difference in correlations is present under bivariate normal distribution we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20%.  This suggests its estimates here are in fact upwardly biased.
+When no difference in correlations is present under bivariate normal distribution we would expect power equivalent to our alpha level of 0.05, which, approximately, the other tests have; however, the SLR test has approximately 20%.  This suggests its estimates here are upwardly biased.
 
-After the SLR test the GTV was the next most powerful under approximate normality, but appeared to perform equivalent to the Fishers'Z simulation under extreme violations. 
+After the SLR test the GTV was the next most powerful, but only marginally moreso than the Fisher's Z based tests.
+
+9. >>>>
+We developed a flexible and extensible architecture geared to solving future problems.
+
+However, the programming and analysis took longer than anticipated.  The results I have shown today were processed using 100 simulations per parameter combination.  The 1000 simulation results should be completed to update my results in a day or so.
+
+There is more we can do to make this of more particular use in the twin context, for example by evaluating correlations in simulations using multivariable regression methods we could account for partial correlations; if we did this using mixed effects methods we could also consider power for difference in intra-class correlations.
 
 10. >>>>
-We developed a flexible and extensible architecture which is geared to solving future problems.
-
-However, the programming and analysis took longer than anticipated.  As such the results I have shown today were processed using 100 simulations per parameter combination.  The 1000 simulation results should be completed to update my results in a day or so.
-
-There is more we can do to make this of more particular use in the twin context, and I have some ideas about how to achieve this.
-
-11. >>>>
-To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required.  In addition, I have trialled an interactive web app using the R Shiny development environment.  My plan is to incorporate the pre-processed database into this application to allow comparison of these tests on the fly based on pre-processed results.
+To sum up, we have created both the architecture for a process, as well as a database of simulation scenarios that can be interrogated.  Both can be expanded as required. I have trialled an interactive power calculator web app, and it is planned incorporate the pre-processed database into this to allow on the fly estimates informed by our pre-processed results.
 
 Acknowledgements

@@ -1,7 +1,7 @@
 \chapter*{1. Introduction}
 \markboth{1. Introduction}{}
 \setcounter{chapter}{1}
-\addcontentsline{toc}{chapter}{1.\quad\ Introduction}
+\addcontentsline{toc}{chapter}{1. Introduction}
 
 			% o	Summary of background and research methods; why this analysis/ evaluation is important; how and why the data was collected (initial study aims, collection methods, response rates); specifics of data (number, variables, outcomes)
 			% Research question, aim, objectives of study
@@ -23,11 +23,56 @@
 
 \section{Background}
 %% topic title
-\subsection{subsection title}
 
+Power is the probability of detecting a true effect, a key consideration when planning a study.
 
+Given a question like How much power do we have to detect a difference in correlations between samples of identical and non-identical twin pairs? We might respond, well that depends.  Intuitively, we will expect a range of possible parameters to influence our power: the sample size, the ratio of MZ to DZ twins, our decisions on how to define what is a meaningful difference, how strong are these correlations, how are you measuring the difference?
 
-\subsection{subsection title}
+Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
+
+\subsection{Twins and the classic twin study}
+
+Identical twins arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings. 
+
+The classic twin study, which is the setting of interest for this power analysis, exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits
+
+In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+
+The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
+
+Contemporary twin studies use mixed effects and structural equation modelling to evaluate differences in variance components for a particular trait between mono and dizygotic twins accounting for differential within pair similarities related to zygosity.  A recent article reported on the development of R commands which can be used to estimate the power to detect a difference in correlations using such models.  
+
+However, a routine preliminary step undertaken by researchers in this field is the calculation and comparison of Pearson correlations across the two twin groups.  This research project focuses on the reported needs of researchers undertaking this early analysis step.
+
+In undertaking a twin study we make certain assumptions, understanding that these likely do not strictly hold in practice, but the key one for the purposes of this power analysis is that our data is approximately normally distributed.
+
+\subsection{Historical background}
+The statistical treatment of correlation was popularised by Francis Galton.  In context of broad social interest in eugenics, Galton described methods which could be used to describe the co-relatededness of variables sourced from closely related family members.  
+
+Karl Pearson was a keen follower of Galton's research, and writing in the context of inheritance and natural selection in 1895 makes reference to what he called Galton's function, describing it as a coefficient of correlation.  
+
+William Gossett and other big names in statistics made contributions to the understanding of what we now know as Pearson's correlation. 
+
+Ronald Fisher observed that a geometric transformation of the correlation cofficient using its inverse hyperbolic tangent could be used to approximate a normal distribution.  This has the effect of mapping the distribution of correlation of coefficients from a domain of negative 1 through positive one to negative infinity through positive infinity. Being a simple and accurate approximation of the normal distribution, this transformation known as Fisher's Z is ubiquitous in statistical treatment of correlation coefficients, for example when seeking to compare their differences.
+
+Florence Nightingale David was a protege of Pearson's who suggested that she prepare a volume of numerically accurate tables and interpolated plots of the distribution of the sample correlation coefficient r given n and the population correlation rho which could act as a standard against which to judge approximations such as that of Fisher.  This visualisation of David's of the chance of rejecting the null hypothesis when true given alpha and rho and n was an influence on this project's presentation of results.
+
+In the context of genetics and kinship, Douglas Falconer outlined methods of using comparison of identical and non-identical twins for estimating heritability, and noted some of the assumptions that this involves.
+
+Michael Neale and colleagues developed methods and software to facilitate the analysis of variance components in twin studies using structural equation modelling.  Brad Verhulst, building on the work of Peter Visscher, developed functions for power analyses in this variance component modelling context, for example detecting a difference in genetic correlations.
+
+This project is concerned with power to detect a difference in Pearson correlations as part of preliminary analysis before variance component modelling.
+
+\subsection{Power analysis}
+Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5\% and 20\%, and this is the parameterisation adopted for the results presented here.
+
+A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in functions found in Stata and R.
+
+To estimate the power using this approach, you first take the difference between a normal reference score given the chosen type 1 error rate and the absolute value of the test statistic. The type 2 error rate is the probability of observing a value of at least this magnitude on the normal distribution.  And 1 minus this value is the power.
+
+Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
+
+So where in our formula we might plug in anticipated or observed coefficients of .2 and .5, in the simulation we use these values to represent the supposed true correlations in the underlying population from which we draw our random samples.  Over a large number of simulations the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
 
  \subsubsection{subsub section title}
  

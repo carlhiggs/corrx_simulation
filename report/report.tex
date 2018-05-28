@@ -1,13 +1,11 @@
-\documentclass[graybox,envcountchap,sectrefs]{svmono}
+\documentclass[graybox,envcountchap,sectrefs,vecarrow]{svmono}
 
 % to create a note \todo{rephrase sentence}  or
 			% \todo[color=green!40]{And a green note}
 			% \todo[inline]{A todonote placed in the text}
 			% %the above can be used before the end of a figure to advise to update
-			% \todo[inline, size=\tiny]{Note with very small font size.}.
+			% \todo[inline, size=\tiny]{Note with very small font size.}
 			% \missingfigure[figcolor=white]{Testing figcolor}
-
-			% \todo[inline]{From Fransisca et al. Comparison of rapid diagnostic test Plasmotec Malaria-3, microscopy, and quantitative real-time PCR for diagnoses of \plf and \plv infections in Mimika Regency, Papua, Indonesia. Malaria journal. 2015;14:103: "standard expert microscopy should continue to be used as the reference gold standard for malaria diagnosis despite the \emph{likelihood of missing some low density parasitemia and sub-microscopic infections}." }
 
 % A4 paper
 \paperwidth 210mm
@@ -25,6 +23,8 @@
 %extra url help
 
 % Links and colours
+
+\usepackage[english]{babel}
 	\usepackage[pdftex]{hyperref}
 	\usepackage{xcolor}
 	\hypersetup{
@@ -42,11 +42,12 @@
 	
 % Fonts, lists, symbols and matrices
   \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
+  % \usepackage[utf8]{inputenc}
 	\usepackage{enumitem}
 	\usepackage{graphicx}
   % \usepackage{mathptmx}
   \usepackage{newtxtext,newtxmath}
+  \usepackage{amssymb}
   \usepackage{amsmath}
 	% \usepackage[retainorgcmds]{IEEEtrantools}
 	\usepackage{multirow}
@@ -55,6 +56,12 @@
 	\usepackage{dcolumn}
 	\usepackage{booktabs}
 	\usepackage{longtable}
+
+\usepackage{csquotes}
+% \usepackage{lmodern}% http://ctan.org/pkg/lm
+\usepackage{bm}
+\usepackage{tikz}
+
 	
 %geometry for electronic version:
 	\usepackage[
@@ -146,10 +153,14 @@
 		\makeatother
 		% \setlength{\parindent}{0pt}
 
-	
-%Custom commands
-	\newcommand{\tdn}{\todo[inline, color=green!40]}
 
+%Custom commands
+\renewcommand{\vec}[1]{\bm{#1}}	
+	\newcommand{\tdn}{\todo[inline, color=green!40]}
+  % \newcommand{\E}{\mathrm{E}}
+  \newcommand{\Var}{\mathrm{Var}}
+  \newcommand{\Cov}{\mathrm{Cov}}
+  \newcommand*{\lcd}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
 % Custom Colours
 	\definecolor{farb1}{rgb}{27	 158 119 }
 	\definecolor{farb2}{rgb}{217 95	 2   }
@@ -160,6 +171,14 @@
 	\definecolor{farb7}{rgb}{166 118 29  }
 	\definecolor{farb8}{rgb}{102 102 102 }
 
+  \definecolor{rgr}{RGB}{28,144,153}
+  
+% Custom math operators
+  \DeclareMathOperator\arctanh{arctanh}
+  \DeclareMathOperator\ci{CI}
+  \DeclareMathOperator\abs{abs}
+  \DeclareMathOperator\power{power}
+  
 %establish correct inset  style for appendices	
 \makeatletter
  \newcommand\chapassect{%
@@ -221,49 +240,49 @@
 
 \date{July 2018}
 
-% \maketitle%
+\maketitle%
 
-% \frontmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \include{sections/acknowledgements}
-% \include{sections/declaration}
-% \include{sections/abstract}
-% \tableofcontents
-% \include{sections/acronym}
+\frontmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{sections/acknowledgements}
+\include{sections/declaration}
+\include{sections/abstract}
+\tableofcontents
+\include{sections/acronym}
 \mainmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \doublespacing
 \include{sections/background}			
-% \include{sections/methods}
-% \include{sections/results}
-% \include{sections/discussion}
-% \include{sections/conclusion}
+\include{sections/methods}
+\include{sections/results}
+\include{sections/discussion}
+\include{sections/conclusion}
 
 \backmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\include{sections/glossary}
-%%References - extra code to display as own chapter, without header, and in contents only once
-\let\oldaddcontentsline\addcontentsline
-\let\oldsection\section
+% \include{sections/glossary}
+% %%References - extra code to display as own chapter, without header, and in contents only once
+% \let\oldaddcontentsline\addcontentsline
+% \let\oldsection\section
 
-\chapter*{References}
-\addcontentsline{toc}{chapter}{References}
-\markboth{Rerences}{}
-\renewcommand\refname{}
-% \lhead{\itshape References}
-\begingroup
-\small
+% \chapter*{References}
+% \addcontentsline{toc}{chapter}{References}
+% \markboth{Rerences}{}
+% \renewcommand\refname{}
+% % \lhead{\itshape References}
+% \begingroup
+% \small
 
-\renewcommand{\addcontentsline}[3]{}% Remove functionality of \addcontentsline
-\renewcommand{\section}[2]{}% Remove functionality of \section
-\begin{thebibliography}{}
-\input{sections/build/referenceLoader.bbl}
-
-%%NOTE! Manually reorder v2.bbl to reflect numeric ordering
-
-\end{thebibliography}{}
-\endgroup
-
+% \renewcommand{\addcontentsline}[3]{}% Remove functionality of \addcontentsline
+% \renewcommand{\section}[2]{}% Remove functionality of \section
+% \begin{thebibliography}{}
 % \input{sections/build/referenceLoader.bbl}
-\renewcommand{\addcontentsline}{\oldaddcontentsline}
-\renewcommand{\section}{\oldsection}
+
+% %%NOTE! Manually reorder v2.bbl to reflect numeric ordering
+
+% \end{thebibliography}{}
+% \endgroup
+
+% % \input{sections/build/referenceLoader.bbl}
+% \renewcommand{\addcontentsline}{\oldaddcontentsline}
+% \renewcommand{\section}{\oldsection}
 
 
 % \include{sections/appendices}
