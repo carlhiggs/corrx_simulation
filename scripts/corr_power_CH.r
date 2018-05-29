@@ -439,44 +439,10 @@ dt[,("ratio"):=n1/n2,by=1:nrow(dt)]
 dt[,("n"):=n1+n2,by=1:nrow(dt)]
 dt[,("diff"):=abs(rho1-rho2),by=1:nrow(dt)]
 
-## There was a very big fuck up; for each distribution I prepared code like this
-# system.time(dt_gamma2[, tests:={
-#   cat("\r",.GRP,"\r")
-#   as.list(corr_power_compiled(rho = c(rho1,rho2), 
-#                               n = c(n1,n2),
-#                               distr = dist,
-#                               param1a = c(p1,p1), 
-#                               param1b = c(p1,p1),
-#                               param2a = c(p2,p2), 
-#                               param2b = c(p2,p2),
-#                               test    = tests,
-#                               alpha   = 0.05, 
-#                               sidedness=2,
-#                               method=as.character(method),  
-#                               nsims = 1000,
-#                               power_only = TRUE))
-# },by = 1:nrow(dt_gamma2)] )
-#
-## But which should have looked something like this:
-# system.time(dt_gamma2[, c( "fz_nosim","fz","gtv","slr","zou"):={
-#   cat("\r",.GRP,"\r")
-#   as.list(corr_power_compiled(rho = c(rho1,rho2), 
-#                               n = c(n1,n2),
-#                               distr = dist,
-#                               param1a = c(p1,p1), 
-#                               param1b = c(p1,p1),
-#                               param2a = c(p2,p2), 
-#                               param2b = c(p2,p2),
-#                               test    = tests,
-#                               alpha   = 0.05, 
-#                               sidedness=2,
-#                               method=as.character(method),  
-#                               nsims = 1000,
-#                               power_only = TRUE))
-# },by = 1:nrow(dt_gamma2)] )
 
-
-## Now, time is slim and to get results I think I need to focus on specific scenarios
+### Due to typo issue with simulation (used macro instead of vector to store results in, 
+### resulting in main results only stored for first test (the non-simulation one)
+### I have now chosen specific scenarios to process at higher levels of simulation
 
 ## How does ratio impact with Pearsons/Spearmans?
 # Scenario A1
@@ -1335,78 +1301,39 @@ ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+
         panel.background = element_blank(), 
         axis.line = element_line(colour = "black")) +
   ggtitle(title)
-  
-# system.time(results<- corr_pplot_compiled(nsims = 10, res_min = -.3, res_max = 0.3, res_inc = 0.1, n = c(30,90)))
-# # Correlation power plot simulation commenced at 2018-05-01 21:57:57 
-# # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
-# # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# #   pearson	0.3	0.3	30	90	0.05	2	10	normal	0.025	0	0
-# # Completed at  2018-05-01 21:59:00 
-# # user  system elapsed 
-# # 58.14    5.07   63.17
-# 
-# system.time(results<- corr_pplot_compiled())
-# ## Note - this time test was run on more powerful work computer
-# # Correlation power plot simulation commenced at 2018-05-01 22:05:06 
-# # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
-# # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# #   pearson	0.95	0.95	30	90	0.05	2	100	normal	0.025	0.09	0.09
-# # Completed at  2018-05-02 02:06:36 
-# # user   system  elapsed 
-# # 14425.09    94.50 14489.76
-# #
-# # There was some error viewing all plots some time later - not sure why; however, results should be saved
-# corrs<- seq(-0.95,0.95,0.05)
-# nsims = 100 
-# n = c(30,90)
-# distr = "normal"
-# tests = c("fz_nosim","fz","gtv")
-# alpha = 0.05
-# beta = 0.2
-# sidedness=2
-# target = 1-beta
-# method="pearson"  
-# names = c("Population A","Population B")
-# for (test in results[["tests"]]) {
-# results[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(results[[test]]), nlevels = 10,
-#                                          xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-#                                          plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(results[[test]]),
-#                                                               levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-#                                                               add = TRUE, lwd = 3, col = "steelblue3");
-#                                            abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                            abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                            axis(1, seq(-1,1,0.2))
-#                                            axis(2, seq(-1,1,0.2))},
-#                                          plot.title = title(main = paste0(test," test ~ ",
-#                                                                  distr,"((",param1a,",",param2a,"),(",
-#                                                                                                     param1b,",",param2b,"))","\n",
-#                                                                           "Mz = ",results[["params"]][["n1"]],
-#                                                                           ", Dz = ",results[["params"]][["n2"]],
-#                                                                           ", alpha: ",alpha, ", sims: ",nsims),
-#                                                             xlab = paste0("Correlation in ",names[1]),
-#                                                             ylab = paste0("Correlation in ",names[2]), adj = 0),
-#                                          color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-# arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
-# }
-# 
-# 
-# 
-# # Non-normal distribution simulation
-# # normal reference distribution
-# bivariate_distribution_normal_m0_s1_n50 <- ggExtra::ggMarginal(data = as.data.frame(a), x = "V1", y = "V2") 
-# plot(bivariate_distribution_normal_m0_s1_n50)
-# # gamma distribution example (mean/shape, and rate/dispersion)
-# # some positive skew (but distinctly non-normal)
-# gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma", 
-#                    corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# bivariate_distribution_gamma_m1.5_d0.09_n50 <- ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2") 
-# plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
-# 
-# # more gamma exploration, using our otherwise defaults
-# gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2") 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2") 
+
+# Non-normal distribution simulation
+# normal reference distribution
+bivariate_distribution_normal_m0_s1_n50 <- ggExtra::ggMarginal(data = as.data.frame(a), x = "V1", y = "V2")
+plot(bivariate_distribution_normal_m0_s1_n50)
+# gamma distribution example (mean/shape, and rate/dispersion)
+# some positive skew (but distinctly non-normal)
+gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma",
+                   corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+bivariate_distribution_gamma_m1.5_d0.09_n50 <- ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2")
+plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
+
+# more gamma exploration, using our otherwise defaults
+gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
+                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
+
+ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2")
+ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2")
+
+
+
+## Alternate fitted contour representation --- a lot bloody easier!
+ggplot(dt_s1.long[(n1==60)&
+                    (n2==120)&
+                    (method=="pearson")&
+                    (dist=="gamma")&(p1==1),],aes(x = rho1,y = rho2, z = power, colour = test, group = test))  +
+  geom_contour(breaks = 0.8)
+
+
+ggplot(dt_s2.long[(n1==90)&
+                    (n2==90)&
+                    (method=="pearson")&
+                    (dist=="gamma")&(p1==1),],aes(x = rho1,y = rho2, z = power, colour = test, group = test))  +
+  geom_contour(breaks = 0.8)
