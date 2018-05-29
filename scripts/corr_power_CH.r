@@ -378,49 +378,8 @@ dt_normal <- dt[(dist=="normal"),]
 dt_gamma1 <- dt[(dist=="gamma")&(p1==1.5),]
 dt_gamma2 <- dt[(dist=="gamma")&(p1==1),]
 
-# example of calculating power for all simulation combinations
-test3 <- dt[1:100,]
-system.time(test3[,  c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2), 
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1), 
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2), 
-                              param2b = c(p2,p2),
-                              test    =  c( "fz_nosim","fz","gtv","slr","zou"),
-                              alpha   = 0.05, 
-                              sidedness=2,
-                              method=as.character(method),  
-                              nsims = 100,
-                              power_only = TRUE))
-},by = 1:nrow(test3)] )
-
-#     method   dist p1 p2 n1 n2 rho1 rho2  fz_nosim   fz  gtv  slr  zou
-# 1: pearson normal  0  1 15 15 -0.9 -0.9 0.0250000 0.12 0.12 0.14 0.12
-# 2: pearson normal  0  1 15 15 -0.9 -0.8 0.1480538 0.16 0.17 0.19 0.16
-# 3: pearson normal  0  1 15 15 -0.9 -0.7 0.3162464 0.31 0.33 0.35 0.31
-# 4: pearson normal  0  1 15 15 -0.9 -0.6 0.4794100 0.54 0.57 0.63 0.54
-# 5: pearson normal  0  1 15 15 -0.9 -0.5 0.6181794 0.65 0.66 0.72 0.63
-# 6: pearson normal  0  1 15 15 -0.9 -0.4 0.7285717 0.74 0.75 0.77 0.72
-
-# example extraction of plot
-filled.contour(x = seq(-0.9,-0.6,0.1), 
-               y = seq(-0.9,-0.6,0.1), 
-               z = matrix(unlist(test3[(method=="pearson")&
-                                         (dist=="normal")&
-                                         (p1==0)&
-                                         (p2==1)&
-                                         (n1==15)&
-                                         (n2==15)&
-                                         (rho1<=-0.6)&
-                                         (rho2<=-0.6),
-                                       "gtv"]),
-                          nrow=4,ncol=4, byrow = TRUE))
-
 # run main simulation study
-system.time(dt_normal[, tests:={
+system.time(dt_normal[,  c("fz_nosim","fz","gtv","slr","zou"):={
   cat("\r",.GRP,"\r")
   as.list(corr_power_compiled(rho = c(rho1,rho2), 
                       n = c(n1,n2),
@@ -438,7 +397,7 @@ system.time(dt_normal[, tests:={
 },by = 1:nrow(dt_normal)] )
 
 
-system.time(dt_gamma1[, tests:={
+system.time(dt_gamma1[,  c("fz_nosim","fz","gtv","slr","zou"):={
   cat("\r",.GRP,"\r")
   as.list(corr_power_compiled(rho = c(rho1,rho2), 
                               n = c(n1,n2),
@@ -456,7 +415,7 @@ system.time(dt_gamma1[, tests:={
 },by = 1:nrow(dt_gamma1)] )
 
 
-system.time(dt_gamma2[, tests:={
+system.time(dt_gamma2[,  c("fz_nosim","fz","gtv","slr","zou"):={
   cat("\r",.GRP,"\r")
   as.list(corr_power_compiled(rho = c(rho1,rho2), 
                               n = c(n1,n2),
@@ -795,12 +754,19 @@ dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(po
 
 
 # Function to produce corrx plots from long data
-corrxplot <- function(data.long,method = "pearson",dist = "normal",test = "fz",n1 = 60,n2 = 120,
+corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 60,n2 = 120,
                       param1a = 0,param1b = 0, param2a = 1,param2b = 1,
                       rho1 = 0.2, rho2 = 0.5, ratio = 0.5,
                       nsims = 100, names = c("Mz twins","Dz twins"), type  = "contour",
                       alpha = 0.05, threshold = 0.8,
-                      graph_out,gwidth = 7,gheight=6.5) {
+                      graph_out = "corrxplot",gwidth = 7,gheight=6.5) {
+  
+  graph_out <- if(graph_out=="corrxplot") paste("corrx",type,method,dist,
+                                                paste0(param1a,'-',param1a),
+                                                paste0(param2a,'-',param2b),
+                                                paste0('n',n1,'-',n2),
+                                                rho1,rho2,".pdf",sep="_") else graph_out
+  
   # rename input vars so not ambiguous when referencing data.table fields
   lmethod  <- method
   ldist    <- dist
@@ -934,6 +900,89 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test = "fz",n
     # finalise plot
     dev.off()
   }
+  if(type %in% c("diffpower","diffpowerabs")){
+    ln = n1+n2
+    # plot power curve by difference given parameters
+    um <- data.long[(dist=="normal")&
+                    (method=="pearson")&
+                    (p1==lparam1a)&
+                    (p2==lparam2a)&
+                    (n ==ln)&
+                    (ratio==lratio),
+                  power,by=list(test,rho1,rho2,diff)]
+    
+    um[,"z1":=atanh(rho1), by = 1:nrow(um)]
+    um[,"z2":=atanh(rho2), by = 1:nrow(um)]
+    
+    if(type=="diffpower") {  
+      um[,"diff":=tanh(z1-z2), by = 1:nrow(um)]
+      xformula <- bquote("d* ="~tanh(atanh(rho[1])-atanh(rho[2])))
+    } else {
+      um[,"diff":=abs(tanh(z1-z2)), by = 1:nrow(um)]
+      xformula <- bquote("d* = |"~tanh(atanh(rho[1])-atanh(rho[2]))~"|")
+    }
+    
+    # fit by averaging over differences arising from differen rho combinations
+    fit <- data.table()
+    for(x in levels(um$test)) {
+      spline <- with(um[test %in% x,], smooth.spline(diff, 
+                                                     power,
+                                                     all.knots=seq(0,1,0.01)))
+      fit <- rbind(fit,
+                   cbind("test" = x,
+                         "diff"    = seq(0,1,0.01),
+                         "power" = splinefun(spline$x, 
+                                             spline$y,
+                                             method = "monoH.FC")(seq(0,1,0.01))))
+    }
+    
+    fit$diff <- as.double(fit$diff)
+    fit$power <- as.double(fit$power)
+    
+    cross <- data.table()
+    for(x in levels(um$test)) {
+      cross <- rbind(cross, 
+                     fit[(test %in% x)][which.min(abs(0.8-fit[(test %in% x),power]))])
+    }
+    
+    cross$label <- c("FZ (no sim.)",
+                     "FZ",
+                     "GTV",
+                     "SLR",
+                     "Zou's CI")
+    cross[,"label":= paste0(label," (",round(diff,2),")"),by=1:nrow(cross)]
+    cross <- cross[order(+rank(diff))]
+    
+    title <- paste0("Power to detect difference in ",method," correlations, by difference*\n",
+                    dist,"((",param1a,",",param1b,"),(",param2a,",",param2b,"))","\n",
+                    "N: ",ln,
+                    "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
+    # initialise plot
+    pdf(graph_out,width=gwidth,height=gheight)
+    p <- ggplot(NULL, aes(x = diff, y = power, colour = test, group = test))+ 
+      scale_x_continuous(xformula, 
+                         breaks = seq(0,1,0.1),
+                         limits = c(0,1)) +
+      scale_y_continuous(bquote(Power~(1-beta)), 
+                         breaks = seq(0,1,0.1),
+                         limits = c(0,1)) +
+      geom_point(data = um)  +
+      geom_line(data = fit, lwd = 1) +
+      geom_hline(yintercept = 0.8) +
+      geom_vline(aes(xintercept = cross$diff, colour = cross$test)) +
+      scale_colour_discrete(name="d* for 80% Power",
+                            breaks=cross$test,
+                            labels=cross$label)  +
+      theme(panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black")) +
+      ggtitle(title)
+    
+    print(p)
+    # finalise plot
+    dev.off()
+    
+  }
 }
 
 
@@ -1006,7 +1055,7 @@ corrxplot(data.long  =  dt.long,
           param2a    =  1,
           nsims      =  100,
           type       = "npower",
-          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s100.pdf",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
 
@@ -1024,7 +1073,7 @@ corrxplot(data.long  =  dt_s3.long,
           param2a    =  1,
           nsims      =  1000,
           type       = "npower",
-          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s1000.pdf",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s1000.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
 
@@ -1041,7 +1090,7 @@ corrxplot(data.long  =  dt_s3_10k.long,
           param2a    =  1,
           nsims      =  10000,
           type       = "npower",
-          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s10000.pdf",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s10000.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
 
@@ -1147,154 +1196,68 @@ corrxplot(data.long  =  dt_s3_10k.long,
           threshold  =  0.8) 
 
 
+# difference plot (note the imprecision though - not a perfect approach)
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "normal",
+          param1a    =  0,
+          param2a    =  1,
+          ratio      =  .5,
+          n1         =  60,
+          n2         =  120,
+          nsims      =  100,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_normal_60_120_mzdz1_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-# # plot power curve by difference given parameters
-# dist      <- "normal"
-# method    <- "pearson"
-# ratio     <- 1
-# n         <- 240
-# threshold <- 0.8
-# 
-# um <- dt.long[(dist==dist)&
-#                 (method==method)&
-#                 (p1==0)&
-#                 (p2==1)&
-#                 (ratio==ratio)&
-#                 (n==n),
-#               power,by=list(test,rho1,rho2,diff)]
 
-um <- dt.long[(dist=="normal")&
-                (method=="pearson")&
-                (p1==0)&
-                (p2==1)&
-                (ratio==1)&
-                (n==240),
-              power,by=list(test,rho1,rho2,diff)]
+# difference plot (note the imprecision though - not a perfect approach)
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "normal",
+          param1a    =  0,
+          param2a    =  1,
+          ratio      =  .5,
+          n1         =  60,
+          n2         =  120,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_normal_60_120_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-um[,"z1":=atanh(rho1), by = 1:nrow(um)]
-um[,"z2":=atanh(rho2), by = 1:nrow(um)]
-um[,"diff1":=tanh(z1-z2), by = 1:nrow(um)]
-um[,"diff2":=abs(tanh(z1-z2)), by = 1:nrow(um)]
-# 
-# # Plots to clarify why the use of tanh(atanh(difference)) is important
-# # Power estimates are not monotonic here using just corr differences
-# ggplot(um[(test %in% "fz")],aes(x = diff,y = power,group = rho1, colour = rho1))+geom_point()+theme_bw()
-# 
-# # Here we see that the differences are ordered when considered by tanh(atanh(diff))
-# ggplot(um[(test %in% "fz")],aes(x = diff,y = diff1,group = rho1, colour = rho1))+geom_point()+theme_bw()
-# 
-# # Here we see that the differences are ordered when considered by and simplified by |tanh(atanh(diff))|
-# ggplot(um[(test %in% "fz")],aes(x = diff,y = diff2,group = rho1, colour = rho1))+geom_point()+theme_bw()
-# 
-# # Here we see that power increases as diff increases, but not equally across series of (rho1,rho2) combinations
-# ggplot(um[(test %in% "fz")],aes(x = diff,y = diff2,group = power, colour = power))+geom_point()+theme_bw()
-# 
-# 
-# # Rho by Rho showing power; with squiggly line analogue of our filled conotur
-# ggplot(um,aes(x = rho1,
-#               y = rho2, 
-#               group = power, 
-#               colour = power))+
-#   geom_point()+
-#   geom_line()+
-#   theme_bw() 
-# 
-# # Here, we see how the assymetrical tanh(atanh(diff)) works; fixed rho, fixed test
-# ggplot(um[(test=="fz")&(rho1==0.5),],aes(x = diff1,
-#               y = power, 
-#               group = test, 
-#               colour = test))+
-#   geom_point()+
-#   theme_bw() 
-# 
-# # power by diff1;  fixed rho, series by test
-# ggplot(um[(rho1==0.5),],aes(x = diff1,
-#                                          y = power, 
-#                                          group = test, 
-#                                          colour = test))+
-#   geom_point()+
-#   theme_bw() 
-# 
-# # power by diff2;  fixed rho, series by test
-# ggplot(um[(rho1==0.5),],aes(x = diff2,
-#                             y = power, 
-#                             group = test, 
-#                             colour = test))+
-#   geom_point()+
-#   theme_bw() 
-# 
-# # amazing abstract picture  -- how??!
-# ggplot(um[(test %in% "fz")],aes(x = rho1,y = power,group = rho2, colour = rho2))+
-#   geom_point()+
-#   geom_line()+
-#   theme_bw()
-# 
-# ggplot(um[(test %in% "fz")],aes(x = z1,y = power,group = z2, colour = z2))+
-#   geom_point()+
-#   geom_line()+
-#   theme_bw()
 
-# fit by averaging over differences arising from differen rho combinations
-fit <- data.table()
-for(x in levels(um$test)) {
-  spline <- with(um[test %in% x,], smooth.spline(diff2, 
-                                                 power,
-                                                 all.knots=seq(0,1,0.01)))
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "diff2"    = seq(0,1,0.01),
-                     "power" = splinefun(spline$x, 
-                                         spline$y,
-                                         method = "monoH.FC")(seq(0,1,0.01))))
-}
+# difference plot (note the imprecision though - not a perfect approach)
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "normal",
+          param1a    =  0,
+          param2a    =  1,
+          ratio      =  1,
+          n1         =  90,
+          n2         =  90,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_normal_90_90_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-fit$diff2 <- as.double(fit$diff2)
-fit$power <- as.double(fit$power)
 
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(0.8-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                 "FZ",
-                 "GTV",
-                 "SLR",
-                 "Zou's CI")
-cross[,"label":= paste0(label," (",round(diff2,2),")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(diff2))]
-
-method <- "pearson"
-dist <- "normal"
-p <- c(0,1)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 1
-n <- 240
-title <- paste0("Power to detect difference in ",method," correlations, by difference*\n",
-         dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-       "N: ",n,
-       "; Mz to Dz ratio: ",ratio, "; sims: ",100)
-
-ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+ 
-  scale_x_continuous(bquote("d* = |"~tanh(atanh(rho[1])-atanh(rho[2]))~"|"), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$diff2, colour = cross$test)) +
-  scale_colour_discrete(name="d* for 80% Power",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle(title)
+# difference plot (note the imprecision though - not a perfect approach)
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       = "gamma",
+          param1a    =  1,
+          param2a    =  5,
+          ratio      =  1,
+          n1         =  90,
+          n2         =  90,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_extrskew_90_90_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 
 # # plot power curve by difference given parameters - Gamma, extreme 
@@ -1447,127 +1410,3 @@ ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+
 # 
 # ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2") 
 # ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2") 
-# fz(gamma_a,gamma_b)
-# gtv(gamma_a,gamma_b)   
-# corr_power(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5), param2a = c(.09,.09), param2b = c(.09,.09))
-# # pearson	0.2	0.5	30	90	0.05	2	100	gamma	0.37	0.37$params        
-# # method     rho_1     rho_2        n1        n2     alpha sidedness     nsims     distr 
-# # "pearson"     "0.2"     "0.5"      "30"      "90"    "0.05"       "2"     "100"   "gamma" 
-# # 
-# # $additional
-# # param1a1 param1a2 param1b1 param1b2 param2a1 param2a2 param2b1 param2b2 
-# # 1.50     1.50     1.50     1.50     0.09     0.09     0.09     0.09 
-# # 
-# # $analytical
-# # fz_nosim 
-# # 0.3494663 
-# # 
-# # $power
-# # fz  gtv 
-# # 0.37 0.37 
-# 
-# # simulate using non-normal, Extreme positively skewed distribution
-# system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09)))
-# ## Note - run on work computer, so time is optimistic
-# # Correlation power plot simulation commenced at 2018-05-02 22:25:35 
-# # method	rho_1	rho_2	n1	n2	alpha	sides	nsims	distr	PowerXtests	
-# # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# #   pearson	0.95	0.95	30	90	0.05	2	100	gamma	0.025	0.07	0.07
-# # Completed at  2018-05-03 02:22:07 
-# # user   system  elapsed 
-# # 14169.60    64.91 14192.36 
-# ## about 3 hours and 54 minutes
-# # cp_plotplot(data = results[["fz"]],dist = "gamma",param1a = c(1.5,1.5), param1b = c(1.5,1.5),param2a = c(.09,.09),param2b = c(.09,.09))
-# corrs<- seq(-0.95,0.95,0.05)
-# nsims = 100 
-# n = c(30,90)
-# dist = "gamma"
-# param1a = c(1.5,1.5)
-# param1b = c(1.5,1.5)
-# param2a = c(.09,.09)
-# param2b = c(.09,.09)
-# tests = c("fz_nosim","fz","gtv")
-# alpha = 0.05
-# beta = 0.2
-# sidedness=2
-# target = 1-beta
-# method="pearson"  
-# names = c("Population A","Population B")
-# for (test in res_gamma[["tests"]]) {
-#   res_gamma[["fig"]][[test]]<-filled.contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]), nlevels = 10,
-#                                            xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-#                                            plot.axes = {contour(x = corrs, y = corrs, z = as.matrix(res_gamma[[test]]),
-#                                                                 levels = target, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-#                                                                 add = TRUE, lwd = 3, col = "steelblue3");
-#                                              abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                              abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-#                                              axis(1, seq(-1,1,0.2))
-#                                              axis(2, seq(-1,1,0.2))},
-#                                            plot.title = title(main = paste0(test," test ~ ",
-#                                                                             dist,"((",param1a,",",param2a,"),(",
-#                                                                             param1b,",",param2b,"))","\n",
-#                                                                             "Mz = ",n[1],
-#                                                                             ", Dz = ",n[2],
-#                                                                             ", alpha: ",alpha, ", sims: ",nsims),
-#                                                               xlab = paste0("Correlation in ",names[1]),
-#                                                               ylab = paste0("Correlation in ",names[2]), adj = 0),
-#                                            color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-#   arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
-# }
-# 
-# gamma_c <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.2, 0.2, 1), ncol = 2), wide = TRUE)[,2:3]
-# gamma_d <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma", 
-#                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-# 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_c), x = "V1", y = "V2") 
-# ggExtra::ggMarginal(data = as.data.frame(gamma_d), x = "V1", y = "V2") 
-# 
-# system.time(res_gamma<- corr_pplot_compiled(dist = "gamma",param1a = c(1,1), param1b = c(1,1),param2a = c(5,5),param2b = c(5,5)))
-# 
-# 
-# 
-# 
-# #other mslrt exploration
-# # param1 are the probabilities
-# binary <- genCorGen(50, nvars = 2, params1 = c(.3, .5), dist = "binary", 
-#                     corMatrix = matrix(c(1, 0.8, 0.8, 1), ncol = 2), wide = TRUE)
-
-
-# 
-# ggplotly(p)
-# 
-# colors <- c('#4AC6B7', '#1972A4', '#965F8A', '#FF7070', '#C61951')
-# colors2 <- c(rev(colors),colors[2:5])
-# 
-# p <- plot_ly(dt.long[(method=="pearson")&
-#                   (dist=="normal")&
-#                   (p1==0)&
-#                   (p2==1)&
-#                   (test=="zou"),], 
-#              x = ~n1, y = ~n2, z = ~diff, color = ~power, size = ~n, colors = rev(colors),
-#              marker = list(symbol = 'circle', sizemode = 'diameter'), sizes = c(1, 10),
-#              text = ~paste('Power:', power, '<br>Dz correlation:', rho2, '<br>Mz correlation:', rho1,
-#                            '<br>Twin pairs:', n)) %>%
-#   layout(title = 'Power by correlation and group size',
-#          scene = list(xaxis = list(title = 'Mz twins',
-#                                    gridcolor = 'rgb(255, 255, 255)',
-#                                    # range = c(2.003297660701705, 5.191505530708712),
-#                                    zerolinewidth = 1,
-#                                    ticklen = 5,
-#                                    gridwidth = 2),
-#                       yaxis = list(title = 'Dz twins',
-#                                    gridcolor = 'rgb(255, 255, 255)',
-#                                    # type = 'log',
-#                                    # range = c(36.12621671352166, 91.72921793264332),
-#                                    zerolinewidth = 1,
-#                                    ticklen = 5,
-#                                    gridwith = 2),
-#                       zaxis = list(title = 'Difference in r',
-#                                    gridcolor = 'rgb(255, 255, 255)',
-#                                    zerolinewidth = 1,
-#                                    ticklen = 5,
-#                                    gridwith = 2)),
-#          paper_bgcolor = 'rgb(243, 243, 243)',
-#          plot_bgcolor = 'rgb(243, 243, 243)')
-# ggplotly(p)
