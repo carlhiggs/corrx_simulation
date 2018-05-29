@@ -238,7 +238,7 @@
 		 }}%
 
 
-\date{July 2018}
+\date{June 2018}
 
 \maketitle%
 
@@ -257,35 +257,35 @@
 \include{sections/conclusion}
 
 \backmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \include{sections/glossary}
-% %%References - extra code to display as own chapter, without header, and in contents only once
-% \let\oldaddcontentsline\addcontentsline
-% \let\oldsection\section
+\include{sections/glossary}
+%%References - extra code to display as own chapter, without header, and in contents only once
+\let\oldaddcontentsline\addcontentsline
+\let\oldsection\section
 
-% \chapter*{References}
-% \addcontentsline{toc}{chapter}{References}
-% \markboth{Rerences}{}
-% \renewcommand\refname{}
-% % \lhead{\itshape References}
-% \begingroup
-% \small
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+\markboth{Rerences}{}
+\renewcommand\refname{}
+% \lhead{\itshape References}
+\begingroup
+\small
 
-% \renewcommand{\addcontentsline}[3]{}% Remove functionality of \addcontentsline
-% \renewcommand{\section}[2]{}% Remove functionality of \section
-% \begin{thebibliography}{}
+\renewcommand{\addcontentsline}[3]{}% Remove functionality of \addcontentsline
+\renewcommand{\section}[2]{}% Remove functionality of \section
+\begin{thebibliography}{}
+\input{sections/build/referenceLoader.bbl}
+
+%%NOTE! Manually reorder v2.bbl to reflect numeric ordering
+
+\end{thebibliography}{}
+\endgroup
+
 % \input{sections/build/referenceLoader.bbl}
-
-% %%NOTE! Manually reorder v2.bbl to reflect numeric ordering
-
-% \end{thebibliography}{}
-% \endgroup
-
-% % \input{sections/build/referenceLoader.bbl}
-% \renewcommand{\addcontentsline}{\oldaddcontentsline}
-% \renewcommand{\section}{\oldsection}
+\renewcommand{\addcontentsline}{\oldaddcontentsline}
+\renewcommand{\section}{\oldsection}
 
 
-% \include{sections/appendices}
+\include{sections/appendices}
 
 \printindex
 
