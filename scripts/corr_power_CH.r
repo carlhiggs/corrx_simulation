@@ -19,6 +19,9 @@
 
 # install.packages("Rcpp")
 # install.packages("simstudy")
+
+# may have to set working directory
+setwd("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts")
 require(compiler)
 require(Rcpp)
 require("simstudy")
@@ -707,19 +710,27 @@ load("r_power_work_dt_sA2_20180527.RData", envir=tmp.env) # load workspace into 
 dt_sA2 <- get("dt_sA2", pos=tmp.env) # get the objects you need into your globalenv()
 load("r_power_work_dt_sA3_20180527.RData", envir=tmp.env) # load workspace into temporary environment
 dt_sA3 <- get("dt_sA3", pos=tmp.env) # get the objects you need into your globalenv()
+load("r_power_work_dt_sA3_10k_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA3_10k <- get("dt_sA3_10k", pos=tmp.env) # get the objects you need into your globalenv()
 rm(tmp.env) # remove the temporary environment to free up memory
 #x <- tmp.env$x # equivalent to previous line
 
-# additional summary statistics
+# additional summary statistics, for each specific scenario
 dt_sA1[,("ratio"):=n1/n2,by=1:nrow(dt_sA1)]
 dt_sA1[,("n"):=n1+n2,by=1:nrow(dt_sA1)]
 dt_sA1[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA1)]
+
 dt_sA2[,("ratio"):=n1/n2,by=1:nrow(dt_sA2)]
 dt_sA2[,("n"):=n1+n2,by=1:nrow(dt_sA2)]
 dt_sA2[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA2)]
+
 dt_sA3[,("ratio"):=n1/n2,by=1:nrow(dt_sA3)]
 dt_sA3[,("n"):=n1+n2,by=1:nrow(dt_sA3)]
 dt_sA3[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA3)]
+
+dt_sA3_10k[,("ratio"):=n1/n2,by=1:nrow(dt_sA3)]
+dt_sA3_10k[,("n"):=n1+n2,by=1:nrow(dt_sA3)]
+dt_sA3_10k[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA3)]
 
 # convert to long
 # 100 sims
@@ -729,6 +740,9 @@ dtk.long <- melt(dtk, measure.vars = tests, variable.name = "test", value.name =
 dt_s1.long <- melt(dt_sA1, measure.vars = tests, variable.name = "test", value.name = "power")
 dt_s2.long <- melt(dt_sA2, measure.vars = tests, variable.name = "test", value.name = "power")
 dt_s3.long <- melt(dt_sA3, measure.vars = tests, variable.name = "test", value.name = "power")
+
+# 10000 sims
+dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars = tests, variable.name = "test", value.name = "power")
 
 # overall average power
 dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
@@ -767,7 +781,7 @@ dt[(method=="pearson")&
                                "slr" = round(mean(slr),2))
                                ,by=list(ratio)]
 
-require(Publish)
+
 dt.long[(method=="pearson")&(dist=="normal"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
                                                   p25=round(quantile(power, .025, na.rm=TRUE),2),
                                                   p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
@@ -779,600 +793,359 @@ dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(po
                                                            p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
 
 
-lparam1a <- 0
-lparam1b <- 0
-lparam2a <- 1
-lparam2b <- 1
-ln1 <- 60
-ln2 <- 120
-lalpha <- 0.05
-lthreshold <- 0.8
-lnsims <- 100
-ltest <- "slr"
-ldist <- "normal"
-lmethod <-"pearson"
-lnames <- c("Mz twins","Dz twins")
-corrxplot <- matrix(unlist(dt.long[(method==lmethod)&
-                   (dist==ldist)&
-                   (p1==lparam1a)&
-                   (p2==lparam2a)&
-                   (n1==ln1)&
-                   (n2==ln2)&
-                   (test==ltest),
-                   power]),
-                 nrow=19,ncol=19, byrow = TRUE)
-test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
-                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
 
-filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 10,
-               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
-                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                    add = TRUE, lwd = 3, col = "steelblue3");
-                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 axis(1, seq(-1,1,0.2))
-                 axis(2, seq(-1,1,0.2))},
-               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
-                                       ldist,"((",lparam1a,",",lparam2a,"),(",
-                                                                          lparam1b,",",lparam2b,"))","\n",
-                                                "Mz = ",ln1,
-                                                ", Dz = ",ln2,
-                                                ", alpha: ",lalpha, ", sims: ",lnsims),
-                                  xlab = paste0("Correlation in ",lnames[1]),
-                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
-               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-               arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+# Function to produce corrx plots from long data
+corrxplot <- function(data.long,method = "pearson",dist = "normal",test = "fz",n1 = 60,n2 = 120,
+                      param1a = 0,param1b = 0, param2a = 1,param2b = 1,
+                      rho1 = 0.2, rho2 = 0.5, ratio = 0.5,
+                      nsims = 100, names = c("Mz twins","Dz twins"), type  = "contour",
+                      alpha = 0.05, threshold = 0.8,
+                      graph_out,gwidth = 7,gheight=6.5) {
+  # rename input vars so not ambiguous when referencing data.table fields
+  lmethod  <- method
+  ldist    <- dist
+  ltest    <- test
+  lparam1a <- param1a
+  lparam1b <- param1b
+  lparam2a <- param2a
+  lparam2b <- param2b
+  ln1      <- n1
+  ln2      <- n2
+  lrho1    <- rho1
+  lrho2    <- rho2
+  lratio   <- ratio
+  lnsims   <- nsims
+  lnames   <- names
+
+  # produce contour plot
+  if(type=="contour"){
+      # make correlation-power matrix
+      corrx_tmp <- matrix(unlist(data.long[(method==lmethod)&
+                                          (dist==ldist)&
+                                          (p1==lparam1a)&
+                                          (p2==lparam2a)&
+                                          (n1==ln1)&
+                                          (n2==ln2)&
+                                          (test==ltest),]$power),
+                      nrow=19,ncol=19, byrow = TRUE)
+    # lookup table for test names
+    test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
+                         data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+      
+    # initialise output plot
+    pdf(graph_out,width=gwidth,height=gheight)
+    # make contour plot
+    filled.contour(x = corrs,y = corrs,z = corrx_tmp, nlevels = 100,
+                 xlim = c(-.9,.9), ylim = c(-.9,.9), zlim = c(0,1),
+                 plot.axes = {contour(x = corrs, y = corrs, z = corrx_tmp,
+                                      levels = threshold, at = seq(-.9, .9, 0.2), drawlabels = FALSE, axes = FALSE,
+                                      add = TRUE, lwd = 3, col = "steelblue3");
+                   abline(v = seq(-9, 0.9, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                   abline(h = seq(-9, 0.9, 0.1), lwd = .5, col = "lightgray", lty = 2)
+                   axis(1, seq(-.9,.9,0.2))
+                   axis(2, seq(-.9,.9,0.2))},
+                 key.title = {title(main="Power")},
+                 plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
+                                                  ldist,"((",lparam1a,",",lparam2a,"),(",
+                                                  lparam1b,",",lparam2b,"))","\n",
+                                                  "Mz = ",ln1,
+                                                  ", Dz = ",ln2,
+                                                  ", alpha: ",alpha, ", sims: ",lnsims),
+                                    xlab = paste0("Correlation in ",lnames[1]),
+                                    ylab = paste0("Correlation in ",lnames[2]), adj = 0),
+                 color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
+    # add arrow to legend to indicate target power level (0.8)
+    arrows(0.6, 0.54, 0.77, 0.54, length = 0.14, lwd = 3, col = "steelblue3")  
+    # finalise plot
+    dev.off()
+  }
+  
+  if(type=="npower"){
+    # get data subset
+    um <- data.long[(dist==ldist)&
+                    (method==lmethod)&
+                    (p1==lparam1a)&
+                    (p2==lparam2a)&
+                    (rho1==lrho1)&
+                    (rho2==lrho2)&
+                    (ratio==lratio),
+                  power,by=list(n,test)]
+    
+    # interpolate power given log(n)
+    um[,"log_n":=log2(n),by=1:nrow(um)]
+    fit <- data.table()
+    for(x in levels(um$test)) {
+      fit <- rbind(fit,
+                   cbind("test" = x,
+                         "n"    = min(um$n):max(um$n),
+                         "power" = splinefun(um[test %in% x,log_n], 
+                                             um[test %in% x,power],
+                                             method = "monoH.FC")(log2(min(um$n):max(um$n)))))
+    }
+    
+    fit$n <- as.integer(fit$n)
+    fit$power <- as.double(fit$power)
+    
+    # find x intercept give y of 0.8
+    cross <- data.table()
+    for(x in levels(um$test)) {
+      cross <- rbind(cross, 
+                     fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
+    }
+    
+    # associate x intercept (required sample size for 80% power) with test name
+    cross$label <- c("FZ (no sim.)",
+                     "FZ",
+                     "GTV",
+                     "SLR",
+                     "Zou's CI")
+    cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
+    
+    # order tests by smallest sample size estimate required to achieve power threshold
+    cross <- cross[order(+rank(n))]
+    
+    # define plot title
+    title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
+                    dist,"((",param1a,",",param1b,"),(",param2a,",",param2b,"))","\n",
+                    "rho: (",rho1,",",rho2,")",
+                    "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
+    # initialise plot
+    pdf(graph_out,width=gwidth,height=gheight)
+    p <- ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
+      scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
+                         breaks = unique(um$n),
+                         limits = c(30,1920)) +
+      scale_y_continuous(bquote(Power~(1-beta)), 
+                         breaks = seq(0,1,0.1),
+                         limits = c(0,1)) +
+      geom_point(data = um)  +
+      geom_line(data = fit, lwd = 1) +
+      geom_hline(yintercept = 0.8) +
+      geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
+      scale_colour_discrete(name="Tests (req. n)",
+                            breaks=cross$test,
+                            labels=cross$label)  +
+      theme(panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black")) +
+      ggtitle(title)
+    
+    print(p)
+    # finalise plot
+    dev.off()
+  }
+}
+
+
+# Scenario 1pre - 100 sims 60:120
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  100,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_sA1pre_n180_mzdz.5_slr_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+
 # Scenario 1  - 1000 sims 60:120
-lparam1a <- 0
-lparam1b <- 0
-lparam2a <- 1
-lparam2b <- 1
-ln1 <- 60
-ln2 <- 120
-lalpha <- 0.05
-lthreshold <- 0.8
-lnsims <- 1000
-ltest <- "slr"
-ldist <- "normal"
-lmethod <-"pearson"
-lnames <- c("Mz twins","Dz twins")
-corrxplot <- matrix(unlist(dt_s1.long[(method==lmethod)&
-                                     (dist==ldist)&
-                                     (p1==lparam1a)&
-                                     (p2==lparam2a)&
-                                     (n1==ln1)&
-                                     (n2==ln2)&
-                                     (test==ltest),
-                                   power]),
-                    nrow=19,ncol=19, byrow = TRUE)
-test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
-                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_sA1_n180_mzdz.5_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 100,
-               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
-                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                    add = TRUE, lwd = 3, col = "steelblue3");
-                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 axis(1, seq(-1,1,0.2))
-                 axis(2, seq(-1,1,0.2))},
-               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
-                                                ldist,"((",lparam1a,",",lparam2a,"),(",
-                                                lparam1b,",",lparam2b,"))","\n",
-                                                "Mz = ",ln1,
-                                                ", Dz = ",ln2,
-                                                ", alpha: ",lalpha, ", sims: ",lnsims),
-                                  xlab = paste0("Correlation in ",lnames[1]),
-                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
-               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")    
+
 # Scenario 2  - 1000 sims 90:90
-lparam1a <- 0
-lparam1b <- 0
-lparam2a <- 1
-lparam2b <- 1
-ln1 <- 90
-ln2 <- 90
-lalpha <- 0.05
-lthreshold <- 0.8
-lnsims <- 1000
-ltest <- "slr"
-ldist <- "normal"
-lmethod <-"pearson"
-lnames <- c("Mz twins","Dz twins")
-corrxplot <- matrix(unlist(dt_s2.long[(method==lmethod)&
-                                        (dist==ldist)&
-                                        (p1==lparam1a)&
-                                        (p2==lparam2a)&
-                                        (n1==ln1)&
-                                        (n2==ln2)&
-                                        (test==ltest),
-                                      power]),
-                    nrow=19,ncol=19, byrow = TRUE)
-test_lookup <- cbind(data.table("test" = c("fz_nosim","fz","gtv","slr","zou")),
-                     data.table("name" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_sA2_n180_mzdz1_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-filled.contour(x = corrs,y = corrs,z = corrxplot, nlevels = 100,
-               xlim = c(-1,1), ylim = c(-1,1), zlim = c(0,1),
-               plot.axes = {contour(x = corrs, y = corrs, z = corrxplot,
-                                    levels = lthreshold, at = seq(-1, 1, 0.2), drawlabels = FALSE, axes = FALSE,
-                                    add = TRUE, lwd = 3, col = "steelblue3");
-                 abline(v = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 abline(h = seq(-1, 1, 0.1), lwd = .5, col = "lightgray", lty = 2)
-                 axis(1, seq(-1,1,0.2))
-                 axis(2, seq(-1,1,0.2))},
-               plot.title = title(main = paste0(test_lookup[test==ltest,name]," test ~ ",
-                                                ldist,"((",lparam1a,",",lparam2a,"),(",
-                                                lparam1b,",",lparam2b,"))","\n",
-                                                "Mz = ",ln1,
-                                                ", Dz = ",ln2,
-                                                ", alpha: ",lalpha, ", sims: ",lnsims),
-                                  xlab = paste0("Correlation in ",lnames[1]),
-                                  ylab = paste0("Correlation in ",lnames[2]), adj = 0),
-               color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
-arrows(0.63, 0.6, 0.845, 0.6, length = 0.14, lwd = 3, col = "steelblue3")  
+# plot power curve by N given parameters  - Normal 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  0,
+          param2a    =  1,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 
-
-# alternative plots 
-library(ggplot2)
-p <- ggplot(dt.long[(method=="pearson")&
-                      (dist=="normal")&
-                      (p1==0)&
-                      (p2==1)&
-                      (n1==15)&
-                      (n2==15),])
-p2 <- p + geom_point(aes(x = diff, 
-                         y = power,
-                         colour = test), size = 3)
-p2
-# could do: colour = interaction(ratio,n,sep="-",lex.order=TRUE)
-p3 <- p + geom_smooth(aes(x = diff, y = power, colour = test))
-p3
-
-# plot of test by method
-p <- ggplot(dt.long[(dist=="normal")&
-                      (p1==0)&
-                      (p2==1)&
-                      (n1==15)&
-                      (n2==15)&
-                      (test=="fz"),])
-# could do: colour = interaction(ratio,n,sep="-",lex.order=TRUE)
-p3 <- p + geom_smooth(aes(x = diff, y = power, colour = method))
-p3
-
-# Plot power by N, holding ratio and correlations constant
-p <- ggplot(dt.long[(method=="pearson")&
-                      (dist=="normal")&
-                      (p1==0)&
-                      (p2==1)&
-                      (ratio==1)&
-                      (rho1==-0.9)&
-                      (rho2==-0.6),])
-p2 <- p + geom_point(aes(x = n, 
-                         y = power,
-                         colour = test), size = 3)
-p2
-
-# Plot power by ratio, holding n and correlations constant
-p <- ggplot(dt.long[(method=="pearson")&
-                      (dist=="normal")&
-                      (p1==0)&
-                      (p2==1)&
-                      (rho1==-0.9)&
-                      (rho2==-0.6),])
-p <- p + geom_point(aes(x = ratio, 
-                         y = power,
-                         colour = test), size = 3)
-
-p <- p + geom_tile(aes(fill=n))
-
-
-
-
-dt.long[(method=="pearson")&
-          (dist=="normal")&
-          (p1==0)&
-          (p2==1)&
-          (n1==15)&
-          (n2==15),mean(power),by=test]
-
-dt.long[(method=="spearman")&
-          (dist=="normal")&
-          (p1==0)&
-          (p2==1)&
-          (n1==15)&
-          (n2==15),mean(power),by=test]
-
-dt[, lapply(.SD, sum, na.rm=TRUE), by=category ]
-
-dt.long[(dist=="normal")&
-          (p1==0)&
-          (p2==1)&
-          (ratio==1),
-        mean(power),by=list(method,test,n)]
-
-
-# plot power curve given parameters - Normal
-um <- dt.long[(dist=="normal")&
-                (method=="pearson")&
-                (p1==0)&
-                (p2==1)&
-                (rho1==0.2)&
-                (rho2==0.5)&
-                (ratio==1)&
-                (test=='zou'),
-              power,by=list(n)]
-
-threshold <- 0.8
-# interpolate power curve
-fit <- cbind(data.table("n" = min(um$n):max(um$n)),
-             data.table("power" = splinefun(um$n, 
-                                            um$power,
-                                            method = "monoH.FC")(min(um$n):max(um$n))))
-
-# find point of y which satisfied f(y) = desired power (e.g. 0.8)
-cross <-fit[which.min(abs(threshold-fit$power)),] #find closest to Y intercept (0.8)
-# plots results
-plot(um,lwd=1)
-lines(fit, lwd = 2)
-abline(h=threshold)
-abline(v=cross[[1]])
-
-# plot power curve by N given parameters  - Normal
-um <- dt.long[(dist=="normal")&
-                (method=="pearson")&
-                (p1==0)&
-                (p2==1)&
-                (rho1==0.2)&
-                (rho2==0.5)&
-                (ratio==0.5),
-              power,by=list(n,test)]
-
-
-
-um[,"log_n":=log2(n),by=1:nrow(um)]
-fit <- data.table()
-for(x in levels(um$test)) {
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "n"    = min(um$n):max(um$n),
-                     "power" = splinefun(um[test %in% x,log_n], 
-                                         um[test %in% x,power],
-                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
-}
-
-fit$n <- as.integer(fit$n)
-fit$power <- as.double(fit$power)
-
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                 "FZ",
-                 "GTV",
-                 "SLR",
-                 "Zou's CI")
-cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(n))]
-
-method <- "pearson"
-dist <- "normal"
-p <- c(0,1)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 0.5
-title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
-                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-                "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",100)
-ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
-  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
-                     breaks = unique(um$n),
-                     limits = c(30,1920)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
-  scale_colour_discrete(name="Tests",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle(title)
 
 # plot power curve by N given parameters  - Normal - Scenario 3 - 1000sim
-um <- dt_s3.long[(dist=="normal")&
-                (method=="pearson")&
-                (p1==0)&
-                (p2==1)&
-                (ratio==0.5),
-              power,by=list(n,test)]
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  0,
+          param2a    =  1,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# plot power curve by N given parameters  - Normal - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "normal",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  0,
+          param2a    =  1,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_r.2_r.5_mzdz.5_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1.5,
+          param2a    =  0.09,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild - Scenario 3 - 1000sim
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1.5,
+          param2a    =  0.09,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1.5,
+          param2a    =  0.09,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 
 
-um[,"log_n":=log2(n),by=1:nrow(um)]
-fit <- data.table()
-for(x in levels(um$test)) {
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "n"    = min(um$n):max(um$n),
-                     "power" = splinefun(um[test %in% x,log_n], 
-                                         um[test %in% x,power],
-                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
-}
-
-fit$n <- as.integer(fit$n)
-fit$power <- as.double(fit$power)
-
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                 "FZ",
-                 "GTV",
-                 "SLR",
-                 "Zou's CI")
-cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(n))]
-
-method <- "pearson"
-dist <- "normal"
-p <- c(0,1)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 0.5
-title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
-                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-                "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",1000)
-ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
-  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
-                     breaks = unique(um$n),
-                     limits = c(30,1920)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
-  scale_colour_discrete(name="Tests",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle(title)
+# plot power curve by N given parameters  - gamma extr 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1,
+          param2a    =  5,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 
 
-# plot power curve by N given parameters - Gamma, subtle
-um <- dt.long[(dist=="gamma")&
-                (method=="pearson")&
-                (p1==1.5)&
-                (p2==0.09)&
-                (rho1==0.2)&
-                (rho2==0.5)&
-                (ratio==1),
-              power,by=list(n,test)]
+# plot power curve by N given parameters  - gamma extr - Scenario 3 - 1000sim
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1,
+          param2a    =  5,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 
+# plot power curve by N given parameters  - gamma extr - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  0.5,
+          param1a    =  1,
+          param2a    =  5,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
-um[,"log_n":=log2(n),by=1:nrow(um)]
-fit <- data.table()
-for(x in levels(um$test)) {
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "n"    = min(um$n):max(um$n),
-                     "power" = splinefun(um[test %in% x,log_n], 
-                                         um[test %in% x,power],
-                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
-}
-
-fit$n <- as.integer(fit$n)
-fit$power <- as.double(fit$power)
-
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                 "FZ",
-                 "GTV",
-                 "SLR",
-                 "Zou's CI")
-cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(n))]
-
-method <- "pearson"
-dist <- "gamma"
-p <- c(1.5,0.09)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 1
-title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
-                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-                "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",100)
-ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
-  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
-                     breaks = unique(um$n),
-                     limits = c(30,1920)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
-  scale_colour_discrete(name="Tests",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggitle(title)
-
-
-# plot power curve by N given parameters - Gamma, extreme
-um <- dt.long[(dist=="gamma")&
-                (method=="pearson")&
-                (p1==1)&
-                (p2==5)&
-                (rho1==0.2)&
-                (rho2==0.5)&
-                (ratio==0.5),
-              power,by=list(n,test)]
-
-
-
-um[,"log_n":=log2(n),by=1:nrow(um)]
-fit <- data.table()
-for(x in levels(um$test)) {
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "n"    = min(um$n):max(um$n),
-                     "power" = splinefun(um[test %in% x,log_n], 
-                                         um[test %in% x,power],
-                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
-}
-
-fit$n <- as.integer(fit$n)
-fit$power <- as.double(fit$power)
-
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                    "FZ",
-                    "GTV",
-                    "SLR",
-                    "Zou's CI")
-cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(n))]
-
-
-method <- "pearson"
-dist <- "gamma"
-p <- c(1,5)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 0.5
-nsims <- 100
-title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
-                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-                "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
-
-ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
-  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
-                     breaks = unique(um$n),
-                     limits = c(30,1920)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
-  scale_colour_discrete(name="Tests",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle(title)
-
-
-# plot power curve by N given parameters - Gamma, extreme - Scenario 3 1000 sims
-um <- dt_s3.long[(dist=="gamma")&
-                (method=="pearson")&
-                (p1==1)&
-                (p2==5)&
-                (rho1==0.2)&
-                (rho2==0.5)&
-                (ratio==0.5),
-              power,by=list(n,test)]
-
-
-
-um[,"log_n":=log2(n),by=1:nrow(um)]
-fit <- data.table()
-for(x in levels(um$test)) {
-  fit <- rbind(fit,
-               cbind("test" = x,
-                     "n"    = min(um$n):max(um$n),
-                     "power" = splinefun(um[test %in% x,log_n], 
-                                         um[test %in% x,power],
-                                         method = "monoH.FC")(log2(min(um$n):max(um$n)))))
-}
-
-fit$n <- as.integer(fit$n)
-fit$power <- as.double(fit$power)
-
-cross <- data.table()
-for(x in levels(um$test)) {
-  cross <- rbind(cross, 
-                 fit[(test %in% x)][which.min(abs(threshold-fit[(test %in% x),power]))])
-}
-
-cross$label <- c("FZ (no sim.)",
-                 "FZ",
-                 "GTV",
-                 "SLR",
-                 "Zou's CI")
-cross[,"label":= paste0(label," (",n,")"),by=1:nrow(cross)]
-cross <- cross[order(+rank(n))]
-
-
-method <- "pearson"
-dist <- "gamma"
-p <- c(1,5)
-rho1 <- 0.2
-rho2 <- 0.5
-ratio <- 0.5
-nsims <- 1000
-title <- paste0("Power to detect difference in ",method," correlations, by sample size\n",
-                dist,"((",p[1],",",p[1],"),(",p[2],",",p[2],"))","\n",
-                "rho: (",rho1,",",rho2,")",
-                "; Mz to Dz ratio: ",ratio, "; sims: ",nsims)
-
-ggplot(NULL, aes(x = n, y = power, colour = test, group = test))+ 
-  scale_x_continuous(trans='log2',bquote(N~(log[2]~scale)), 
-                     breaks = unique(um$n),
-                     limits = c(30,1920)) +
-  scale_y_continuous(bquote(Power~(1-beta)), 
-                     breaks = seq(0,1,0.1),
-                     limits = c(0,1)) +
-  geom_point(data = um)  +
-  geom_line(data = fit, lwd = 1) +
-  geom_hline(yintercept = 0.8) +
-  geom_vline(aes(xintercept = cross$n, colour = cross$test)) +
-  scale_colour_discrete(name="Tests",
-                        breaks=cross$test,
-                        labels=cross$label)  +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle(title)
 
 
 # # plot power curve by difference given parameters
@@ -1459,7 +1232,7 @@ um[,"diff2":=abs(tanh(z1-z2)), by = 1:nrow(um)]
 # ggplot(um[(test %in% "fz")],aes(x = z1,y = power,group = z2, colour = z2))+
 #   geom_point()+
 #   geom_line()+
-  theme_bw()
+#   theme_bw()
 
 # fit by averaging over differences arising from differen rho combinations
 fit <- data.table()
@@ -1581,14 +1354,14 @@ title <- paste0("Power to detect difference in ",method," correlations, by diffe
                 "N: ",n,
                 "; Mz to Dz ratio: ",ratio, "; sims: ",100)
 
-ggplot(NULL, aes(x = diff1, y = power, colour = test, group = test))+ 
+ggplot(NULL, aes(x = diff2, y = power, colour = test, group = test))+ 
   scale_x_continuous(bquote("d* = |"~tanh(atanh(rho[1])-atanh(rho[2]))~"|"), 
                      breaks = seq(0,1,0.1),
                      limits = c(0,1)) +
   scale_y_continuous(bquote(Power~(1-beta)), 
                      breaks = seq(0,1,0.1),
                      limits = c(0,1)) +
-  geom_point(data = um)  
+  geom_point(data = um)  +
   geom_line(data = fit, lwd = 1) +
   geom_hline(yintercept = 0.8) +
   geom_vline(aes(xintercept = cross$diff2, colour = cross$test)) +
