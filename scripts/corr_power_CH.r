@@ -28,6 +28,7 @@ require("simstudy")
 sourceCpp('test.cpp')
 require(data.table)
 require(ggplot2)
+library(parallel)
 
 # to deploy R power app (code elsewhere
 
@@ -587,26 +588,91 @@ system.time(dt_sA3_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
 },by = 1:nrow(dt_sA3_10k)] )
 save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_10k_20180527.RData")
 
-# Hero attempt
-dt_hero <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
-system.time(dt_hero[, c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2),
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1),
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2),
-                              param2b = c(p2,p2),
-                              test    = tests,
-                              alpha   = 0.05,
-                              sidedness=2,
-                              method=as.character(method),
-                              nsims = 1000,
-                              power_only = TRUE))
-},by = 1:nrow(dt_sA3)] )
-save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_20180527.RData")
+# # Hero attempt
+# dt_hero <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+# system.time(dt_hero[, c( "fz_nosim","fz","gtv","slr","zou"):={
+#   cat("\r",.GRP,"\r")
+#   as.list(corr_power_compiled(rho = c(rho1,rho2),
+#                               n = c(n1,n2),
+#                               distr = dist,
+#                               param1a = c(p1,p1),
+#                               param1b = c(p1,p1),
+#                               param2a = c(p2,p2),
+#                               param2b = c(p2,p2),
+#                               test    = tests,
+#                               alpha   = 0.05,
+#                               sidedness=2,
+#                               method=as.character(method),
+#                               nsims = 1000,
+#                               power_only = TRUE))
+# },by = 1:nrow(dt_hero)] )
+# save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_sA3_20180527.RData")
 
+# a time test using parallel
+dt_mouse1 <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+# system.time(dt_mouse1[, c( "fz_nosim","fz","gtv","slr","zou"):={
+#   cat("\r",.GRP,"\r")
+#   as.list(corr_power_compiled(rho = c(rho1,rho2),
+#                               n = c(n1,n2),
+#                               distr = dist,
+#                               param1a = c(p1,p1),
+#                               param1b = c(p1,p1),
+#                               param2a = c(p2,p2),
+#                               param2b = c(p2,p2),
+#                               test    = tests,
+#                               alpha   = 0.05,
+#                               sidedness=2,
+#                               method=as.character(method),
+#                               nsims = 1000,
+#                               power_only = TRUE))
+# },by = 1:nrow(dt_mouse1)] )
+# # user  system elapsed 
+# # 588.82   13.11  603.81 
+
+# Parallelised approach inspired by http://www.parallelr.com/r-with-parallel-computing/
+cores <- detectCores(logical = FALSE)
+cl <- makeCluster(cores)
+clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
+                     'corr_diff_test',
+                     'corr_power_compiled', 
+                     'dt_mouse1'))
+system.time(
+  dt_mouse2 <- parLapply(cl, 1:nrow(dt_mouse1), function(x) { 
+                  with(dt_mouse1, c(method = as.character(method[x]),
+                                    dist   = dist[x],
+                                    p1     = p1[x],
+                                    p2     = p2[x],
+                                    n1     = n1[x],
+                                    n2     = n2[x],
+                                    rho1   = rho1[x],
+                                    rho2   = rho2[x],
+                                     corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                                    n = c(n1[x],n2[x]),
+                                    distr = dist,
+                                    param1a = c(p1[x],p1[x]),
+                                    param1b = c(p1[x],p1[x]),
+                                    param2a = c(p2[x],p2[x]),
+                                    param2b = c(p2[x],p2[x]),
+                                    test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                                    alpha   = 0.05,
+                                    sidedness=2,
+                                    method=as.character(method[x]),
+                                    nsims = 1000,
+                                    power_only = TRUE))) })
+                       )
+stopCluster(cl)
+# first run of 20 rows
+# user  system elapsed 
+# 1.13    0.53  435.80
+# second run of twenty rows, storing parameters as parLapply is not guaranteed to return ordered results
+# user  system elapsed 
+# 0.80    0.47  505.64 
+mice <- data.table()
+for(x in 1:nrow(dt_mouse1)) {
+  mice <- rbind(mice,as.data.table(t(dt_mouse2[[x]])))
+}
+
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_mice_20180531.RData")
 
 ### scratch code for getting results processed from environment on work computer
 # tmp.env <- new.env() # create a temporary environment
