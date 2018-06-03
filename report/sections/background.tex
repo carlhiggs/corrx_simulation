@@ -22,21 +22,17 @@
 % \end{figure}
 
 \section{Background}
-%% topic title
-
-Power is the probability of detecting a true effect, a key consideration when planning a study.
-
-Given a question like How much power do we have to detect a difference in correlations between samples of identical and non-identical twin pairs? We might respond, well that depends.  Intuitively, we will expect a range of possible parameters to influence our power: the sample size, the ratio of MZ to DZ twins, our decisions on how to define what is a meaningful difference, how strong are these correlations, how are you measuring the difference?
-
-Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
-
+%% Intro
+The classic twin study exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits.  The calculation and comparison of Pearson correlations across the two twin groups is a routine preliminary step undertaken by researchers in this field.  However, a range of factors can impact on researcher's ability to detect a true effect given data.  This thesis reports on a simulation-based power analysis for the detection of differences in correlations between identical and non-identical twin pairs under a range of scenarios, and the associated development of R functions and an applied interactive power calculator.  These tools address an identified absence of tools for this fundamental step in the twin study context.
+ 
 \subsection{Twins and the classic twin study}
-
 Identical twins arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings. 
 
-The classic twin study, which is the setting of interest for this power analysis, exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits
+The classic twin study can be used to estimate the proportion of variation in traits which may be attributable to genetics, or heritability.  
 
-In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+The estimates of heritability are conditional on key assumptions.  This chapter will define key genetic concepts, how these are exploited by the classic twin study to estimate the role of heridity for particular traits, and the assumptions which are relied upon in order to make such inferences.
+
+The classic twin study exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits.  In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
 
 The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
 
@@ -72,6 +68,13 @@ To estimate the power using this approach, you first take the difference between
 Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
 
 So where in our formula we might plug in anticipated or observed coefficients of .2 and .5, in the simulation we use these values to represent the supposed true correlations in the underlying population from which we draw our random samples.  Over a large number of simulations the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
+
+ 
+ 
+%% Power
+Power is the probability of detecting a true effect, a key consideration when planning a study.  In the context of differences in correlations undertaken in a twin study, we will expect a range of possible parameters to influence our power: the sample size; the ratio of MZ to DZ twins; how we have defined what constitutes a meaningful difference; the magnitude of the respective correlations; how these are measured.
+
+Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
 
  \subsubsection{subsub section title}
  
