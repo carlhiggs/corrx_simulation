@@ -135,7 +135,7 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
       scale_y_continuous(paste0("Correlation in ",lnames[2]),
                          breaks =seq(-.9, 0.9, 0.2),
                          limits = c(-.9,.9)) +
-      scale_colour_discrete(name="Tests",
+      scale_colour_discrete(name="Test (mean power)",
                             breaks=test_lookup$test,
                             labels=test_lookup$label)  +
       theme(panel.grid.minor = element_blank(),
@@ -1042,34 +1042,3 @@ dist_x_plot(dist = "gamma",
             graph_out = "../figs/distx_gamma_extrskew_60_120.pdf")
 
 
-# gamma distribution example (mean/shape, and rate/dispersion)
-# some positive skew (but distinctly non-normal)
-gamma <- genCorGen(1000, nvars = 2, params1 = c(1.5,1.5), params2 = c(0.09,0.09),dist = "gamma",
-                   corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-bivariate_distribution_gamma_m1.5_d0.09_n50 <- ggExtra::ggMarginal(data = as.data.frame(gamma), x = "V1", y = "V2")
-plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
-
-# more gamma exploration, using our otherwise defaults
-gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
-                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma",
-                     corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-
-ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2")
-ggExtra::ggMarginal(data = as.data.frame(gamma_b), x = "V1", y = "V2")
-
-
-
-## Alternate fitted contour representation --- a lot bloody easier!
-ggplot(dt_s1.long[(n1==60)&
-                    (n2==120)&
-                    (method=="pearson")&
-                    (dist=="gamma")&(p1==1),],aes(x = rho1,y = rho2, z = power, colour = test, group = test))  +
-  geom_contour(breaks = 0.8)
-
-
-ggplot(dt_s2.long[(n1==90)&
-                    (n2==90)&
-                    (method=="pearson")&
-                    (dist=="gamma")&(p1==1),],aes(x = rho1,y = rho2, z = power, colour = test, group = test))  +
-  geom_contour(breaks = 0.8)
