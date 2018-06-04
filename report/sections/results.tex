@@ -7,114 +7,122 @@
 \section{section title}
 
 
-    \begin{itemize}
-      \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
-      \item Under approximate normality / mild skew, on average: \\SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
-    \end{itemize}
+530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
+
+Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
+
+ Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
     
     
-    Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
+ Under extreme skew Fisher's Z formula underestimates req. sample size
     
-     \begin{center}
-      \begin{figure}[!htb]
-        \minipage{0.49\textwidth}
-          \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example}.pdf}
-        \endminipage\hfill
-        \minipage{0.49\textwidth}%
-          \includegraphics[width=\linewidth]{{../figs/power_n_plot_example}.pdf}
-        \endminipage
-      \end{figure}
-    \end{center}
-    
-    
-   % \begin{itemize}
-      % \item 530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
-      % \item Under extreme skew: \\Fisher's Z formula underestimates req. sample size by $ \sim 50\%$
-    % \end{itemize}
-    % \linebreak
-    % \small{Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{G}\bigg(\left[\begin{smallmatrix}1\\ 1\end{smallmatrix}\right],\, \left[\begin{smallmatrix}5 & {\rho} \\ {\rho} & 5\end{smallmatrix}\right] \bigg)$}
-    % \begin{center}
-      % \begin{figure}[!htb]
-        % \minipage{0.49\textwidth}
-          % \includegraphics[width=\linewidth]{{../figs/corrxplot_slr_example2}.pdf}
-        % \endminipage\hfill
-        % \minipage{0.49\textwidth}%
-          % \includegraphics[width=\linewidth]{{../figs/power_n_plot_example2}.pdf}
-        % \endminipage
-      % \end{figure}
-    % \end{center}
-\begin{landscape}   
-  \begin{figure}[htb]
-    \centering        
-    \minipage{0.25\textwidth}%
-      \includegraphics[width=\linewidth]{{../figs/distx_normal_60_120}.pdf}
-      % \caption{Example bivariate normal draw with $\rho(0.2,0.5)$}
-      % \label{fig:1}
-    \endminipage\hfill       
-    \minipage{0.25\textwidth}%
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100}.pdf}
-      % \caption{Sample size estimate: 100 simulations}
-      % \label{fig:1}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s1000}.pdf}
-      % \caption{Sample size estimate: 1,000 simulations}
-      % \label{fig:2}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s10000}.pdf}
-      % \caption{Sample size estimate: 10,000 simulations}
-      % \label{fig:3}
-    \endminipage\hfill
-    \caption{Left to right: Example bivariate normal draw with $\rho(0.2,0.5)$, and sample size estimates to achieve 80\% power using 100, 1000, and 10000 simulation runs per scenario}
-    \label{fig:images1}
-    
-    \medskip
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/distx_gamma_mildskew_60_120}.pdf}
-      % \caption{Example bivariate gamma ("mild skew") draw with $\rho(0.2,0.5)$}
-      % \label{fig:4}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s100}.pdf}
-      % \caption{Sample size estimate: 100 simulations}
-      % \label{fig:4}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s1000}.pdf}
-      % \caption{Sample size estimate: 1,000 simulations}
-      % \label{fig:5}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s10000}.pdf}
-      % \caption{Sample size estimate: 10,000 simulations}
-      % \label{fig:6}
-    \endminipage\hfill
-    \caption{Left to right: Example bivariate gamma ("mild skew") draw from population with $\rho(0.2,0.5)$, and sample size estimates to achieve 80\% power using 100, 1000, and 10000 simulation runs per scenario}
-    \label{fig:images2}
-    
-    \medskip
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/distx_gamma_extrskew_60_120}.pdf}
-      % \caption{Example bivariate gamma ("extreme skew") draw with $\rho(0.2,0.5)$}
-      % \label{fig:4}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-       \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s100}.pdf}
-      % \caption{Sample size estimate: 100 simulations}
-      % \label{fig:4}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s1000}.pdf}
-      % \caption{Sample size estimate: 1,000 simulations}
-      % \label{fig:5}
-    \endminipage\hfill
-    \minipage{0.25\textwidth}% 
-      \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s10000}.pdf}
-      % \caption{Sample size estimate: 10,000 simulations}
-      % \label{fig:6}
-    \endminipage\hfill
-    \caption{Left to right: Example bivariate gamma ("extreme skew") draw from population with $\rho(0.2,0.5)$, and sample size estimates to achieve 80\% power using 100, 1000, and 10000 simulation runs per scenario}
-    \label{fig:images3}
-  \end{figure}
-\end{landscape}
+%% Example distributions
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.52\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/distx_normal_60_120}.pdf}
+    \caption{Example bivariate normal draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_norm}
+  \endminipage\hfill   
+  \medskip
+  \minipage{0.52\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/distx_gamma_mildskew_60_120}.pdf}
+    \caption{Example bivariate gamma ("mild skew") draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_gamma1}
+  \endminipage\hfill
+  \medskip
+  \minipage{0.52\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/distx_gamma_extrskew_60_120}.pdf}
+    \caption{Example bivariate gamma ("extreme skew") draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_gamma2}
+  \endminipage\hfill
+\end{figure} 
+
+%% Example sample sizes required 
+\begin{figure}[htb]
+  \centering        
+ 
+  \minipage{0.33\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100}.pdf}
+    % \caption{Sample size estimate: 100 simulations}
+    % \label{fig:1}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s1000}.pdf}
+    % \caption{Sample size estimate: 1,000 simulations}
+    % \label{fig:2}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s10000}.pdf}
+    % \caption{Sample size estimate: 10,000 simulations}
+    % \label{fig:3}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulation for bivariate normal distributions with respective $\rho$ of 0.2 and 0.5.}
+  \label{fig:npower_norm}
+  
+  \medskip
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s100}.pdf}
+    % \caption{Sample size estimate: 100 simulations}
+    % \label{fig:4}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s1000}.pdf}
+    % \caption{Sample size estimate: 1,000 simulations}
+    % \label{fig:5}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s10000}.pdf}
+    % \caption{Sample size estimate: 10,000 simulations}
+    % \label{fig:6}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulation for bivariate "mild skew" gamma distributions with respective $\rho$ of 0.2 and 0.5.}
+  \label{fig:npower_mildskew}
+  
+  \medskip
+  \minipage{0.33\textwidth}% 
+     \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s100}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s1000}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s10000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulation for bivariate "extreme skew" gamma distributions with respective $\rho$ of 0.2 and 0.5.}
+  \label{fig:npower_extrskew}
+\end{figure}
+
+  
+%% Contour - vary ratio
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA1_n180_mzdz.5_slr_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA2_n180_mzdz1_slr_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: SLR test power given rho contour plots for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_slr_norm}  
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_slr_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA2_n180_mzdz1_slr_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: SLR test power given rho contour plots for bivariate "mild skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_slr_gamma1}
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_slr_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA2_n180_mzdz1_slr_s1000}.pdf}
+  \endminipage\hfill  
+  \caption{Left to right, above: SLR test power given rho contour plots for bivariate "extreme skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_slr_gamma2}
+\end{figure} 

@@ -320,9 +320,7 @@ corrxplot(data.long  =  dt.long,
           alpha      =  0.05,
           threshold  =  0.8) 
 
-
-
-# Scenario 1  - 1000 sims 60:120
+# Scenario 1  - norm - 1000 sims 60:120
 corrxplot(data.long  =  dt_s1.long,
           method     = "pearson",
           dist       =  "normal",
@@ -341,7 +339,7 @@ corrxplot(data.long  =  dt_s1.long,
           threshold  =  0.8) 
 
 
-# Scenario 2  - 1000 sims 90:90
+# Scenario 2  - norm -  1000 sims 90:90
 corrxplot(data.long  =  dt_s2.long,
           method     = "pearson",
           dist       =  "normal",
@@ -356,6 +354,80 @@ corrxplot(data.long  =  dt_s2.long,
           names      =  c("Mz twins","Dz twins"),
           type       = "contour",
           graph_out  =  "../figs/corrx_contour_sA2_n180_mzdz1_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# Scenario 1  - gamma1 - 1000 sims 60:120
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  0.09,
+          param2b    =  0.09,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# Scenario 2  - gamma1 -  1000 sims 90:90
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  .09,
+          param2b    =  .09,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_gamma1_sA2_n180_mzdz1_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# Scenario 1  - gamma2 - 1000 sims 60:120
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_slr_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# Scenario 2  - gamma2 -  1000 sims 90:90
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          test       =  "slr",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour",
+          graph_out  =  "../figs/corrx_contour_gamma2_sA2_n180_mzdz1_slr_s1000.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
 
