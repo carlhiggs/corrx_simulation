@@ -1,25 +1,6 @@
-# R script to simulate power for difference in correlations (Pearson, Spearman, and later ... ICC)
+# R script to time power simulation functions defined in corr_power_CH.r
+# simulate power for difference in correlations (Pearson, Spearman, and later ... ICC)
 # Carl Higgs 2017
-#
-# Initial inspiration for corr_power_plot from https://janhove.github.io/design/2015/04/14/power-simulations-for-comparing-independent-correlations
-# Jan Vanhove 14 April 2015
-
-
-# Function to simulate two bivariate normal distributions based on respective population correlations.
-# Reports:
-#    - the significance of the sample correlation's difference (output 'z_p') 
-#    - the power to detect a difference (output 'z_power') given alpha, beta and sidedness parameters.
-# Optionally
-#    - calculate the power or significance of difference of Pearson, Spearman or Kendall correlations
-#    - calculate the significance and power without sampling using the two input correlations (simulation = FALSE).
-#    - output a full log of simulation paramaters with results
-#    - output a single statistic (z_p, or z_power).
-#    - distribution can be one of "poisson", "binary", "gamma", "uniform", "negbinom", "normal"
-#    - given dist, a parameterisation (e.g. rate [poisson], dispersion [gamma], var [normal] or max [uniform])
-# To develop
-#    - accounting for clustering (ie. icc in twin studies)
-#    - allow parameterisation to explore change in source pop mean and sd (unequal variance, etc)
-
 
 # Testing out compilation of genCorGen according to directions at 
 # https://www.r-statistics.com/2012/04/speed-up-your-r-code-using-a-just-in-time-jit-compiler/
