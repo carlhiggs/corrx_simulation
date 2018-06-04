@@ -265,9 +265,9 @@ dist_x_plot <- function(method = "pearson",dist = "normal",test="",n1 = 60,n2 = 
                         rho1 = 0.2, rho2 = 0.5, ratio = 0.5,
                         nsims = 100, names = c("MZ","DZ"),
                         graph_out = "distxplot.pdf",gwidth = 7,gheight=6.5) {
-  a <- genCorGen(n1, nvars = 2, params1 = param1a, params2 = param2a, dist = "normal", 
+  a <- genCorGen(n1, nvars = 2, params1 = param1a, params2 = param2a, dist = dist, 
                  corMatrix = matrix(c(1, rho1, rho1, 1), ncol = 2), wide = TRUE)[,2:3]
-  b <- genCorGen(n2, nvars = 2, params1 = param1b, params2 = param2b, dist = "normal", 
+  b <- genCorGen(n2, nvars = 2, params1 = param1b, params2 = param2b, dist = dist, 
                  corMatrix = matrix(c(1, rho2, rho2, 1), ncol = 2), wide = TRUE)[,2:3]
   r.a <- round(cor(a, method = method)[1,2],2)
   r.b <- round(cor(b, method = method)[1,2],2)
@@ -613,7 +613,7 @@ plot(bivariate_distribution_gamma_m1.5_d0.09_n50)
 # more gamma exploration, using our otherwise defaults
 gamma_a <- genCorGen(20, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
-gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(0.09,0.09),dist = "gamma",
+gamma_b <- genCorGen(90, nvars = 2, params1 = c(1,1), params2 = c(5,5),dist = "gamma",
                      corMatrix = matrix(c(1, 0.5, 0.5, 1), ncol = 2), wide = TRUE)[,2:3]
 
 ggExtra::ggMarginal(data = as.data.frame(gamma_a), x = "V1", y = "V2")
