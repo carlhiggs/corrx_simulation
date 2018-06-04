@@ -74,7 +74,7 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
     # initialise output plot
     pdf(graph_out,width=gwidth,height=gheight)
     # make contour plot
-    filled.contour(x = corrs,y = corrs,z = corrx_tmp, nlevels = 100,
+    filled.contour(x = corrs,y = corrs,z = corrx_tmp, nlevels = 10,
                    xlim = c(-.9,.9), ylim = c(-.9,.9), zlim = c(0,1),
                    plot.axes = {contour(x = corrs, y = corrs, z = corrx_tmp,
                                         levels = threshold, at = seq(-.9, .9, 0.2), drawlabels = FALSE, axes = FALSE,
@@ -94,7 +94,10 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
                                       ylab = paste0("Correlation in ",lnames[2]), adj = 0),
                    color.palette =  colorRampPalette(c("#f7fcf0","#525252")));
     # add arrow to legend to indicate target power level (0.8)
-    arrows(0.6, 0.54, 0.77, 0.54, length = 0.14, lwd = 3, col = "steelblue3")  
+    ## arrows for 100 levels
+    arrows(0.6, 0.54, 0.77, 0.54, length = 0.14, lwd = 3, col = "steelblue3")
+    # arrows(0.65, 0.54, 0.795, 0.54, length = 0.14, lwd = 3, col = "steelblue3")
+    
     # finalise plot
     dev.off()
   }
@@ -176,7 +179,7 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
   if(type %in% c("diffpower","diffpowerabs")){
     ln = n1+n2
     # plot power curve by difference given parameters
-    um <- data.long[(dist=="normal")&
+    um <- data.long[(dist==ldist)&
                       (method=="pearson")&
                       (p1==lparam1a)&
                       (p2==lparam2a)&
@@ -440,7 +443,9 @@ corrxplot(data.long  =  dt.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  0,
+          param1b    =  0,
           param2a    =  1,
+          param2b    =  1,
           nsims      =  100,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100.pdf",
@@ -458,7 +463,9 @@ corrxplot(data.long  =  dt_s3.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  0,
+          param1b    =  0,
           param2a    =  1,
+          param2b    =  1,
           nsims      =  1000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s1000.pdf",
@@ -475,7 +482,9 @@ corrxplot(data.long  =  dt_s3_10k.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  0,
+          param1b    =  0,
           param2a    =  1,
+          param2b    =  1,
           nsims      =  10000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s10000.pdf",
@@ -491,7 +500,9 @@ corrxplot(data.long  =  dt.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1.5,
+          param1b    =  1.5,
           param2a    =  0.09,
+          param2b    =  0.09,
           nsims      =  100,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s100.pdf",
@@ -507,7 +518,9 @@ corrxplot(data.long  =  dt_s3.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1.5,
+          param1b    =  1.5,
           param2a    =  0.09,
+          param2b    =  0.09,
           nsims      =  1000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s1000.pdf",
@@ -523,7 +536,9 @@ corrxplot(data.long  =  dt_s3_10k.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1.5,
+          param1b    =  1.5,
           param2a    =  0.09,
+          param2b    =  0.09,
           nsims      =  10000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz.5_s10000.pdf",
@@ -541,7 +556,9 @@ corrxplot(data.long  =  dt.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1,
+          param1b    =  1,
           param2a    =  5,
+          param2b    =  5,
           nsims      =  100,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s100.pdf",
@@ -559,7 +576,9 @@ corrxplot(data.long  =  dt_s3.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1,
+          param1b    =  1,
           param2a    =  5,
+          param2b    =  5,
           nsims      =  1000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s1000.pdf",
@@ -576,7 +595,9 @@ corrxplot(data.long  =  dt_s3_10k.long,
           rho2       =  0.5,
           ratio      =  0.5,
           param1a    =  1,
+          param1b    =  1,
           param2a    =  5,
+          param2b    =  5,
           nsims      =  10000,
           type       = "npower",
           graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s10000.pdf",
@@ -632,7 +653,39 @@ corrxplot(data.long  =  dt_s2.long,
           threshold  =  0.8) 
 
 
-# difference plot (note the imprecision though - not a perfect approach)
+# difference plot  - gamma1 - ratio 1:1
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       = "gamma",
+          param1a    =  1.5,
+          param2a    =  0.09,
+          ratio      =  1,
+          n1         =  90,
+          n2         =  90,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_mildskew_90_90_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# difference plot  - gamma1 - ratio 0.5:1
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       = "gamma",
+          param1a    =  1.5,
+          param2a    =  0.09,
+          ratio      =  .5,
+          n1         =  60,
+          n2         =  120,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_mildskew_60_120_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# difference plot  - gamma2 - ratio 1:1
 corrxplot(data.long  =  dt_s2.long,
           method     = "pearson",
           dist       = "gamma",
@@ -644,6 +697,22 @@ corrxplot(data.long  =  dt_s2.long,
           nsims      =  1000,
           type       = "diffpowerabs",
           graph_out  =  "../figs/corrx_diffpower_extrskew_90_90_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# difference plot  - gamma2 - ratio 0.5:1
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       = "gamma",
+          param1a    =  1,
+          param2a    =  5,
+          ratio      =  0.5,
+          n1         =  60,
+          n2         =  120,
+          nsims      =  1000,
+          type       = "diffpowerabs",
+          graph_out  =  "../figs/corrx_diffpower_extrskew_60_120_mzdz1_s1000.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
 
