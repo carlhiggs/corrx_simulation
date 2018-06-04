@@ -103,6 +103,51 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
     dev.off()
   }
   
+  # produce contour comparison plot
+  if(type=="contour2"){
+    # make correlation-power matrix
+    corrx_tmp <- data.long[(method==lmethod)&
+                                           (dist==ldist)&
+                                           (p1==lparam1a)&
+                                           (p2==lparam2a)&
+                                           (n1==ln1)&
+                                           (n2==ln2),]
+    # lookup table for test names
+    test_lookup <- cbind(dt_s1.long[,mean(power),by=test],
+                         data.table("label" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
+    # order tests by smallest sample size estimate required to achieve power threshold
+    test_lookup <- test_lookup[order(-rank(V1))]
+    test_lookup[,"label":= paste0(label," (",round(V1,2),")"),by=1:nrow(cross)]
+    
+    
+    # define plot title
+    title <- paste0("Power to detect difference in ",method," correlations, by rho\n",
+                    ldist,"((",lparam1a,",",lparam2a,"),(",lparam1b,",",lparam2b,"))","\n",
+                    "Mz = ",ln1,", Dz = ",ln2,", alpha: ",alpha, ", sims: ",lnsims)
+    # initialise output plot
+    pdf(graph_out,width=gwidth,height=gheight)
+    # make contour plot
+    p <- ggplot(corrx_tmp,aes(x = rho1,y = rho2, z = power, colour = test, group = test))  +
+      geom_contour(breaks = 0.8) + 
+      scale_x_continuous(paste0("Correlation in ",lnames[2]),
+                         breaks =seq(-.9, 0.9, 0.2),
+                         limits = c(-.9,.9))  +
+      scale_y_continuous(paste0("Correlation in ",lnames[2]),
+                         breaks =seq(-.9, 0.9, 0.2),
+                         limits = c(-.9,.9)) +
+      scale_colour_discrete(name="Tests",
+                            breaks=test_lookup$test,
+                            labels=test_lookup$label)  +
+      theme(panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black")) +
+      ggtitle(title)  
+    print(p)
+    # finalise plot to pdf
+    dev.off()
+    # display plot on screen
+    print(p)
+  }  
   if(type=="npower"){
     # get data subset
     um <- data.long[(dist==ldist)&
@@ -171,11 +216,12 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
       theme(panel.grid.minor = element_blank(),
             panel.background = element_blank(), 
             axis.line = element_line(colour = "black")) +
-      ggtitle(title)
-    
+      ggtitle(title)  
     print(p)
-    # finalise plot
+    # finalise plot to pdf
     dev.off()
+    # display plot on screen
+    print(p)
   }
   if(type %in% c("diffpower","diffpowerabs")){
     ln = n1+n2
@@ -564,6 +610,130 @@ corrxplot(data.long  =  dt_s2.long,
           alpha      =  0.05,
           threshold  =  0.8) 
 
+
+
+# Compare: Scenario 1pre - 100 sims 60:120
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "normal",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  100,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_sA1pre_n180_mzdz.5_compare_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# Compare: Scenario 1  - norm - 1000 sims 60:120
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "normal",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_sA1_n180_mzdz.5_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# Compare: Scenario 2  - norm -  1000 sims 90:90
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "normal",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_sA2_n180_mzdz1_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# Compare: Scenario 1  - gamma1 - 1000 sims 60:120
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  0.09,
+          param2b    =  0.09,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# Compare: Scenario 2  - gamma1 -  1000 sims 90:90
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  .09,
+          param2b    =  .09,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_gamma1_sA2_n180_mzdz1_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# Compare: Scenario 1  - gamma2 - 1000 sims 60:120
+corrxplot(data.long  =  dt_s1.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          n1         =  60,
+          n2         =  120,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# Compare: Scenario 2  - gamma2 -  1000 sims 90:90 
+corrxplot(data.long  =  dt_s2.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          n1         =  90,
+          n2         =  90,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  1000,
+          names      =  c("Mz twins","Dz twins"),
+          type       = "contour2",
+          graph_out  =  "../figs/corrx_contour_gamma2_sA2_n180_mzdz1_compare_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
 # plot power curve by N given parameters  - Normal 100 sim
 corrxplot(data.long  =  dt.long,
           method     = "pearson",
@@ -581,8 +751,6 @@ corrxplot(data.long  =  dt.long,
           graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100.pdf",
           alpha      =  0.05,
           threshold  =  0.8) 
-
-
 
 # plot power curve by N given parameters  - Normal - Scenario 3 - 1000sim
 corrxplot(data.long  =  dt_s3.long,
