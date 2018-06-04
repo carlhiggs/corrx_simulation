@@ -94,6 +94,56 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
 \end{figure}
 
   
+  
+%% Difference - SLR - vary ratio --- not bias with unequal sample size
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_diffpower_normal_60_120_mzdz1_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_diffpower_normal_90_90_mzdz1_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: SLR test power estimate given difference in rho for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_slr_norm}  
+\end{figure} 
+
+
+%% Contour - vary ratio
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA1_n180_mzdz.5_gtv_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA2_n180_mzdz1_gtv_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: GTV test power given rho contour plots for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_norm}  
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_gtv_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA2_n180_mzdz1_gtv_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: GTV test power given rho contour plots for bivariate "mild skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_gamma1}
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_gtv_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA2_n180_mzdz1_gtv_s1000}.pdf}
+  \endminipage\hfill  
+  \caption{Left to right, above: GTV test power given rho contour plots for bivariate "extreme skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_gamma2}
+\end{figure} 
+
+
+
 %% Contour - vary ratio
 \begin{figure}[htb]
   \centering        
@@ -127,16 +177,3 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
   \label{fig:contour_slr_gamma2}
 \end{figure} 
 
-  
-%% Difference - SLR - vary ratio --- not bias with unequal sample size
-\begin{figure}[htb]
-  \centering        
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_diffpower_normal_60_120_mzdz1_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_diffpower_normal_90_90_mzdz1_s1000}.pdf}
-  \endminipage\hfill
-  \caption{Left to right, above: SLR test power estimate given difference in rho for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_slr_norm}  
-\end{figure} 
