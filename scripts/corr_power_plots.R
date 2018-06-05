@@ -113,7 +113,7 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
                                            (n1==ln1)&
                                            (n2==ln2),]
     # lookup table for test names
-    test_lookup <- cbind(dt_s1.long[,mean(power),by=test],
+    test_lookup <- cbind(corrx_tmp[,mean(power),by=test],
                          data.table("label" = c("Fisher's z (no sim)","Fisher's Z","GTV","SLR","Zou's CI")))
     # order tests by smallest sample size estimate required to achieve power threshold
     test_lookup <- test_lookup[order(-rank(V1))]
@@ -137,10 +137,7 @@ corrxplot <- function(data.long,method = "pearson",dist = "normal",test="",n1 = 
                          limits = c(-.9,.9)) +
       scale_colour_discrete(name="Test (mean power)",
                             breaks=test_lookup$test,
-                            labels=test_lookup$label)  +
-      theme(panel.grid.minor = element_blank(),
-            panel.background = element_blank(), 
-            axis.line = element_line(colour = "black")) +
+                            labels=test_lookup$label) + 
       ggtitle(title)  
     print(p)
     # finalise plot to pdf
@@ -331,8 +328,8 @@ dist_x_plot <- function(method = "pearson",dist = "normal",test="",n1 = 60,n2 = 
     aes_string(colour = 'Group') +
     geom_point() + theme_bw(15) +
     theme(legend.position = c(1.04, 1.1),legend.text.align	 = 0)  +
-    scale_color_manual(labels = c(bquote(paste("  60 ",.(names[1]),"  (r = ",.(r.a),")")), 
-                                  bquote(paste("120 ",.(names[2]),"  (r = ",.(r.b),")"))),
+    scale_color_manual(labels = c(bquote(paste("120 ",.(names[2]),"  (r = ",.(r.a),")")), 
+                                  bquote(paste("  60 ",.(names[1]),"  (r = ",.(r.b),")"))),
                        values = c("MZ" = "#ef8a62","DZ" = "#67a9cf"))
   
   p <- ggExtra::ggMarginal(p,
@@ -627,7 +624,8 @@ corrxplot(data.long  =  dt.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_sA1pre_n180_mzdz.5_compare_s100.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 # Compare: Scenario 1  - norm - 1000 sims 60:120
 corrxplot(data.long  =  dt_s1.long,
@@ -644,7 +642,8 @@ corrxplot(data.long  =  dt_s1.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_sA1_n180_mzdz.5_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 
 # Compare: Scenario 2  - norm -  1000 sims 90:90
@@ -662,7 +661,8 @@ corrxplot(data.long  =  dt_s2.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_sA2_n180_mzdz1_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 # Compare: Scenario 1  - gamma1 - 1000 sims 60:120
 corrxplot(data.long  =  dt_s1.long,
@@ -679,7 +679,8 @@ corrxplot(data.long  =  dt_s1.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 
 # Compare: Scenario 2  - gamma1 -  1000 sims 90:90
@@ -697,7 +698,8 @@ corrxplot(data.long  =  dt_s2.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_gamma1_sA2_n180_mzdz1_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 # Compare: Scenario 1  - gamma2 - 1000 sims 60:120
 corrxplot(data.long  =  dt_s1.long,
@@ -714,7 +716,8 @@ corrxplot(data.long  =  dt_s1.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 
 # Compare: Scenario 2  - gamma2 -  1000 sims 90:90 
@@ -732,13 +735,13 @@ corrxplot(data.long  =  dt_s2.long,
           type       = "contour2",
           graph_out  =  "../figs/corrx_contour_gamma2_sA2_n180_mzdz1_compare_s1000.pdf",
           alpha      =  0.05,
-          threshold  =  0.8) 
+          threshold  =  0.8,
+          gwidth     =  7.5) 
 
 # plot power curve by N given parameters  - Normal 100 sim
 corrxplot(data.long  =  dt.long,
           method     = "pearson",
           dist       =  "normal",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -756,7 +759,6 @@ corrxplot(data.long  =  dt.long,
 corrxplot(data.long  =  dt_s3.long,
           method     = "pearson",
           dist       =  "normal",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -775,7 +777,6 @@ corrxplot(data.long  =  dt_s3.long,
 corrxplot(data.long  =  dt_s3_10k.long,
           method     = "pearson",
           dist       =  "normal",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -793,7 +794,6 @@ corrxplot(data.long  =  dt_s3_10k.long,
 corrxplot(data.long  =  dt.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -811,7 +811,6 @@ corrxplot(data.long  =  dt.long,
 corrxplot(data.long  =  dt_s3.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -829,7 +828,6 @@ corrxplot(data.long  =  dt_s3.long,
 corrxplot(data.long  =  dt_s3_10k.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -849,7 +847,6 @@ corrxplot(data.long  =  dt_s3_10k.long,
 corrxplot(data.long  =  dt.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -869,7 +866,6 @@ corrxplot(data.long  =  dt.long,
 corrxplot(data.long  =  dt_s3.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -888,7 +884,6 @@ corrxplot(data.long  =  dt_s3.long,
 corrxplot(data.long  =  dt_s3_10k.long,
           method     = "pearson",
           dist       =  "gamma",
-          test       =  "slr",
           rho1       =  0.2,
           rho2       =  0.5,
           ratio      =  0.5,
@@ -902,6 +897,165 @@ corrxplot(data.long  =  dt_s3_10k.long,
           alpha      =  0.05,
           threshold  =  0.8) 
 
+
+# plot power curve by N given parameters  - Normal 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "normal",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz1_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - Normal - Scenario 3 - 1000sim
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "normal",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# plot power curve by N given parameters  - Normal - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "normal",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  0,
+          param1b    =  0,
+          param2a    =  1,
+          param2b    =  1,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_norm_r.2_r.5_mzdz1_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  0.09,
+          param2b    =  0.09,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild - Scenario 3 - 1000sim
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  0.09,
+          param2b    =  0.09,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+# plot power curve by N given parameters  - gamma mild - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1.5,
+          param1b    =  1.5,
+          param2a    =  0.09,
+          param2b    =  0.09,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+
+# plot power curve by N given parameters  - gamma extr 100 sim
+corrxplot(data.long  =  dt.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  100,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s100.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+
+# plot power curve by N given parameters  - gamma extr - Scenario 3 - 1000sim
+corrxplot(data.long  =  dt_s3.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  1000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s1000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
+
+
+# plot power curve by N given parameters  - gamma extr - Scenario 3 - 10000sim
+corrxplot(data.long  =  dt_s3_10k.long,
+          method     = "pearson",
+          dist       =  "gamma",
+          rho1       =  0.2,
+          rho2       =  0.5,
+          ratio      =  1,
+          param1a    =  1,
+          param1b    =  1,
+          param2a    =  5,
+          param2b    =  5,
+          nsims      =  10000,
+          type       = "npower",
+          graph_out  =  "../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s10000.pdf",
+          alpha      =  0.05,
+          threshold  =  0.8) 
 
 # difference plot (note the imprecision though - not a perfect approach)
 corrxplot(data.long  =  dt.long,

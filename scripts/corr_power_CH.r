@@ -706,32 +706,62 @@ dt_s3.long <- melt(dt_sA3, measure.vars = tests, variable.name = "test", value.n
 # 10000 sims
 dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars = tests, variable.name = "test", value.name = "power")
 
-# overall average power
+# overall average power - NOTE - the below are only for the 100 simulation run, for now!
+#  SO - limited validity
 dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
+#        test   V1
+# 1: fz_nosim 0.74
+# 2:       fz 0.75
+# 3:      gtv 0.75
+# 4:      slr 0.83
+# 5:      zou 0.74
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1.5"),round(mean(power),2),by=test]
+#        test   V1
+# 1: fz_nosim 0.74
+# 2:       fz 0.74
+# 3:      gtv 0.74
+# 4:      slr 0.82
+# 5:      zou 0.74
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),round(mean(power),2),by=test]
+#        test   V1
+# 1: fz_nosim 0.74
+# 2:       fz 0.50
+# 3:      gtv 0.51
+# 4:      slr 0.62
+# 5:      zou 0.50
 
 
-# concerning that SLR has 22% power to detect difference when no difference....
-# Then again, this is beta - probability of not rejecting when false --- 20%..
-# hmmm.. no its not, it should be alpha which is 5% - hence other tests
-# ie. probability of rejecting when H0 is true
 dt.long[(method=="pearson")&
           (dist=="normal")&
           (rho1==0)&
           (rho2==0),round(mean(power),2),by=test]
-
+# test   V1
+# 1: fz_nosim 0.03
+# 2:       fz 0.05
+# 3:      gtv 0.06
+# 4:      slr 0.22
+# 5:      zou 0.05
 
 dt.long[(method=="pearson")&
           (dist=="normal")&
           (rho1==-0.2)&
           (rho2==-0.2),round(mean(power),2),by=test]
-
+# test   V1
+# 1: fz_nosim 0.03
+# 2:       fz 0.05
+# 3:      gtv 0.06
+# 4:      slr 0.20
+# 5:      zou 0.05
 dt.long[(method=="pearson")&
           (dist=="normal")&
           (rho1==0.9)&
           (rho2==0.9),round(mean(power),2),by=test]
-
+# test   V1
+# 1: fz_nosim 0.03
+# 2:       fz 0.05
+# 3:      gtv 0.05
+# 4:      slr 0.20
+# 5:      zou 0.05
 
 dt[(method=="pearson")&
           (dist=="normal"),list("mean_n1" = round(mean(n1),0),
@@ -742,17 +772,47 @@ dt[(method=="pearson")&
                                "gtv" = round(mean(gtv),2),
                                "slr" = round(mean(slr),2))
                                ,by=list(ratio)]
-
+#         ratio mean_n1 mean_n2 fz_nosim   fz  zou  gtv  slr
+#  1:  1.000000     272     272     0.77 0.77 0.77 0.77 0.78
+#  2:  0.500000     158     315     0.77 0.77 0.77 0.78 0.79
+#  3:  0.250000      93     372     0.76 0.77 0.77 0.77 0.82
+#  4:  0.125000      56     450     0.74 0.75 0.75 0.75 0.85
+#  5:  0.062500      35     560     0.71 0.71 0.71 0.72 0.87
+#  6:  0.031250      22     720     0.67 0.67 0.67 0.68 0.89
+#  7:  0.015625      15     960     0.61 0.62 0.62 0.63 0.91
+#  8:  2.000000     315     158     0.77 0.77 0.77 0.78 0.80
+#  9:  4.000000     372      93     0.76 0.77 0.77 0.77 0.82
+# 10:  8.000000     450      56     0.74 0.74 0.74 0.75 0.84
+# 11: 16.000000     560      35     0.71 0.71 0.71 0.72 0.87
+# 12: 32.000000     720      22     0.67 0.67 0.67 0.68 0.89
+# 13: 64.000000     960      15     0.61 0.62 0.62 0.63 0.91
 
 dt.long[(method=="pearson")&(dist=="normal"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
                                                   p25=round(quantile(power, .025, na.rm=TRUE),2),
                                                   p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
+# test  p50  p25 p75
+# 1: fz_nosim 0.98 0.03   1
+# 2:       fz 0.99 0.04   1
+# 3:      gtv 0.99 0.05   1
+# 4:      slr 1.00 0.10   1
+# 5:      zou 0.99 0.04   1
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1.5"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
                                                              p25=round(quantile(power, .25, na.rm=TRUE),2),
                                                              p75=round(quantile(power, .75, na.rm=TRUE),2)),by=test]
+# test  p50  p25 p75
+# 1: fz_nosim 0.98 0.47   1
+# 2:       fz 0.98 0.45   1
+# 3:      gtv 0.99 0.46   1
+# 4:      slr 1.00 0.72   1
+# 5:      zou 0.98 0.45   1
 dt.long[(method=="pearson")&(dist=="gamma")&(p1=="1"),list(p50=round(quantile(power, .50, na.rm=TRUE),2),
                                                            p25=round(quantile(power, .025, na.rm=TRUE),2),
                                                            p75=round(quantile(power, .975, na.rm=TRUE),2)),by=test]
-
+# test  p50  p25 p75
+# 1: fz_nosim 0.98 0.03   1
+# 2:       fz 0.46 0.00   1
+# 3:      gtv 0.47 0.00   1
+# 4:      slr 0.72 0.00   1
+# 5:      zou 0.46 0.00   1
 
 

@@ -5,11 +5,10 @@
 \addcontentsline{toc}{chapter}{2. Methods}
 
 
-\section{section title}
+\section{Plan}
 
-%% Plan
-%% Evaluation
-%% Revision
+\tdn{NOTE - THIS IS ALL STILL ROUGH
+ - I need to write in formulas etc and coherently explain things; I know}
 
 I conducted a review of the literature relating to twins, correlations, power and simulations to inform development of a plan for our analysis.  
 
@@ -19,100 +18,188 @@ Other important considerations were the efficiency of our implemented simulation
 
 The R programming environment was used for all of our analyses.
 
-    \begin{center}
-      % \includegraphics{../figs/r_to_z.pdf}
-    \begin{figure}[!htb]
-        \minipage{0.3\textwidth}
-          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
-        \endminipage\hfill
-        \minipage{0.39\textwidth}
-           \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
-           \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
-           \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
-           \[\text{heritability} = 2\delta_{\rho}\]
-        \endminipage\hfill
-        \minipage{0.3\textwidth}%
-          \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
-        \endminipage
-    \end{figure}
-    \begin{table}\centering
-    \begin{tabular}{rcc}
-        \toprule
-        \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
-        \cmidrule(lr){2-3} 
-         & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
-        \midrule										
-        genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
-        shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
-        individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
-        combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
-         \bottomrule 
-    \end{tabular}
-    \end{table}
-    \end{center}
+    % \begin{center}
+      % % \includegraphics{../figs/r_to_z.pdf}
+    % \begin{figure}[!htb]
+        % \minipage{0.3\textwidth}
+          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        % \endminipage\hfill
+        % \minipage{0.39\textwidth}
+           % \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
+           % \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
+           % \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
+           % \[\text{heritability} = 2\delta_{\rho}\]
+        % \endminipage\hfill
+        % \minipage{0.3\textwidth}%
+          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
+        % \endminipage
+    % \end{figure}
+    % \begin{table}\centering
+    % \begin{tabular}{rcc}
+        % \toprule
+        % \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
+        % \cmidrule(lr){2-3} 
+         % & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
+        % \midrule										
+        % genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
+        % shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
+        % individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
+        % combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
+         % \bottomrule 
+    % \end{tabular}
+    % \end{table}
+    % \end{center}
 
-\section{Frequentist NHST paradigm} 
-    $\alpha$ (Type I error) and $\beta$ (Type II error); Power is $1-\beta$
-    \linebreak
-    \linebreak
-    \textbf{Fisher's $Z$ formula approach (David, 1938; Cohen 1988)}
-    \linebreak
-    $ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $ 
-    \linebreak
-    \section{Simulation approach}
-    \begin{itemize}
-      \item implement hypothesis tests for difference in correlations
-      \item $M$ times
-        \begin{itemize}
-          \item draw from simulated bivariate MZ and DZ populations
-          \item run hypothesis tests for difference in sample correlations
-        \end{itemize}
-      \item power given parameters is proportion of tests where $p < \alpha$      
-    \end{itemize} 
-    
+
+\section{Power analysis and hypothesis testing} 
+Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5\% and 20\%, and this is the parameterisation adopted for the results presented here.
+
 \subsection{Formula based hypothesis test}
+A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in functions found in Stata and R.
+ $$\textbf{Fisher's Z test} = \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
+To estimate the power using this approach, you first take the difference between a normal reference score given the chosen type 1 error rate and the absolute value of the test statistic. The type 2 error rate is the probability of observing a value of at least this magnitude on the normal distribution.  And 1 minus this value is the power.
 
-\subsection{Simulation based hypothesis test}
-The tests we identified and developed for inclusion were 
+$$ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $$ 
 
+The above method is the de facto standard, as used for example in the Stata \code{power two correlations}.  However, other options for evaluating the difference in Pearson or Spearman correlations should be considered.  Alternate tests we identified and implemented for inclusion in our simulation study were as follows. 
+\tdn{need to write in the formulas references etc - I have the citations in the bibtex library, will enter later}
 \subsubsection{Fisher's Z test}
 the simulation equivalent of the Fisher's Z test already discussed
  $$\frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
 \subsubsection{Zou's confidence interval}
-Zou's confidence interval approach which evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
-
+Zou's confidence interval approach evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
+% zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
+  % # From Zou (2007) and used in Cocor (note typo for U in paper; should be '+')
+  % #  However, really, this is equivalent to fz test for hypothesis testing purposes
+  % n  <- c(nrow(a),nrow(b))
+  % r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  % z  <- atanh(r)
+  % zdiff  <- z[1]-z[2]
+  % # Step 3: calculate standard error and test statistic
+  % z_ref  <- qnorm(1-alpha/sidedness)
+  % z_se   <- sqrt(1/(n-3))
+  % ci_mat <- matrix(c(-1,-1,1,1),nrow = 2, ncol = 2, dimnames =list(c("Mz","Dz"),c("l","u")))
+  % z_ci   <- z + ci_mat * z_se * z_ref
+  % r_ci   <- tanh(z_ci)
+  % L      <- r[1]-r[2] - sqrt((r[1]      - r_ci[1,1])^2 + (r_ci[2,2] - r[2]     )^2)
+  % U      <- r[1]-r[2] + sqrt((r_ci[1,2] - r[1]     )^2 + (r[2]      - r_ci[2,1])^2)
+  % r_diff_ci <- c(L,U)
+  % ci_test <- (L < 0) && (0 < U)
+  % return(c(ci_test,r_diff_ci))
+% }
 \subsubsection{Generalised Variable Test}
 
-The GVT test involves tranformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value.
-
+The GVT test involves tranformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value.  Krishnamoorthy and Lee, Kazemi and Jafari.
+% gtv_r <- function(a,b,M=1e4,method = "pearson") {
+  % # Two samples
+  % n1 <- nrow(a)
+  % n2 <- nrow(b)
+  
+  % # Step 1: Compute sample correlation coefficients
+  % r1 <- cor(a,method = method)[2,1]
+  % r2 <- cor(b,method = method)[2,1]
+  % r  <- c(r1,r2)
+  
+  % # Step 2: Generate random numbers
+  % V2     <- matrix(data=0, nrow = M, ncol = 2)
+  % V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  % V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  % W2     <- matrix(data=0, nrow = M, ncol = 2)
+  % W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  % W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  % Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  % # Compute test statistic
+  % rstar <- r/sqrt(1-r^2)
+  % top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+  % G     <- top / sqrt( top^2 + V2 )
+  
+  % # Compute p value
+  % Grho <- G[,1] - G[,2];
+  % p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  % return(p)
+% }
 
 \subsubsection{Signed log-likelihood ratio test}
-The signed log likelihood ratio test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods.
+The signed log likelihood ratio test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods. Krishnamoorthy and Lee, Kazemi and Jafari.
+% # SIgned Log-likelihood Ratio test (an 'unmodified' version of test described in Kazemi and Jafari / DiCiccio)
+% slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+  % # Two samples
+  % n  <- c(nrow(a),nrow(b))
+  
+  % # Step 1: Compute sample correlation coefficients
+  % r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  % z  <- atanh(r)
+  % rf <- tanh(mean(z))
+  
+  % slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
+  % p    <- 2 * (1 - pnorm(abs(slr))); 
+  % return(p)
+% }
 
 
 \subsubsection{Permutation test}
 The permutation test is a non-parametric approach which compares the absolute difference of the Z-transformed sample correlations with correlations from a series of group membership permutations using the sample rank orders as values.
+% pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+% ### WAIT! Don't do this as a f-ing vector--- just single, and return test
+% # Then treat as per other tests--- do similar refactoring of GTV
+% # Based on Efron and Tibshirani
+% n  <- c(nrow(a),nrow(b))
+% r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+% z  <- atanh(r)
+% # g <- c(rep("A",n[1]),rep("B",n[2]))
+% v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
+% rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
+% rtest <- numeric(0)
+% for (i in 1:M){
+  % permute <- cbind(v,rbinom(sum(n),1,0.5))
+  % rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
+               % cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
+  % zstar   <- atanh(rstar)
+  % rtest   <- c(rtest,
+               % abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
+  % } 
+% p <- mean(rtest)
+% return(p)
+% }
 
-\subsection{Efficiency}
-To undertake the simulations as planned for combinations of 
-\begin{itemize}
-  \item correlations at .05 intervals 
-  \item exponentially increasing group sizes of 15 through 960
-  \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
-  \item two approaches to correlation measurement 
-  \item across 6 tests
-  \item with 1000 simulations per combination 
-\end{itemize}
+\subsection{Simulation approach to calculating power}
+Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
+
+So where in our formula we might plug in hypothesised sample coefficients of 0.2 and 0.5, in the simulation we use these values to represent the true correlations in the underlying population from which we draw our samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
+  
+\section{Feasability appraisal}
+% To undertake the simulations as planned for combinations of 
+% \begin{itemize}
+  % \item correlations at .05 intervals 
+  % \item exponentially increasing group sizes of 15 through 960
+  % \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
+  % \item two approaches to correlation measurement 
+  % \item across 6 tests
+  % \item with 1000 simulations per combination 
+% \end{itemize}
+
+Briefly summarise timing tests
+\\
+Point to appendix for timing test results
+
 would have resulted in more than 2 billion results and taken 33 years.  Instead, I reduced my ambition using a .1 correlation resolution and dropped the permutation test which was implemented inefficiently to get this to 16 days.
-  
 
+\section{Revision}
   
-  We talk about the two image types
-  
-  fitted contour
-  
-  spline interpolation
-  n
-  
-  diff - and why this is problematic
+results in format of images
+\\
+\\
+contour plot
+\\
+\\  
+interpolation using monotonic increasing spline function
+\\
+\\
+Required sample size to achieve 80% power
+\\
+\\  
+Difference to achieve 80% power
 

@@ -4,17 +4,33 @@
 \setcounter{section}{0}
 \addcontentsline{toc}{chapter}{3. Results}
 
+Power estimates were calculated for a series of 530,670 parameter combination scenarios. Example draws from the three considered distributions of normal, mild skew, and extreme skew are displayed respectively in Figures \ref{fig:dist_norm}, \ref{fig:dist_gamma1} and \ref{fig:dist_gamma2}.
+\\
+Mean power estimates by test were.... (note will point out in discussion why this metric is not useful)
+\\
+Spline interpolated plots for required sample size to achieve 80\% power were produced for the series of tests (see Figure \ref{fig:npower_norm}).
+
+\\
+The impact of group size ratio using a fixed N
+\\
+Contour plots comparing by power given rho by test for MZ:DZ ratios of 60:120 and 90:90
+ (to discuss - hints of bias in SLR implementation viz. ratio)
+
+Spline interpolated plots for required sample size given difference by test for MZ:DZ ratios of 60:120 and 90:90
+ (to discuss, why overlooking magnitude of respective correlations is problematic; hence, value in power calculator to address specific scenarios)
+
+Appendix plots - test specific contour plots (don't show in results) 
+ 
+% Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
+
+ % Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
+    
+    
+ % Under extreme skew Fisher's Z formula underestimates req. sample size
+
+
+
 \section{section title}
-
-
-530,670 power estimates comparing: tests, sample size, group size ratio, normality, correlation combinations, correlation methods
-
-Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power; others $\leq 75\%$. 
-
- Power to detect $\hat\delta_{\rho}$ in MZ and DZ twins $\sim \mathcal{N}\bigg(\left[\begin{smallmatrix}0\\ 0\end{smallmatrix}\right],\, \left[\begin{smallmatrix}1 & {\rho} \\ {\rho} & 1\end{smallmatrix}\right] \bigg)$
-    
-    
- Under extreme skew Fisher's Z formula underestimates req. sample size
     
 %% Example distributions
 \begin{figure}[htb]
@@ -38,26 +54,21 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
   \endminipage\hfill
 \end{figure} 
 
-%% Example sample sizes required 
+%% Example sample sizes required
+%MZ DZ 0.5:1 
 \begin{figure}[htb]
   \centering        
  
   \minipage{0.33\textwidth}%
     \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s100}.pdf}
-    % \caption{Sample size estimate: 100 simulations}
-    % \label{fig:1}
   \endminipage\hfill
   \minipage{0.33\textwidth}% 
     \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s1000}.pdf}
-    % \caption{Sample size estimate: 1,000 simulations}
-    % \label{fig:2}
   \endminipage\hfill
   \minipage{0.33\textwidth}% 
     \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz.5_s10000}.pdf}
-    % \caption{Sample size estimate: 10,000 simulations}
-    % \label{fig:3}
   \endminipage\hfill
-  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate normal distributions with respective $\rho$ of 0.2 and 0.5.}
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate normal distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 0.5:1.}
   \label{fig:npower_norm}
   
   \medskip
@@ -76,7 +87,7 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
     % \caption{Sample size estimate: 10,000 simulations}
     % \label{fig:6}
   \endminipage\hfill
-  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "mild skew" gamma distributions with respective $\rho$ of 0.2 and 0.5.}
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "mild skew" gamma distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 0.5:1.}
   \label{fig:npower_mildskew}
   
   \medskip
@@ -89,11 +100,91 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
   \minipage{0.33\textwidth}% 
     \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz.5_s10000}.pdf}
   \endminipage\hfill
-  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "extreme skew" gamma distributions with respective $\rho$ of 0.2 and 0.5.}
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "extreme skew" gamma distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 0.5:1.}
   \label{fig:npower_extrskew}
 \end{figure}
 
+%MZ DZ 1:1 
+\begin{figure}[htb]
+  \centering        
+ 
+  \minipage{0.33\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz1_s100}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz1_s1000}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_norm_r.2_r.5_mzdz1_s10000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate normal distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 1:1.}
+  \label{fig:npower_norm}
   
+  \medskip
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s100}.pdf}
+    % \caption{Sample size estimate: 100 simulations}
+    % \label{fig:4}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s1000}.pdf}
+    % \caption{Sample size estimate: 1,000 simulations}
+    % \label{fig:5}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_mildskew_r.2_r.5_mzdz1_s10000}.pdf}
+    % \caption{Sample size estimate: 10,000 simulations}
+    % \label{fig:6}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "mild skew" gamma distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 1:1.}
+  \label{fig:npower_mildskew}
+  
+  \medskip
+  \minipage{0.33\textwidth}% 
+     \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s100}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s1000}.pdf}
+  \endminipage\hfill
+  \minipage{0.33\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_npower_extrskew_r.2_r.5_mzdz1_s10000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: Sample size estimates to achieve 80\% power using (a) 100, (b) 1,000, and (c) 10,000 simulations for bivariate "extreme skew" gamma distributions with respective $\rho$ of 0.2 and 0.5 and an MZ:DZ ratio of 1:1.}
+  \label{fig:npower_extrskew}
+\end{figure}
+
+%% Contour - Comparison  - vary ratio
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA1_n180_mzdz.5_compare_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA2_n180_mzdz1_compare_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: Contour plots of power given rho by test for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_norm}  
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_compare_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA2_n180_mzdz1_compare_s1000}.pdf}
+  \endminipage\hfill
+  \caption{Left to right, above: Contour plots of power given rho by test for bivariate "mild skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_gamma1}
+  
+  \medskip
+  \minipage{0.49\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_compare_s1000}.pdf}
+  \endminipage\hfill 
+  \minipage{0.49\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA2_n180_mzdz1_compare_s1000}.pdf}
+  \endminipage\hfill  
+  \caption{Left to right, above: Contour plots of power given rho by test for bivariate "extreme skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
+  \label{fig:contour_gtv_gamma2}
+\end{figure}   
   
 %% Difference - SLR - vary ratio --- not bias with unequal sample size
 \begin{figure}[htb]
@@ -128,72 +219,5 @@ Under approximate normality / mild skew, on average SLR test $ \sim 82\%$ power;
   \label{fig:contour_slr_norm}  
 \end{figure} 
 
-
-%% Contour - vary ratio
-\begin{figure}[htb]
-  \centering        
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA1_n180_mzdz.5_gtv_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA2_n180_mzdz1_gtv_s1000}.pdf}
-  \endminipage\hfill
-  \caption{Left to right, above: GTV test power given rho contour plots for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_gtv_norm}  
-  
-  \medskip
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_gtv_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA2_n180_mzdz1_gtv_s1000}.pdf}
-  \endminipage\hfill
-  \caption{Left to right, above: GTV test power given rho contour plots for bivariate "mild skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_gtv_gamma1}
-  
-  \medskip
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_gtv_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA2_n180_mzdz1_gtv_s1000}.pdf}
-  \endminipage\hfill  
-  \caption{Left to right, above: GTV test power given rho contour plots for bivariate "extreme skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_gtv_gamma2}
-\end{figure} 
-
-
-
-%% Contour - vary ratio
-\begin{figure}[htb]
-  \centering        
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA1_n180_mzdz.5_slr_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_sA2_n180_mzdz1_slr_s1000}.pdf}
-  \endminipage\hfill
-  \caption{Left to right, above: SLR test power given rho contour plots for bivariate normal distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_slr_norm}  
-  
-  \medskip
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA1_n180_mzdz.5_slr_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma1_sA2_n180_mzdz1_slr_s1000}.pdf}
-  \endminipage\hfill
-  \caption{Left to right, above: SLR test power given rho contour plots for bivariate "mild skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_slr_gamma1}
-  
-  \medskip
-  \minipage{0.49\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA1_n180_mzdz.5_slr_s1000}.pdf}
-  \endminipage\hfill 
-  \minipage{0.49\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/corrx_contour_gamma2_sA2_n180_mzdz1_slr_s1000}.pdf}
-  \endminipage\hfill  
-  \caption{Left to right, above: SLR test power given rho contour plots for bivariate "extreme skew" gamma distribution, using MZ:DZ group size ratio of (a) 60:120, and (b) 90:90}
-  \label{fig:contour_slr_gamma2}
-\end{figure} 
+\tdn{Main results relate to images contained here.  These will be introduced and explained, and involve the key important comparisons vis impact on power and required sample size to achieve this: number of simulations (justifies 1000 simulation approach); choice of ratio; choice of test method; impact of non-normality; magnitude of correlations; etc.  I have put more old style contour plots in appendix, which may be referred to --- specific examples for GTV and SLR}
 
