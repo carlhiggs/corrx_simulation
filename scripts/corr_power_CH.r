@@ -21,6 +21,7 @@
 # install.packages("simstudy")
 # install.packages("ggplot2")
 # install.packages("data.table")
+# install.packages('RPostgres')
 
 # may have to set working directory
 setwd("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts")
@@ -30,7 +31,10 @@ require("simstudy")
 sourceCpp('test.cpp')
 require(data.table)
 require(ggplot2)
-library(parallel)
+require(parallel)
+require(config)
+require(RPostgres)
+library(DBI)  
 
 # to deploy R power app (code elsewhere
 
@@ -161,13 +165,10 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
 
 
 pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
-### WAIT! Don't do this as a f-ing vector--- just single, and return test
-# Then treat as per other tests--- do similar refactoring of GTV
 # Based on Efron and Tibshirani
 n  <- c(nrow(a),nrow(b))
 r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
 z  <- atanh(r)
-# g <- c(rep("A",n[1]),rep("B",n[2]))
 v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
 rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
 rtest <- numeric(0)
@@ -601,36 +602,99 @@ dt_mouse1 <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
 # # 588.82   13.11  603.81 
 
 # Parallelised approach inspired by http://www.parallelr.com/r-with-parallel-computing/
+# Combining with output to SQL database to make long running process robust to outages and 
+# more flexible with parallel processing input
+# Assumption: 
+#   - You have Postgresql installed
+#   - You have created a database
+#   - Your connection and database settings are specified in a config.yml file in working dir
+dt_mouse1 <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+
+create_table <- paste0("CREATE TABLE corrx (
+   simx         integer PRIMARY KEY,
+   method       varchar(8),
+   dist         varchar(8),
+   p1           numeric,
+   p2           numeric,
+   n1           integer,
+   n2           integer,
+   rho1         double precision,
+   rho2         double precision,
+   fz_nosim     double precision,
+   fz           double precision,
+   gtvr         double precision,
+   slr          double precision,
+   zou          double precision);")
+res <- dbSendQuery(pg.RPostgres, create_table)
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+
+
 cores <- detectCores(logical = FALSE)
 cl <- makeCluster(cores)
 clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
                      'corr_diff_test',
                      'corr_power_compiled', 
-                     'dt_mouse1'))
+                     'min'))
 system.time(
-  dt_mouse2 <- parLapply(cl, 1:nrow(dt_mouse1), function(x) { 
-                  with(dt_mouse1, c(method = as.character(method[x]),
-                                    dist   = dist[x],
-                                    p1     = p1[x],
-                                    p2     = p2[x],
-                                    n1     = n1[x],
-                                    n2     = n2[x],
-                                    rho1   = rho1[x],
-                                    rho2   = rho2[x],
-                                     corr_power_compiled(rho = c(rho1[x],rho2[x]),
-                                    n = c(n1[x],n2[x]),
-                                    distr = dist,
-                                    param1a = c(p1[x],p1[x]),
-                                    param1b = c(p1[x],p1[x]),
-                                    param2a = c(p2[x],p2[x]),
-                                    param2b = c(p2[x],p2[x]),
-                                    test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
-                                    alpha   = 0.05,
-                                    sidedness=2,
-                                    method=as.character(method[x]),
-                                    nsims = 1000,
-                                    power_only = TRUE))) })
-                       )
+  parLapply(cl, 1:nrow(min), function(x) { 
+    res <-  with(min, c(id = x, 
+                        method = as.character(method[x]),
+                        dist   = dist[x],
+                        p1     = p1[x],
+                        p2     = p2[x],
+                        n1     = n1[x],
+                        n2     = n2[x],
+                        rho1   = rho1[x],
+                        rho2   = rho2[x],
+                        corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                        n = c(n1[x],n2[x]),
+                        distr = dist,
+                        param1a = c(p1[x],p1[x]),
+                        param1b = c(p1[x],p1[x]),
+                        param2a = c(p2[x],p2[x]),
+                        param2b = c(p2[x],p2[x]),
+                        test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                        alpha   = 0.05,
+                        sidedness=2,
+                        method=as.character(method[x]),
+                        nsims = 1000,
+                        power_only = TRUE))) 
+    pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                              dbname   = config::get("sql")$connection$dbname,
+                              host     = config::get("sql")$connection$host,
+                              port     = config::get("sql")$connection$port,
+                              user     = config::get("sql")$connection$user,
+                              password = config::get("sql")$connection$password)
+   # insert simulation result to as database row 
+    res <- dbSendQuery(pg.RPostgres, 
+                "INSERT INTO corrx VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
+                params=list(simx       =as.integer(res["id"]), 
+                            method     =res["method"],
+                            dist       =res["dist"],
+                            p1         =as.numeric(res["p1"]),
+                            p2         =as.numeric(res["p2"]),
+                            n1         =as.integer(res["n1"]),
+                            n2         =as.integer(res["n2"]),
+                            rho1       =as.numeric(res["rho1"]),
+                            rho2       =as.numeric(res["rho2"]),
+                            fz_nosim   =as.numeric(res["fz_nosim"]),
+                            fz         =as.numeric(res["fz"]),
+                            gtvr       =as.numeric(res["gtvr"]),
+                            slr        =as.numeric(res["slr"]),
+                            zou        =as.numeric(res["zou"])
+                ))
+    # clean up and release connection
+    dbClearResult(res)
+    dbDisconnect(pg.RPostgres)
+    }))
 stopCluster(cl)
 # first run of 20 rows
 # user  system elapsed 

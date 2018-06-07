@@ -59,13 +59,80 @@ Michael Neale and colleagues developed methods and software to facilitate the an
 
 This project is concerned with power to detect a difference in Pearson correlations as part of preliminary analysis before variance component modelling.
 
+Bivariate distribution
+$$\boldsymbol\mu = \begin{pmatrix} \mu_X \\ \mu_Y \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} \sigma_X^2 & \rho \sigma_X \sigma_Y \\ \rho \sigma_X \sigma_Y  & \sigma_Y^2 \end{pmatrix}$$
+Assuming our variables are scaled to have mean of zero and standard deviation 1, the notation is simplified as
+$$\boldsymbol\mu = \begin{pmatrix} 0 \\ 0 \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} 1 & \rho \\ \rho  & 1 \end{pmatrix}$$
+                             
+$$\rho_{X,Y} = \frac{\Cov(x,y)}{\sigma_x \sigma_y} = \frac{\operatorname{E}[(X-\mu_X)(Y-\mu_Y)]}{\sigma_X\sigma_Y}$$
+and is estimated by the sample correlation coefficient $r$
+$$r_{x,y} = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}$$
+
+$$z = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r}$$
+
+
+\begin{figure}[htbp]
+\sidecaption[t]
+%\centering
+\fbox{\includegraphics[scale=1.3]{../figs/r_to_z.pdf}}
+%\picplace{5cm}{2cm} % Give the correct figure height and width in cm
+\caption{Transformation of $r$ to $z$ using Fisher's method.}
+\label{fig:ztransform}       % Give a unique label
+\end{figure}
+
+
+
+
 \subsection{Power analysis}
 
 Power is the probability of detecting a true effect, a key consideration when planning a study.  In the context of differences in correlations undertaken in a twin study, we will expect a range of possible parameters to influence our power: the sample size; the ratio of MZ to DZ twins; how we have defined what constitutes a meaningful difference; the magnitude of the respective correlations; how these are measured.
 
 Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
 
+
+alpha  expected proportion of null hypotheses to be rejected when true 
+type 1 error
+the classic '0.05' (5\%)\; but 0.1 or any other number may also be chosen 
+ expected proportion of null hypotheses not rejected when false 
+      \item type 2 error
+      \item 0.2 (20\%) is a classic choice; gunning for power of \(1 - \beta = 80\)
+      
+      
  \subsubsection{subsub section title}
  
+The ratio of MZ to DZ twins is an important parameter to consider with regard to power to estimate variance components in twin studies, involving a trade off between power to detect additive genetic ($>1:1$) or shared environmental effects ($<1:1$) \cite{Visscher2008}.  Such effects may be the main objects of interest in contemporary studies when planning a study, and power calculators such as that of Verhulst \cite{Verhulst2017} specifically cater to these concerns.  However
 
-			
+
+
+
+    % \begin{center}
+      % % \includegraphics{../figs/r_to_z.pdf}
+    % \begin{figure}[!htb]
+        % \minipage{0.3\textwidth}
+          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
+        % \endminipage\hfill
+        % \minipage{0.39\textwidth}
+           % \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
+           % \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
+           % \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
+           % \[\text{heritability} = 2\delta_{\rho}\]
+        % \endminipage\hfill
+        % \minipage{0.3\textwidth}%
+          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
+        % \endminipage
+    % \end{figure}
+    % \begin{table}\centering
+    % \begin{tabular}{rcc}
+        % \toprule
+        % \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
+        % \cmidrule(lr){2-3} 
+         % & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
+        % \midrule										
+        % genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
+        % shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
+        % individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
+        % combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
+         % \bottomrule 
+    % \end{tabular}
+    % \end{table}
+    % \end{center}

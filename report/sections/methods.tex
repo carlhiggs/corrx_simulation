@@ -10,176 +10,315 @@
 \tdn{NOTE - THIS IS ALL STILL ROUGH
  - I need to write in formulas etc and coherently explain things; I know}
 
-I conducted a review of the literature relating to twins, correlations, power and simulations to inform development of a plan for our analysis.  
+To inform development of a plan for our analysis, a review of the literature relating to twins, correlations, power and simulations was undertaken.  With interest restricted those papers concerning differences in Pearson correlations, results of a search for abstracts relating to power analyses concerned with all these themes from a series of structured searches were limited.  Tracing back references cited in the article which inspired this research project \cite{Verhulst2017}, a number of key historical texts were identified and informed the preceding method section: \cite{David1938} on correlation and hypothesis tests, \cite{Falconer1960} on heredity and correlation,  \cite{Cohen1988} on power for differences in correlation, 
 
 We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearson's, using the same formula on the rank ordered variables rather than their raw values.
 
 Other important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  
 
 The R programming environment was used for all of our analyses.
-
-    % \begin{center}
-      % % \includegraphics{../figs/r_to_z.pdf}
-    % \begin{figure}[!htb]
-        % \minipage{0.3\textwidth}
-          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
-        % \endminipage\hfill
-        % \minipage{0.39\textwidth}
-           % \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
-           % \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
-           % \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
-           % \[\text{heritability} = 2\delta_{\rho}\]
-        % \endminipage\hfill
-        % \minipage{0.3\textwidth}%
-          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
-        % \endminipage
-    % \end{figure}
-    % \begin{table}\centering
-    % \begin{tabular}{rcc}
-        % \toprule
-        % \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
-        % \cmidrule(lr){2-3} 
-         % & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
-        % \midrule										
-        % genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
-        % shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
-        % individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
-        % combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
-         % \bottomrule 
-    % \end{tabular}
-    % \end{table}
-    % \end{center}
+ 
 
 
 \section{Power analysis and hypothesis testing} 
 Power analysis involves a compromise between type 1 and type 2 error thresholds, respectively the expected proportion of null hypotheses to be rejected when true and not rejected when false.  These could be chosen to suit the requirements of a particular study, but for historical reasons the usual consensus is for 5\% and 20\%, and this is the parameterisation adopted for the results presented here.
 
-\subsection{Formula based hypothesis test}
+\subsection{Fisher's Z test (analytical approach)}
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference.  Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in functions found in Stata and R.
- $$\textbf{Fisher's Z test} = \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
+
+David compared the use of the z-transformation and other methods such as the Lagrangian four-point formula for use in hypothesis tests concerning $r$, concluding that the z-transformation should be appropriate for most purposes since little difference was observed between the two methods' results given sample sizes greater than 25 \cite{David1938}.
+
+An estimate for the difference in sample correlation coefficients may be estimated as \cite{David1938}
+$$\hat{\theta} = z_{MZ} - z_{DZ}$$
+with standard error,
+$$se_\hat{\theta}  = \sqrt{\frac{1}{n_{MZ}-3}+\frac{1}{n_{DZ}-3}} $$
+$$t_\hat{\theta}   = \hat{\theta} / se_\hat{\theta}               $$ 
+Under the null hypothesis, we evaluate \(t_\theta\) against the standard normal distribution for the two sided probability of observing an effect size of such mangitude is:
+$$p(\theta)  =  2 \times \Phi \bigg(t_{\hat{\theta}} \bigg)$$
+Comparing this against a normal reference point
+$$ c   =  \Phi_{\alpha/2}^{-1}$$
+ (for example, $\sim 1.96$ when $\alpha = 0.05$), we can calculate $\beta$ as
+$$\beta = \Phi \bigg( c - t_\theta \bigg)$$
+Finally, our power estimate for the detection of difference in correlations would be
+$$\power(\theta) = 1 - \beta$$
+
+Here, we are testing the hypothesis that $\rho_{MZ} = \rho_{DZ}$ using a two-tailed p-value, implying 'admissible alternatives' to be the case that $\rho_{MZ}$ is greater than or less than $\rho_{DZ}$ \cite{David1938}.  One-tailed consideration, for example that $\rho_{MZ} \geq \rho_{DZ}$, could be considered.  While this is not the case in the scenarios calculated for this report, the functions developed may be parameterised in this way if desired.
+
+Putting the above altogether, we calculate a Fisher's $z$ test statistic as 
+
+ $$\text{Fisher's Z test} = \frac{z_{MZ} - z_{DZ}}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
+ 
 To estimate the power using this approach, you first take the difference between a normal reference score given the chosen type 1 error rate and the absolute value of the test statistic. The type 2 error rate is the probability of observing a value of at least this magnitude on the normal distribution.  And 1 minus this value is the power.
 
 $$ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $$ 
 
-The above method is the de facto standard, as used for example in the Stata \code{power two correlations}.  However, other options for evaluating the difference in Pearson or Spearman correlations should be considered.  Alternate tests we identified and implemented for inclusion in our simulation study were as follows. 
-\tdn{need to write in the formulas references etc - I have the citations in the bibtex library, will enter later}
-\subsubsection{Fisher's Z test}
-the simulation equivalent of the Fisher's Z test already discussed
- $$\frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}$$
-\subsubsection{Zou's confidence interval}
-Zou's confidence interval approach evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
-% zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
-  % # From Zou (2007) and used in Cocor (note typo for U in paper; should be '+')
-  % #  However, really, this is equivalent to fz test for hypothesis testing purposes
-  % n  <- c(nrow(a),nrow(b))
-  % r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-  % z  <- atanh(r)
-  % zdiff  <- z[1]-z[2]
-  % # Step 3: calculate standard error and test statistic
-  % z_ref  <- qnorm(1-alpha/sidedness)
-  % z_se   <- sqrt(1/(n-3))
-  % ci_mat <- matrix(c(-1,-1,1,1),nrow = 2, ncol = 2, dimnames =list(c("Mz","Dz"),c("l","u")))
-  % z_ci   <- z + ci_mat * z_se * z_ref
-  % r_ci   <- tanh(z_ci)
-  % L      <- r[1]-r[2] - sqrt((r[1]      - r_ci[1,1])^2 + (r_ci[2,2] - r[2]     )^2)
-  % U      <- r[1]-r[2] + sqrt((r_ci[1,2] - r[1]     )^2 + (r[2]      - r_ci[2,1])^2)
-  % r_diff_ci <- c(L,U)
-  % ci_test <- (L < 0) && (0 < U)
-  % return(c(ci_test,r_diff_ci))
-% }
-\subsubsection{Generalised Variable Test}
+\begin{lstlisting}[caption={Fisher's Z test (analytic approach)}]
+# Fishers Z test - no sim
+fz_nosim <- function(r1,r2,n1,n2,
+                     alpha = 0.05, sidedness=2,method = "pearson",
+                     power = TRUE) {
+  # Calculate Fisher's Z
+  z1     <- atanh(r1)
+  z2     <- atanh(r2)
+  
+  # Take difference
+  zdiff  <- z1-z2
+  
+  # Calculate standard error and test statistic
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  
+  # Optionally return p-value for observing diff at least this large under H0
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  if (power == FALSE) return("p" = z_p)
+  z_ref   <- qnorm(1-alpha/sidedness)
+  z_power <- 1-pnorm(z_ref - abs(z_test))
+  return(z_power)
+}
+\end{lstlisting}
 
-The GVT test involves tranformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value.  Krishnamoorthy and Lee, Kazemi and Jafari.
-% gtv_r <- function(a,b,M=1e4,method = "pearson") {
-  % # Two samples
-  % n1 <- nrow(a)
-  % n2 <- nrow(b)
-  
-  % # Step 1: Compute sample correlation coefficients
-  % r1 <- cor(a,method = method)[2,1]
-  % r2 <- cor(b,method = method)[2,1]
-  % r  <- c(r1,r2)
-  
-  % # Step 2: Generate random numbers
-  % V2     <- matrix(data=0, nrow = M, ncol = 2)
-  % V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
-  % V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
-  
-  % W2     <- matrix(data=0, nrow = M, ncol = 2)
-  % W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
-  % W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
-  
-  % Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
-  
-  % # Compute test statistic
-  % rstar <- r/sqrt(1-r^2)
-  % top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
-  % G     <- top / sqrt( top^2 + V2 )
-  
-  % # Compute p value
-  % Grho <- G[,1] - G[,2];
-  % p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
-  % return(p)
-% }
-
-\subsubsection{Signed log-likelihood ratio test}
-The signed log likelihood ratio test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods. Krishnamoorthy and Lee, Kazemi and Jafari.
-% # SIgned Log-likelihood Ratio test (an 'unmodified' version of test described in Kazemi and Jafari / DiCiccio)
-% slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
-  % # Two samples
-  % n  <- c(nrow(a),nrow(b))
-  
-  % # Step 1: Compute sample correlation coefficients
-  % r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-  % z  <- atanh(r)
-  % rf <- tanh(mean(z))
-  
-  % slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
-  % p    <- 2 * (1 - pnorm(abs(slr))); 
-  % return(p)
-% }
-
-
-\subsubsection{Permutation test}
-The permutation test is a non-parametric approach which compares the absolute difference of the Z-transformed sample correlations with correlations from a series of group membership permutations using the sample rank orders as values.
-% pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
-% ### WAIT! Don't do this as a f-ing vector--- just single, and return test
-% # Then treat as per other tests--- do similar refactoring of GTV
-% # Based on Efron and Tibshirani
-% n  <- c(nrow(a),nrow(b))
-% r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-% z  <- atanh(r)
-% # g <- c(rep("A",n[1]),rep("B",n[2]))
-% v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
-% rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
-% rtest <- numeric(0)
-% for (i in 1:M){
-  % permute <- cbind(v,rbinom(sum(n),1,0.5))
-  % rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
-               % cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
-  % zstar   <- atanh(rstar)
-  % rtest   <- c(rtest,
-               % abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
-  % } 
-% p <- mean(rtest)
-% return(p)
-% }
-
-\subsection{Simulation approach to calculating power}
+The above method is the de facto standard, as used for example in the Stata \code{power two correlations}.  However, other options for evaluating the difference in Pearson or Spearman correlations should be considered.  
+\\
+\subsection{Fisher's Z test (simulation approach)}
 Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
 
 So where in our formula we might plug in hypothesised sample coefficients of 0.2 and 0.5, in the simulation we use these values to represent the true correlations in the underlying population from which we draw our samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
+
+\begin{lstlisting}[caption={Fisher's Z test (simulation approach)}]
+# Fishers Z test
+fz <- function(a,b,sidedness=2,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+   
+  # Compute z-transformed sample correlation coefficients
+  z1     <- atanh(cor(a,method = method)[2,1])
+  z2     <- atanh(cor(b,method = method)[2,1])
+  zdiff  <- z1-z2
+  
+  # calculate standard error and test statistic
+  z_se   <- sqrt(1/(n1-3) + 1/(n2-3))
+  z_test <- zdiff/z_se
+  
+  # return p-value
+  z_p    <- sidedness*pnorm(-abs(z_test))
+  return(z_p)
+}
+\end{lstlisting}
+
+
+In addition to applying the Fisher Z test in a simulation context, alternate tests we identified and implemented for inclusion in our simulation study were as follows. 
+
+\subsection{Zou's confidence interval}
+Zou's confidence interval approach evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
+
+This approach \cite{Zou2007} expands on earlier work \cite{Olkin1995} to calculate a confidence interval for a difference in correlations using a so-called Simple Asymptotic approach, using what Zou refers to as a Modified Asymptotic method.  Both approaches draw heavily on Fisher's earlier work \cite{Fisher1990}.  The modified asymptotic method of Zou consists of first calculating confidence intervals for the two respective z-transformed correlations (transformed as per Fisher's method, described above):
+$$(l_z_k, u_z_k) = z_k \pm \sqrt{\frac{1}{n_k - 3}} \times \Phi_{\alpha/2}^{-1},\ \text{where} k \in \{1,2\}$$
+
+Then, the lower (L) and upper (U) bounds of the modified asymptotic confidence interval for the difference in correlations are calculated:
+$$L = r_1 - r_2 - \sqrt{(r_1 - \tanh(l_z_1))^2 + (\tanh(u_z_2)- r_2)^2}$$
+$$U = r_1 - r_2 + \sqrt{(\tanh(u_z_1) - r_1)^2 + (r_2 - \tanh(l_z_2))^2}$$
+
+If zero is within the bounds of the confidence interval for the difference, the test returns as 1, and otherwise 0.
+
+\begin{lstlisting}[caption={Zou's confidence interval}]
+zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
+  # From Zou (2007) and used in Cocor (note typo for U in paper; should be '+')
+  #  However, really, this is equivalent to fz test for hypothesis testing purposes
+  
+  # compute z- transformed correlations and differences
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  zdiff  <- z[1]-z[2]
+  
+  # calculate standard error for respective z scores
+  n  <- c(nrow(a),nrow(b))
+  z_se   <- sqrt(1/(n-3))
+
+  # calculate reference threshold
+  z_ref  <- qnorm(1-alpha/sidedness)
+  
+  # calculate respective confidence intervals
+  ci_mat <- matrix(c(-1,-1,1,1),nrow = 2, ncol = 2, dimnames =list(c("Mz","Dz"),c("l","u")))
+  z_ci   <- z + ci_mat * z_se * z_ref
+  r_ci   <- tanh(z_ci)
+  
+  # calculate Zou's Modified Asymptoptic confidence interval for difference in correlations
+  L      <- r[1]-r[2] - sqrt((r[1]      - r_ci[1,1])^2 + (r_ci[2,2] - r[2]     )^2)
+  U      <- r[1]-r[2] + sqrt((r_ci[1,2] - r[1]     )^2 + (r[2]      - r_ci[2,1])^2)
+  r_diff_ci <- c(L,U)
+  
+  # return test value (0 or 1, however, in the power context this resolves to same outcome as p)
+  ci_test <- (L < 0) && (0 < U)
+  return(c(ci_test,r_diff_ci))
+}
+\end{lstlisting}
+
+
+
+\subsection{Generalised Variable Test}
+
+The generalised variable (GV) test involves transformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value \cite{Krishnamoorthy2014}. Synthesising two reported approaches \cite{Krishnamoorthy2007,Kazemi2016} this test was first implemented as an example by my supervisor Enes Makalic in a Matlab script, and subsequently adapted by myself as a function in R.  A compiled version using RCPP to leverage C++ routines for random number draws was suggested by my colleague Koen Simons, and adopted to improve the function's run time. However, this later version was not compatible with the parallelised simulation approach, and in this context the non-RCCP 'GVT-r' version was used.
+
+Given two bivariate normal samples $k\in\{1,2\}$, the sample correlation coefficients $r_k$ are used to estimate two respective quantities $r_k^* = \frac{r_k}{\sqrt(1-r_k^2)}$, and the generalised variables $G_{\rho}_k}$:
+$$G_{\rho}_k} = \frac{r_k^*\sqrt{W_k} - U_k}{\sqrt{(r_k^*\sqrt(W_k) - U_k)^2 + V_k}}$$
+where,
+$$U_k \sim N(0,1) ,\ V_k \sim \chi_{n_k - 1}^2 ,\ \text{and} \ W_k \sim \chi_{n_k-2}^2$$
+A p-value using the GV test is calculated as twice the value of the smaller of two quantities: the proportion of differences in $G_{\rho}_k}$ less than 0, and the proportion greater than 0.
+
+\begin{lstlisting}[caption={GV test (R version)}]
+gvt_r <- function(a,b,M=1e4,method = "pearson") {
+  # Two samples
+  n1 <- nrow(a)
+  n2 <- nrow(b)
+  
+  # Compute sample correlation coefficients
+  r1 <- cor(a,method = method)[2,1]
+  r2 <- cor(b,method = method)[2,1]
+  r  <- c(r1,r2)
+  
+  # Generate random numbers
+  V2     <- matrix(data=0, nrow = M, ncol = 2)
+  V2[,1] <- rchisq(M, df = n1-1, ncp = 1)
+  V2[,2] <- rchisq(M, df = n2-1, ncp = 1)
+  
+  W2     <- matrix(data=0, nrow = M, ncol = 2)
+  W2[,1] <- rchisq(M, df = n1-2, ncp = 1)
+  W2[,2] <- rchisq(M, df = n2-2, ncp = 1)
+  
+  Z <-matrix(data = rnorm(2*M), nrow=M, ncol = 2)
+  
+  # Compute test statistic
+  rstar <- r/sqrt(1-r^2)
+  top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
+  G     <- top / sqrt( top^2 + V2 )
+  
+  # Compute p value
+  Grho <- G[,1] - G[,2];
+  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  return(p)
+}
+\end{lstlisting}
+
+\subsection{Signed log-likelihood ratio test}
+The signed log likelihood ratio (SLR) test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods.  The test here is a partial implementation of a recently reported modified signed log-likelihood ratio (MSLR) test  for differences in two bivariate normal correlations \cite{Kazemi2016}. The SLR and MSLR tests are well established general hypothesis tests \cite{Barndorff1986,Barndorff1991,Diciccio2001,Krishnamoorthy2014}, the novelty in Kazemi and Jafari's approach being the applied context of difference in correlations. However, we (myself, nor my supervisors) were unable to successfully replicate the 'modified' portion of Kazemi and Jafari's reported algorithm.  Due to time constraints, and noting that the 'unmodified' SLR test appeared to return p-values similar to the other hypothesis tests it was decided that inclusion of the SLR test would be a valid option to consider.
+
+\begin{lstlisting}[caption={Signed log-likelihood ratio test}]
+slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+  # Signed Log-likelihood Ratio test (an 'unmodified' version of test 
+  # described in Krishnamoorthy and Lee, Kazemi and Jafari , DiCiccio etc)
+  # Two samples
+  n  <- c(nrow(a),nrow(b))
+  
+  # Compute z-transformed sample correlation coefficients
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  
+  # Calculate average z as a plug in value
+  rf <- tanh(mean(z))
+  
+  # calcaulte SLR
+  slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
+  
+  # return p-value
+  p    <- 2 * (1 - pnorm(abs(slr))); 
+  return(p)
+}
+\end{lstlisting}
+
+\subsection{Permutation test}
+The permutation test is a non-parametric approach which compares the absolute 
+difference of the Z-transformed sample correlations with those using correlations 
+from a series of group membership permutations using the sample rank orders as 
+values.  Under a hypothesis of no difference in correlation, those differences arising from permutations would be assumed to be equally likely as those observed, or anticipated to be observed \cite{Efron1993}.  Across a series of $M$ permutations (in this study, 10,000), a $p$-value is calculated as the proportion of permutation derived absolute differences (($\abs(z_{MZ}^* - z_{DZ}^*)$)) of greater magnitude than $\abs(z_{MZ} - z_{DZ})$.
+
+\begin{lstlisting}[caption={Permutation test}]
+pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
+  # Based on Efron and Tibshirani, 1993
+  # Store size, and calculate z-transformed correlations
+  n  <- c(nrow(a),nrow(b))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  
+  # Store rank-ordered vector representations, in one column
+  v  <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),
+              rank(rbind(a[,2],b[,2]),ties.method = "random"))
+  # label rows
+  rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
+  
+  # initial empty test vector
+  rtest <- numeric(0)
+  
+  # run M permutations (default is 10,000),
+  #  - returns test that absolute magnitude of difference
+  #    is at least as great as that of the input z-transformed corr. diff.
+  for (i in 1:M){
+    permute <- cbind(v,rbinom(sum(n),1,0.5))
+    rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
+                 cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
+    zstar   <- atanh(rstar)
+    rtest   <- c(rtest,
+                 abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
+    } 
+  
+  # return p-value: proportion of test results at least as large as obs'd
+  p <- mean(rtest)
+  return(p)
+}
+\end{lstlisting}
+
+A function was developed to undertake a single simulation of all of the above tests.  Each test used the same simulated population as source input for the simulation based tests, while the analytic Fisher Z test result was also returned for reference.
+
+\begin{lstlisting}[caption={Single run simulation code}]
+corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
+                    param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
+                    alpha = 0.05, sidedness = 2, test = c("fz","gtv","pt","slr","zou"),
+                    method ="pearson", lower.tri = FALSE) {
+  # cat("Parameters: ",rho[1],rho[2], n[1],n[2], param1a, param1b, param2a, param2b, distr, alpha, sidedness, method,"\n")
+  if(lower.tri==TRUE){
+    # only calculate lower matrix half when comparing across all correlation combinations
+    if(rho[1] < rho[2]) { 
+      return(NA)
+    }
+  }
+  results <- list()
+  if ("fz_nosim" %in% test) {
+    results[["fz_nosim"]] <- fz_ns_compiled(rho[1],rho[2],n[1],n[2], 
+                                      alpha = 0.05, sidedness = 2, method = method, power = FALSE)
+    if(length(test)==1) return(results)
+  }
+  require("simstudy")
+  a <- genCorGen(n[1], nvars = 2, params1 = param1a, params2 = param2a,  
+                dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
+                wide = TRUE)[,2:3]
+  b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
+                dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
+                wide = TRUE)[,2:3]
+  if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
+  if ("gtv"      %in% test) results[["gtv"]]      <- gtv(a,b) # uses rccp ; so elsewise compiled
+  if ("gtvr"     %in% test) results[["gtvr"]]      <- gtv_compiled(a,b) 
+  if ("pt"       %in% test) results[["pt"]]       <- pt_compiled(a,b)
+  if ("slr"      %in% test) results[["slr"]]      <- slr_compiled(a,b)
+  if ("zou"      %in% test) results[["zou"]]      <- zou_compiled(a,b)[1]
+  return(rbind(results[test]))
+}
+\end{lstlisting}
+
+\subsection{Simulation}
+
+\tdn{Explain the above code --- generate flexibly parameterised bivariate distribution, etc}
+
   
 \section{Feasability appraisal}
-% To undertake the simulations as planned for combinations of 
-% \begin{itemize}
-  % \item correlations at .05 intervals 
-  % \item exponentially increasing group sizes of 15 through 960
-  % \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
-  % \item two approaches to correlation measurement 
-  % \item across 6 tests
-  % \item with 1000 simulations per combination 
-% \end{itemize}
+To undertake the simulations as planned for combinations of 
+\begin{itemize}
+  \item correlations at .05 intervals 
+  \item exponentially increasing group sizes of 15 through 960
+  \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
+  \item two approaches to correlation measurement 
+  \item across 6 tests
+  \item with 1000 simulations per combination 
+\end{itemize}
 
 Briefly summarise timing tests
 \\

@@ -61,7 +61,7 @@
 % \usepackage{lmodern}% http://ctan.org/pkg/lm
 \usepackage{bm}
 \usepackage{tikz}
-
+\usepackage{listings}
 	
 %geometry for electronic version:
 	\usepackage[
@@ -163,22 +163,62 @@
   \newcommand*{\lcd}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
   \newcommand{\code}[1]{\texttt{#1}}
 % Custom Colours
-	\definecolor{farb1}{rgb}{27	 158 119 }
-	\definecolor{farb2}{rgb}{217 95	 2   }
-	\definecolor{farb3}{rgb}{117 112 179 }
-	\definecolor{farb4}{rgb}{231 41	 138 }
-	\definecolor{farb5}{rgb}{102 166 30  }
-	\definecolor{farb6}{rgb}{230 171 2   }
-	\definecolor{farb7}{rgb}{166 118 29  }
-	\definecolor{farb8}{rgb}{102 102 102 }
+	\definecolor{farb1}{rgb}{27,158,119}
+	\definecolor{farb2}{rgb}{217,95,2}
+	\definecolor{farb3}{rgb}{117,112,179}
+	\definecolor{farb4}{rgb}{231,41,138}
+	\definecolor{farb5}{rgb}{102,166,30}
+	\definecolor{farb6}{rgb}{230,171,2}
+	\definecolor{farb7}{rgb}{166,118,29}
+	\definecolor{farb8}{rgb}{102,102,102}
 
   \definecolor{rgr}{RGB}{28,144,153}
+  \definecolor{commentgreen}{RGB}{2,112,10}
   
 % Custom math operators
   \DeclareMathOperator\arctanh{arctanh}
+  \DeclareMathOperator\tanh{tanh}
   \DeclareMathOperator\ci{CI}
   \DeclareMathOperator\abs{abs}
   \DeclareMathOperator\power{power}
+
+% Custom R code settings
+\lstset{language=R,
+    basicstyle=\linespread{0.6}\small\ttfamily,
+    frame=tb,
+    stringstyle=\color{commentgreen},
+    % otherkeywords={0,1,2,3,4,5,6,7,8,9},
+    morekeywords={TRUE,FALSE},
+    deletekeywords={data,frame,length,as,character},
+    keywordstyle=\color{blue},
+    commentstyle=\color{commentgreen},
+}
+% \lstset{ %
+  % language=R,                % the language of the code
+  % basicstyle=\footnotesize,           % the size of the fonts that are used for the code
+  % numbers=left,                   % where to put the line-numbers
+  % numberstyle=\tiny\color{gray},  % the style that is used for the line-numbers
+  % stepnumber=2,                   % the step between two line-numbers. If it's 1, each line 
+                                  % % will be numbered
+  % numbersep=5pt,                  % how far the line-numbers are from the code
+  % backgroundcolor=\color{white},      % choose the background color. You must add \usepackage{color}
+  % showspaces=false,               % show spaces adding particular underscores
+  % showstringspaces=false,         % underline spaces within strings
+  % showtabs=false,                 % show tabs within strings adding particular underscores
+  % frame=single,                   % adds a frame around the code
+  % rulecolor=\color{black},        % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. commens (green here))
+  % tabsize=2,                      % sets default tabsize to 2 spaces
+  % captionpos=b,                   % sets the caption-position to bottom
+  % breaklines=true,                % sets automatic line breaking
+  % breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+  % title=\lstname,                   % show the filename of files included with \lstinputlisting;
+                                  % % also try caption instead of title
+  % keywordstyle=\color{blue},          % keyword style
+  % commentstyle=\color{dkgreen},       % comment style
+  % stringstyle=\color{mauve},         % string literal style
+  % escapeinside={\%*}{*)},            % if you want to add a comment within your code
+% }  
+  
   
 %establish correct inset  style for appendices	
 \makeatletter
