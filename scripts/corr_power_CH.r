@@ -642,10 +642,11 @@ cl <- makeCluster(cores)
 clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
                      'corr_diff_test',
                      'corr_power_compiled', 
-                     'min'))
+                     'dt_mouse1',
+                     'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
 system.time(
-  parLapply(cl, 1:nrow(min), function(x) { 
-    res <-  with(min, c(id = x, 
+  parLapply(cl, 1:nrow(dt_mouse1), function(x) { 
+    return <-  with(dt_mouse1, c(id = x, 
                         method = as.character(method[x]),
                         dist   = dist[x],
                         p1     = p1[x],
@@ -676,20 +677,20 @@ system.time(
    # insert simulation result to as database row 
     res <- dbSendQuery(pg.RPostgres, 
                 "INSERT INTO corrx VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
-                params=list(simx       =as.integer(res["id"]), 
-                            method     =res["method"],
-                            dist       =res["dist"],
-                            p1         =as.numeric(res["p1"]),
-                            p2         =as.numeric(res["p2"]),
-                            n1         =as.integer(res["n1"]),
-                            n2         =as.integer(res["n2"]),
-                            rho1       =as.numeric(res["rho1"]),
-                            rho2       =as.numeric(res["rho2"]),
-                            fz_nosim   =as.numeric(res["fz_nosim"]),
-                            fz         =as.numeric(res["fz"]),
-                            gtvr       =as.numeric(res["gtvr"]),
-                            slr        =as.numeric(res["slr"]),
-                            zou        =as.numeric(res["zou"])
+                params=list(as.integer(return["id"]), 
+                            as.character(return["method"]),
+                            as.character(return["dist"]),
+                            as.numeric(return["p1"]),
+                            as.numeric(return["p2"]),
+                            as.integer(return["n1"]),
+                            as.integer(return["n2"]),
+                            as.numeric(return["rho1"]),
+                            as.numeric(return["rho2"]),
+                            as.numeric(return["fz_nosim"]),
+                            as.numeric(return["fz"]),
+                            as.numeric(return["gtvr"]),
+                            as.numeric(return["slr"]),
+                            as.numeric(return["zou"])
                 ))
     # clean up and release connection
     dbClearResult(res)
