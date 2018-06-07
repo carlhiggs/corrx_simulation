@@ -608,8 +608,11 @@ dt_mouse1 <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
 #   - You have Postgresql installed
 #   - You have created a database
 #   - Your connection and database settings are specified in a config.yml file in working dir
+
+# create simulation combination running list
 dt_mouse1 <-  dt[,c("method","dist","p1","p2","n1","n2","rho1","rho2")]
 
+# open Postgres database (db) connection
 pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
                           dbname   = config::get("sql")$connection$dbname,
                           host     = config::get("sql")$connection$host,
@@ -617,6 +620,7 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           user     = config::get("sql")$connection$user,
                           password = config::get("sql")$connection$password)
 
+# Create table to hold results
 create_table <- paste0("CREATE TABLE corrx (
    simx         integer PRIMARY KEY,
    method       varchar(8),
@@ -633,19 +637,25 @@ create_table <- paste0("CREATE TABLE corrx (
    slr          double precision,
    zou          double precision);")
 res <- dbSendQuery(pg.RPostgres, create_table)
+
+# Clean up and close database connection
 dbClearResult(res)
 dbDisconnect(pg.RPostgres)
 
-
+# Prepare for parallel processing using all available cores
 cores <- detectCores(logical = FALSE)
 cl <- makeCluster(cores)
+# Export required functions and data to cluster workers
 clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
                      'corr_diff_test',
                      'corr_power_compiled', 
                      'dt_mouse1',
                      'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
+
+# Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
 system.time(
   parLapply(cl, 1:nrow(dt_mouse1), function(x) { 
+    # run simulation for single row
     return <-  with(dt_mouse1, c(id = x, 
                         method = as.character(method[x]),
                         dist   = dist[x],
@@ -668,6 +678,7 @@ system.time(
                         method=as.character(method[x]),
                         nsims = 1000,
                         power_only = TRUE))) 
+    # open Postgres connection
     pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
                               dbname   = config::get("sql")$connection$dbname,
                               host     = config::get("sql")$connection$host,
@@ -696,19 +707,22 @@ system.time(
     dbClearResult(res)
     dbDisconnect(pg.RPostgres)
     }))
-stopCluster(cl)
-# first run of 20 rows
-# user  system elapsed 
-# 1.13    0.53  435.80
-# second run of twenty rows, storing parameters as parLapply is not guaranteed to return ordered results
-# user  system elapsed 
-# 0.80    0.47  505.64 
-mice <- data.table()
-for(x in 1:nrow(dt_mouse1)) {
-  mice <- rbind(mice,as.data.table(t(dt_mouse2[[x]])))
-}
 
-save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_mice_20180531.RData")
+# Conclude parallel processing and free cores
+stopCluster(cl)
+
+## Get processed data
+# Open Postgres connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+# Fetch results
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx")
+corrx <- dbFetch(res)
+dbClearResult(res)
 
 ### scratch code for getting results processed from environment on work computer
 # tmp.env <- new.env() # create a temporary environment
