@@ -25,16 +25,14 @@
 
 # may have to set working directory
 setwd("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts")
-require(compiler)
-require(Rcpp)
-require("simstudy")
-sourceCpp('test.cpp')
-require(data.table)
-require(ggplot2)
-require(parallel)
-require(config)
-require(RPostgres)
-library(DBI)  
+require("simstudy") # simstudy is used to generate bivariate data
+require(compiler)   # for byte code compilation
+require(Rcpp)       # for alternate compilation approach, using C++
+sourceCpp('test.cpp') # a C++ script, with more efficient number generators
+require(data.table) # Results are stored using data.table
+require(parallel) # For parallel processing
+require(DBI)  # used to connext to Postgresql using RPostgres
+require(config) # used to access config.yml file with Postgres connection parameters
 
 # to deploy R power app (code elsewhere
 
@@ -621,7 +619,7 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           password = config::get("sql")$connection$password)
 
 # Create table to hold results
-create_table <- paste0("CREATE TABLE corrx (
+create_table <- paste0("CREATE TABLE corrx_1k (
    simx         integer PRIMARY KEY,
    method       varchar(8),
    dist         varchar(8),
@@ -687,7 +685,7 @@ system.time(
                               password = config::get("sql")$connection$password)
    # insert simulation result to as database row 
     res <- dbSendQuery(pg.RPostgres, 
-                "INSERT INTO corrx VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
+                "INSERT INTO corrx_1k VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
                 params=list(as.integer(return["id"]), 
                             as.character(return["method"]),
                             as.character(return["dist"]),
@@ -708,8 +706,22 @@ system.time(
     dbDisconnect(pg.RPostgres)
     }))
 
+# Full process (parallel with sql) was started
+# on work computer at about 10:01 on Thurs 6 June 2011
+
 # Conclude parallel processing and free cores
 stopCluster(cl)
+
+# # At work on 8 core machine it took 50.78 seconds to process 10 rows using parallel and sql approach for 1000 sims
+# user  system elapsed 
+# 0.00    0.00   50.78 
+
+# So, that's about 5 secs/row
+# 106134 * 5 / 60 / 60 / 24 = about 6.142014 days 
+#
+# I expect results will be complete by next Thursday all things equal
+# Except, they won't be - I need to do heavy processing next week at work
+# so, that will slow things down.
 
 ## Get processed data
 # Open Postgres connection
@@ -720,9 +732,18 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           user     = config::get("sql")$connection$user,
                           password = config::get("sql")$connection$password)
 # Fetch results
-res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx")
-corrx <- dbFetch(res)
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_1k")
+corrx_1k <- dbFetch(res)
+
+# clean up and close connection
 dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+
+# add in extra summary vars
+ccorrx_1k[,("ratio"):=n1/n2,by=1:nrow(corrx_1k)]
+ccorrx_1k[,("n"):=n1+n2,by=1:nrow(corrx_1k)]
+ccorrx_1k[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_1k)]
+
 
 ### scratch code for getting results processed from environment on work computer
 # tmp.env <- new.env() # create a temporary environment
