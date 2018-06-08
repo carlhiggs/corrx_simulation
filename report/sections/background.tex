@@ -23,16 +23,14 @@
 \tdn{Note: This, along with much else, is not written or structured in the way I intend to submit it.  Things are a sketch at the moment, and will be filled in from methods/results outwards.  The images in results section represent the main results, and the key comparisons provoking discussion}
 \section{Background}
 %% Intro
-The classic twin study exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits.  The calculation and comparison of Pearson correlations across the two twin groups is a routine preliminary step undertaken by researchers in this field.  However, a range of factors can impact on researcher's ability to detect a true effect given data.  This thesis reports on a simulation-based power analysis for the detection of differences in correlations between identical and non-identical twin pairs under a range of scenarios, and the associated development of R functions and an applied interactive power calculator.  These tools address an identified absence of tools for this fundamental step in the twin study context.
+
+The classic twin study exploits the differing degrees of genetic relatedness in identical (\mz) and non-identical (\dz) twins in order to draw inferences on the heritability of traits.  In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to shared genetic effects.  The calculation and comparison of Pearson correlations across the two twin groups is a routine preliminary step undertaken by researchers in this field.  However, a range of factors can impact on researchers' ability to detect a true effect given data.  
+This thesis reports on a simulation-based power analysis for the detection of differences in correlations between \mz and \dz twin pairs under a range of scenarios, and the associated development of R functions and an applied interactive power calculator.  These tools address an identified absence of tools for this fundamental step in the twin study context.
+ 
+In this chapter we will first define key genetic concepts, how these are exploited by the classic twin study, and some of the assumptions which are relied upon in order to make such inferences.  Then, the concept of power analysis and related statistical concepts will be defined in order to provide background, justification and notation for the following chapters. 
  
 \subsection{Twins and the classic twin study}
-Identical twins arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings. 
-
-The classic twin study can be used to estimate the proportion of variation in traits which may be attributable to genetics, or heritability.  
-
-The estimates of heritability are conditional on key assumptions.  This chapter will define key genetic concepts, how these are exploited by the classic twin study to estimate the role of heridity for particular traits, and the assumptions which are relied upon in order to make such inferences.
-
-The classic twin study exploits the differing degrees of genetic relatedness in identical and non-identical twins in order to draw inferences on the heritability of traits.  In broad terms, heritability is the degree to which variation in a trait or phenotype, such as propensity to gain body weight, or become a centenarian, can be attributed to genetics.
+Identical twins (\mz, MZ) arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins (\dz, DZ) arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings. The classic twin study is used to estimate the proportion of variation in traits which may be attributable to genetics, or heritability.  Estimates of heritability are conditional on key assumptions. 
 
 The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics.  This allows us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
 
@@ -81,58 +79,25 @@ $$z = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r}$$
 \end{figure}
 
 
+\section{Power analysis and hypothesis testing} 
+Power analysis involves a compromise between type 1 ($\alpha$) and type 2 ($\beta$) error thresholds, respectively representing the expected proportion of null hypotheses to be rejected when true and not rejected when false  \cite{Freiman1978}.  These could be chosen to suit the requirements of a particular study, but for historical reasons the respective values chosen tend to be 5\% ($\alpha = .05$) and 20\% ($\beta = 0.2$)} \cite{Cohen1988}.  
+\subsection{Significance testing and controversy}
+There are controversies around the choice of such values, relating to what it means to deem something as 'statistically significant', a synonym for $p < \alpha$. A recent commentary suggested 'redefining' significance as $p < 0.005$ \cite{Benjamin2018}; other authors in a biostatistics context have advised that reporting of exact p-values is in general preferable to dichotomisation at a somewhat arbitrary $\alpha$ level, and that there is justification for use in some contexts of confidence intervals based on $\alpha=0.1$ \cite{Clayton1993}.  These are epistemological questions, detailed discussion of which is beyond the scope of this research project.  However it is important to acknowledge that the present study is concerned with an applied statistical question (power to detect differences in correlations in groups with distinct genetic relatedness) with strong historical links to the hypothesis testing paradigm.  
+\subsection{Importance of power analysis}
+Regardless of debates surrounding the use of hypothesis testing and thresholding, the question of power is one of academic rigour with moral implications: if a study is to be conducted with support through significant contribution of public resources in the way of grant funding, there is an ethical imperative to consider $a \ priori$ whether the experiment in question can anticipate production of meaningful evidence \cite{Freiman1978,Cohen1988}.  Power analysis aims to answer this question through consideration of the sample size required to detect an effect of such magnitude to be considered meaningful given the specified values of $\alpha$.  
+\subsection{Calculation of power}
+The probability of observing a true effect, the power of a statistical test, is equal to the proportion of null hypotheses rejected when false; that is, $1 - \beta$ \cite{Cohen1988}.  Hence, the choice of $\beta$ will indicate directly the intent for power: if in planning a twin study we agree an appropriate value for $\beta$ is 0.2, then we are saying that our power to detect a difference of the required magnitude between identical and non-identical twins should be at least as high as 0.8, or 80\%. The ability to achieve this power depends on sample size, the ratio of MZ to DZ twins, the magnitude of the respective correlations themselves, and the degree to which our assumptions of bivariate normality hold. The robustness of the choice of test method employed to departures from distributional assumptions is also an important consideration.
 
-
-\subsection{Power analysis}
-
-Power is the probability of detecting a true effect, a key consideration when planning a study.  In the context of differences in correlations undertaken in a twin study, we will expect a range of possible parameters to influence our power: the sample size; the ratio of MZ to DZ twins; how we have defined what constitutes a meaningful difference; the magnitude of the respective correlations; how these are measured.
-
-Through my research project, I planned and carried out a power analysis for the detection of differences in correlations between identical and non-identical twin pairs investigating the influence of such factors.  
-
-
-alpha  expected proportion of null hypotheses to be rejected when true 
-type 1 error
-the classic '0.05' (5\%)\; but 0.1 or any other number may also be chosen 
- expected proportion of null hypotheses not rejected when false 
-      \item type 2 error
-      \item 0.2 (20\%) is a classic choice; gunning for power of \(1 - \beta = 80\)
-      
-      
- \subsubsection{subsub section title}
- 
+\section{DETRITUS}
+\tdn{sort this out!}
 The ratio of MZ to DZ twins is an important parameter to consider with regard to power to estimate variance components in twin studies, involving a trade off between power to detect additive genetic ($>1:1$) or shared environmental effects ($<1:1$) \cite{Visscher2008}.  Such effects may be the main objects of interest in contemporary studies when planning a study, and power calculators such as that of Verhulst \cite{Verhulst2017} specifically cater to these concerns.  However
 
 
+Through a review of the literature relating to twins, correlations, power and simulations was undertaken to inform our approach.  Results of a search for abstracts relating to power analyses concerned with all these themes from a series of structured searches were limited.  Tracing back references cited in the article which inspired this research project \cite{Verhulst2017}, a number of key historical texts were identified and informed the preceding method section: \cite{David1938} on correlation and hypothesis tests, \cite{Falconer1960} on heredity and correlation,  \cite{Cohen1988} on power for differences in correlation, 
+
+We identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in groups.  The Spearman correlation is a non-parametric alternative to Pearson's, using the same formula on the rank ordered variables rather than their raw values.
 
 
-    % \begin{center}
-      % % \includegraphics{../figs/r_to_z.pdf}
-    % \begin{figure}[!htb]
-        % \minipage{0.3\textwidth}
-          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_mz}.pdf}
-        % \endminipage\hfill
-        % \minipage{0.39\textwidth}
-           % \[\big(x_{z \lcd 1} , x_{z \lcd 2}\big) \sim \mathcal{N}\big(\bm{\mu},\,\Sigma \big) \]
-           % \[r_z = \hat{\rho}_z = \frac{Cov(x_{z \lcd 1} , x_{z \lcd 2})}{\hat{\sigma}_{x_{z \lcd 1}} \hat{\sigma}_{x_{z \lcd 2}}} \]
-           % \[\hat{\delta_r} = r_{MZ} - r_{DZ}\]
-           % \[\text{heritability} = 2\delta_{\rho}\]
-        % \endminipage\hfill
-        % \minipage{0.3\textwidth}%
-          % \includegraphics[width=\linewidth]{{../figs/twin_images/my_twin_drawing_dz}.pdf}
-        % \endminipage
-    % \end{figure}
-    % \begin{table}\centering
-    % \begin{tabular}{rcc}
-        % \toprule
-        % \textbf{Trait etiology} &	\multicolumn{2}{c}{\textbf{Correlation in twin pairs}} \\
-        % \cmidrule(lr){2-3} 
-         % & \textbf{Monozygotic (MZ)} & \textbf{Dizogotic (DZ)}				\\
-        % \midrule										
-        % genetic         &$r_{MZ} = 1$& $r_{DZ} = 0.5$       \\
-        % shared env.     &$r_{MZ} = 1$& $r_{DZ} = 1$         \\  
-        % individual env. &$r_{MZ} = 0$& $r_{DZ} = 0$         \\  
-        % combination     &$0 < r_{MZ} < 1$& $0 < r_{DZ} < 1$ \\
-         % \bottomrule 
-    % \end{tabular}
-    % \end{table}
-    % \end{center}
+Fisher's Z transformation, the inverse hyperbolic tangent, maps the correlation coefficient from a domain of -1 through 1 to negative infinity through positive infinity, with approximate normal distribution.  This classic formulation is still used in functions found in statistical packages such as $R$ and Stata \cite{R2018,StataCorp2013}.
+
+David compared the use of the z-transformation and other methods such as the Lagrangian four-point formula for use in hypothesis tests concerning $r$, concluding that the z-transformation should be appropriate for most purposes since little difference was observed between the two methods' results given sample sizes greater than 25 \cite{David1938}.

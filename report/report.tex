@@ -39,6 +39,7 @@
 	% \setcitestyle{authoryear,open={(},close={)}}
 	% \bibliographystyle{spmpsci.bst} 
 	\usepackage[numbers]{natbib}
+  \bibliographystyle{unsrt_spbasic} 
 	
 % Fonts, lists, symbols and matrices
   \usepackage[T1]{fontenc}
@@ -155,6 +156,7 @@
 
 
 %Custom commands
+\newcommand*{\doi}[1]{\href{http://dx.doi.org/#1}{doi: #1}}
 \renewcommand{\vec}[1]{\bm{#1}}	
 	\newcommand{\tdn}{\todo[inline, color=green!40]}
   % \newcommand{\E}{\mathrm{E}}
@@ -162,6 +164,10 @@
   \newcommand{\Cov}{\mathrm{Cov}}
   \newcommand*{\lcd}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
   \newcommand{\code}[1]{\texttt{#1}}
+  \newcommand{\Mz}{Monozygotic}
+  \newcommand{\mz}{monozygotic}
+  \newcommand{\Dz}{Dizygotic}
+  \newcommand{\dz}{dizygotic}
 % Custom Colours
 	\definecolor{farb1}{rgb}{27,158,119}
 	\definecolor{farb2}{rgb}{217,95,2}
@@ -273,9 +279,12 @@
 		Master of Biostatistics\\
 		  \\
 		Supervisors: \\
-		Enes Makalic \\
-		Elasma Milanzi \\
-		Katrina Scurrah
+		Dr Enes Makalic \\
+		Dr Katrina Scurrah \\
+    \\
+		with additional advice and support from Dr Elasma Milanzi 
+    \\
+    \\
 		 }}%
 
 

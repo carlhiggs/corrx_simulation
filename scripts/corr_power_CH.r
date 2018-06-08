@@ -569,6 +569,10 @@ stopCluster(cl)
 # I expect results will be complete by next Thursday all things equal
 # Except, they won't be - I need to do heavy processing next week at work
 # so, that will slow things down.
+#
+# An update - at 11:15 am on Fri 7 June, 7852 results had been processed
+# so, about 7500 in 12 hours; about 15000/day
+# We need about 100,000 processed - so maybe that's about 7 days
 
 
 ## 10,000 simulations run
@@ -674,6 +678,10 @@ system.time(
 stopCluster(cl)
 
 ## On core2duo home processor, 634 results at 20180606 11:03 (maybe over half hour??)
+# At about 11:10 the next day, the result was at 12381 
+# So, about 12000 in 12 hours; or about 1000/hour
+# We need to process about 100,000; so would take about 100 hours --- a bit over 4 days
+## However, most of this time the computer wasn't being used; with computer usage lets guesstimate 6 days.
 
 ## Get processed data
 ## 100 Simulations
