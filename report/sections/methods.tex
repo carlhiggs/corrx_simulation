@@ -5,7 +5,9 @@
 \addcontentsline{toc}{chapter}{2. Methods}
 
 The preceding chapter summarised a review of the literature relating to twins, correlations, power and simulations undertaken to inform our approach to analysis.  Through this review we identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in two groups. Important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  The $R$ programming environment was used for all analyses \cite{R2018}.
-
+\\
+\\
+\section{Hypothesis tests for difference in correlations}
 \subsection{Fisher's Z test (analytical approach)}
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference \cite{Fisher1990,David1938}
 $$\hat{\theta} = z_{MZ} - z_{DZ}$$
@@ -261,19 +263,23 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
                     param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
                     alpha = 0.05, sidedness = 2, test = c("fz","gtv","pt","slr","zou"),
                     method ="pearson", lower.tri = FALSE) {
-  # cat("Parameters: ",rho[1],rho[2], n[1],n[2], param1a, param1b, param2a, param2b, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
-    # only calculate lower matrix half when comparing across all correlation combinations
+    # optionally, only calculate results for lower matrix half 
+    #   when comparing across all correlation combinations
     if(rho[1] < rho[2]) { 
       return(NA)
     }
   }
+  # initialise empty results vector
   results <- list()
+  
+  # if requested, process analytical Fisher's Z
   if ("fz_nosim" %in% test) {
     results[["fz_nosim"]] <- fz_ns_compiled(rho[1],rho[2],n[1],n[2], 
                                       alpha = 0.05, sidedness = 2, method = method, power = FALSE)
     if(length(test)==1) return(results)
   }
+  # process selected hypothesis tests, each using same draw of simulated data
   require("simstudy")
   a <- genCorGen(n[1], nvars = 2, params1 = param1a, params2 = param2a,  
                 dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
@@ -291,7 +297,48 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
 }
 \end{lstlisting}
 
+The function uses the $R$ package \code{simstudy} function \code{genCorGen} to generate bivariate correlated data for the simulated MZ (group $a$ in the code above) and DZ (group $b$) twin pair samples \cite{simstudy2018}.  The choice of available distributions and parameterisations is normal($\mu,\sigma$), binomial($p$), Poisson(rate $\lambda$) gamma($\mu,\text{dispersion} k$), or uniform($min,max$).  In addition to specifying sample size, distribution and parameterisation, a correlation matrix may be specified.  
+\\
+
+%% Example distributions
+\begin{figure}[htb]
+  \centering        
+  \minipage{0.52\textwidth}%
+    \includegraphics[width=\linewidth]{{../figs/distx_normal_60_120}.pdf}
+    \caption{Example bivariate normal draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_norm}
+  \endminipage\hfill   
+  \medskip
+  \minipage{0.52\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/distx_gamma_mildskew_60_120}.pdf}
+    \caption{Example bivariate gamma ("mild skew") draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_gamma1}
+  \endminipage\hfill
+  \medskip
+  \minipage{0.52\textwidth}% 
+    \includegraphics[width=\linewidth]{{../figs/distx_gamma_extrskew_60_120}.pdf}
+    \caption{Example bivariate gamma ("extreme skew") draw with $\rho(0.2,0.5)$}
+    \label{fig:dist_gamma2}
+  \endminipage\hfill
+\end{figure} 
   
+\\
+Three distribution types were modelled in our simulation based power analysis, with example draws respectively depicted in Figures \ref{fig:dist_norm}, \ref{fig:dist_gamma1}, and \ref{fig:dist_gamma2}:
+\\
+\\
+1. In the case of bivariate normal data, under which our distributional assumptions are asymptotically met, this was specified with the two variable being standardised with mean $mu=zero$ and standard deviation $\sigma=1$:
+
+$$\boldsymbol\mu = \begin{pmatrix} 0 \\ 0 \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} 1 & \rho \\ \rho  & 1 \end{pmatrix}$$.  
+ 
+To constrast with the 'assumptions met' normal scenario, two non-normal distribution scenarios were also considered.
+\\
+\\
+2) A 'mild skew' scenario based on a gamma distribution with mean 1.5 and dispersion 0.09 (which the genCorGen function uses to inform shape and scale parameters for the distribution).  This parameterisation was chosen through experimentation with the intent to represent a mild departure from an assumed normal population distribution, with a slight positive skew.
+\\
+\\
+3) An 'extreme skew' scenario based on a gamma distribution with mean 1 and dispersion 5.  This results in an extreme positive skew to the distribution, analogous to that of biological processes where most observations will be clustered around a certain value, however some outliers may be extremely elevated.
+
+
 \section{Feasability appraisal}
 To undertake the simulations as planned for combinations of 
 \begin{itemize}
@@ -325,3 +372,34 @@ Required sample size to achieve 80% power
 \\  
 Difference to achieve 80% power
 
+\begin{lstlisting}[float=h,caption={Example inspection of simulation results in database, while parallel processing is occurring.},label={lst:corrx_sql}]
+corrx_twins=# SELECT COUNT(*) FROM corrx_100;
+ count
+-------
+ 21466
+(1 row)
+
+
+corrx_twins=# SELECT * FROM corrx_100 LIMIT 10;
+ simx  |  method  |  dist  | p1 | p2 | n1 | n2 | rho1 | rho2 |     fz_nosim      |  fz  | gtvr | slr  | zou
+-------+----------+--------+----+----+----+----+------+------+-------------------+------+------+------+------
+ 53068 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |             0.025 | 0.05 | 0.05 | 0.08 | 0.05
+     1 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |             0.025 | 0.04 | 0.05 | 0.05 | 0.04
+ 53069 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 | 0.148053783217244 | 0.08 | 0.09 | 0.14 | 0.07
+     2 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 | 0.148053783217244 | 0.13 | 0.14 | 0.14 | 0.13
+ 53070 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 | 0.316246390292816 | 0.34 | 0.35 | 0.39 | 0.34
+     3 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 | 0.316246390292816 | 0.29 | 0.31 | 0.35 | 0.29
+ 53071 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 | 0.479410022373891 | 0.55 | 0.57 | 0.63 | 0.55
+     4 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 | 0.479410022373891 | 0.54 | 0.56 | 0.59 | 0.54
+ 53072 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 | 0.618179428741035 | 0.63 | 0.63 | 0.66 | 0.63
+     5 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 | 0.618179428741035 | 0.64 | 0.65 | 0.67 | 0.64
+(10 rows)
+
+
+corrx_twins=# SELECT COUNT(*) FROM corrx_100;
+ count
+-------
+ 21511
+(1 row)
+
+\end{lstlisting}
