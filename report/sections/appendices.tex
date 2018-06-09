@@ -16,9 +16,31 @@
 \addcontentsline{toc}{part}{Appendices}
 
 \begin{appendix}
-% \chapter{title}
-% \label{unique_label} % Always give a unique label
-% \markboth{Appendix \thechapter}{}
+\chapter{Alternative approaches to correlation}
+\label{ch:alt} % Always give a unique label
+\markboth{Appendix \thechapter}{}
+
+The scope of the present study was restricted to Pearson and Spearman correlations, however alternative approaches to estimating correlation should be considered and for completeness the following are reviewed below: Kendall's $\tau$; partial correlations; and intra-class correlations.  The latter two are of particular relevance to twin studies, however were beyond scope for inclusion for this research project.
+
+\section{Kendall's $\tau$}
+An alternate non-parametric option is Kendall's $\tau$ (tau) which provides a summary measure of correlation based on concordance of trend across the sample: pairs are concordant if the product of consecutive rank pair differences is $> 0$, and discordant if this product is $< 0$;  the number of concordant ($C$) and discordant ($D$) pairs are tallied, and the difference ($C – D$) is the score $S$;   Kendall's $\tau_a$ is calculated as $\frac{S}{n(n-1)/2}$, while other variant formulas include further adjustment to account for ties \cite{Fieller1957,StataCorp2013}.
+
+\section{Partial correlation}
+Adjustment for additional covariates, say $x_3$, may be introduced resulting in what is known as a partial correlation representing the linear relationship between $x_1$ and $x_2$ adjusting for the  effects of $x_3$ \cite{Fisher1990}. An elegant computational approach to calculating partial correlations drawing on the output of multiple regression analysis using standard software packages uses the test statistic of interest $t = \frac{b}{se}$, the sample size $n$, and number of covariates $k$ \cite{StataCorp2013}.  Using the example where we are interested in the partial correlation of $x_1$ (dependent variable in our regression model) and $x_2$ adjusting for the  effects of $u_3$, or $\rho_{x_1 x_2 \cdot x_3}$, where $k = 2$:
+
+$$\rho_{x_1 x_2 \cdot x_3} = \frac{t_{x_{2}}}{\sqrt{t_{x_{2}}^2 + n - k}}$$
+
+\section{Intra-class correlations}
+The correlation approaches described above may be considered to be inter-class correlations: in the twin context, this amounts to looking at variable(s) pertaining to a set of (arbitrary) first members of MZ twins, and comparing with the remaining MZ twins.  This approach overlooks the paired nature of twin data.  In contrast, intra-class correlations (ICCs) draw upon within-pair pooled mean and standard deviation \cite{Fisher1990}.  If we refer to twin membership using the subscript $j$, and let $n$ be number of twin pairs in our sample:
+
+\begin{align*}
+\bar{x} &= \frac{1}{2n}\sum_{i=1}^{n} x_{ij}+x_{ij+1}  \\
+s^2 &= \frac{1}{2n}\sum_{i=1}^{n} (x_{ij}-\bar{x})^2+(x_{ij+1}-\bar{x})^2  \\
+r_{\text{ICC}} &= \frac{1}{ns^2}\sum_{i=1}^{n}  (x_{ij}-\bar{x})(x_{ij+1}-\bar{x})
+\end{align*}
+
+The above is considered a more accurate approach to correlation in contexts such as those of twin pairs, which do not have a natural ordering \cite{Fisher1990}.  A number of approaches to statistical modelling can be taken to account for the paired twin data structure \cite{Carlin2005}; a frequently used approach involves the calculation of ICCs for both MZ and DZ twin pairs through use of mixed effects modelling.  Calculated in this way,  $r_{\text{ICC}}$ represents the estimated ratio of between pair variation in a phenotype to total variation; the degree to which $r_{\text{ICC:MZ}}$ is larger than $r_{\text{ICC:DZ}}$ can be inferred to relate to the shared genetic basis for variation in the phenotype \cite{Barrett2008}.
+
 \chapter{Annotated PubMed searches}
 \markboth{Appendix \thechapter}{}
 \label{ch:lit}

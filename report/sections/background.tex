@@ -31,11 +31,11 @@ In this chapter we first define key genetic concepts, how these are exploited by
  
 \section{The classic twin study and power}
 Identical twins (\mz, MZ) arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins (\dz, DZ) arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings.  The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics  \cite{Teare2011}.  Known as the classic twin study, this approach can help us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
-\\
-\\
-\tdn{Falconer,  heritability and difference in MZ and DZ; Paraphrase Visscher re heritability and the various sense of this; then ICC}
-\cite{Visscher2008b}
-In the context of genetics and kinship, Douglas Falconer outlined methods of using comparison of identical and non-identical twins for estimating heritability, and noted some of the assumptions that this involves \cite{Falconer1960}.
+% \\
+% \\
+\tdn{Falconer,  heritability and difference in MZ and DZ; Paraphrase Visscher re heritability and the various sense of this}
+% \cite{Visscher2008b}
+% In the context of genetics and kinship, Douglas Falconer outlined methods of using comparison of identical and non-identical twins for estimating heritability, and noted some of the assumptions that this involves \cite{Falconer1960}.
 
 \\
 \\
@@ -50,51 +50,54 @@ However, a routine preliminary step undertaken by researchers in this field is t
 \\
 In undertaking a twin study we make certain assumptions, understanding that these likely do not strictly hold in practice, but the key one for the purposes of this power analysis is that our data is approximately normally distributed.
 
-\section{Correlation}
-\subsection{historical and statistical background}
-The statistical treatment of correlation was popularised by Francis Galton.  In context of broad social interest in eugenics, Galton described methods which could be used to describe the 'co-relatededness' of variables sourced from closely related family members \cite{Galton1888,Galton1890}.  Karl Pearson was a keen follower of Galton's research, and writing in the context of inheritance and natural selection made use of 'Galton's function', describing it as a coefficient of correlation \cite{Pearson1895}.  This is the function popularly known today as the Pearson correlation coefficient, an index of linear change in one random variable as another changes \cite{Casella2002}.  
-% We use the Greek symbol rho ($\rho$) to denote the underlying population correlation which we hope to measure; estimate of $\rho$ based on a sample of observed data is denoted as $r$.
+\section{Correlation: Historical and statistical background}
+\subsection{Pearson product-moment correlation}
+The statistical treatment of correlation was popularised by Francis Galton.  In context of broad social interest in eugenics, Galton described methods which could be used to describe the 'co-relatededness' of variables sourced from closely related family members \cite{Galton1888,Galton1890}.  Karl Pearson was a keen follower of Galton's research, and writing in the context of inheritance and natural selection made use of 'Galton's function', describing it as a coefficient of correlation \cite{Pearson1895}.  Known today as the product-moment or Pearson correlation coefficient, the function is used to describe the magnitude and direction of linear change in one random variable as another changes \cite{Fisher1990,Casella2002,Diedenhofen2015}.  
 \\
 \\
-Inference based on Pearson correlation coefficient assumes bivariate normality.  That is, given two random variables $(x_1,x_2)$, we assume they have jointly normal probability distribution \cite{David1938}
+Inference based on the Pearson correlation coefficient assumes bivariate normality.  That is, given two random variables $(x_1,x_2)$, we assume they have jointly normal probability distribution \cite{David1938}
 $$p(x_1,x_2) =
-      \frac{1}{2 \pi  \sigma_{x}_{1} \sigma_{x}_{2} \sqrt{1-\rho^2}}
+      \frac{1}{2 \pi  \sigma_{x_1} \sigma_{x_2} \sqrt{1-\rho^2}}
       e^{-\frac{1}{2(1-\rho^2)}\left\{
-          \frac{(x_{1}-\mu_{X}_{1})^2}{\sigma_{X}_{1}^2} -
-          \frac{2\rho(x_{1}-\mu_{X}_{1})(x-\mu_{X}_{2})}{\sigma_{X}_{1} \sigma_{X}_{2}} +
-          \frac{(x_{2}-\mu_{X}_{2})^2}{\sigma_{X}_{2}^2} 
+          \frac{(x_{1}-\mu_{X_1})^2}{\sigma_{X_1}^2} -
+          \frac{2\rho(x_{1}-\mu_{X_1})(x-\mu_{X_2})}{\sigma_{X_1} \sigma_{X_2}} +
+          \frac{(x_{2}-\mu_{X_2})^2}{\sigma_{X_2}^2} 
         \right\}
       \right)$$
 % The bivariate normal distribution has mean $\mu$ and correlation $\Sigma$
 % $$\boldsymbol\mu = \begin{pmatrix} \mu_X \\ \mu_Y \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} \sigma_X^2 & \rho \sigma_X \sigma_Y \\ \rho \sigma_X \sigma_Y  & \sigma_Y^2 \end{pmatrix}$$
       
-The population correlation $\rho$ (rho) is the covariance,
-$$\Cov(x_1,x_2) =  \operatorname{E}[(x_1-\mu_X_1)(x_2-\mu_X_2)]$$
-divided by the product of the two variables' standard deviations $\sigma_X\sigma_Y$.  The estimate of $\rho$ based on a sample of observed data is denoted as $r$.
+The population correlation $\rho$ (rho) is the covariance $\Cov(x_1,x_2) =  \operatorname{E}[(x_1-\mu_{X_1})(x_2-\mu_{X_2})]$ divided by the product of the two variables' standard deviations $\sigma_X\sigma_Y$.  The estimate of $\rho$ based on a sample of observed data is denoted as $r$.
 
-$$r = \frac{\sum_{i=1}^{n} (x_{1}_{i} - \bar{x_1})(x_{2}_i - \bar{x_{2}})}{\sqrt{\sum_{i=1}^{n} (x_{1}_i - \bar{x_{1}})^2 \sum_{i=1}^{n} (x_{2}_i - \bar{x_{2}})^2}}$$
+$$r = \frac{\sum_{i=1}^n (x_{1_i} - \bar{x}_1)(x_{2_i} - \bar{x}_2)}{\sqrt{\sum_{i=1}^n (x_{1_i} - \bar{x}_1)^2 \sum_{i=1}^n (x_{2_i} - \bar{x}_2)^2}}$$
 \\
 \\
-\tdn{something about ICCs and partial correlations, and why i'm not considering these?}
-\\
-\\
+If the variables $\boldsymbol{x}$ are standardised using their respective sample means ${\bar{x}} = \frac{1}{n}\sum_{i=1}x_i$ and standard deviations $s = \frac{1}{\sqrt{n-1}}$ where $n$ is the sample size, as $u$
+$$u = \frac{1}{\sqrt{n-1}}(x_i - \bar{u}),$$
+then the standardised regression coefficient $b_1$ arising from the simple linear regression of $u_1 = b_0 + b_1 u_2$ is equal to the Pearson correlation \cite{Tu2012}.  
+
+\subsection{Spearman rank correlation}
+% Spearman correlation
+ In the case of data with outliers which violate our assumptions of bivariate non-normality, the non-parametric Spearman's correlation $r_s$ may be considered as an alternative to Pearson's: using the same formula for $r$, is is calculated using the rank order transformation of the variables rather than their raw values \cite{Fieller1957,StataCorp2013}. 
+
+\subsection{Alternative approaches to correlation}
+The scope of the present study was restricted to Pearson and Spearman correlations, however alternative approaches to estimating correlation should be considered and for completeness reviews of the following are included in appendix \ref{ch:alt}: Kendall's $\tau$; partial correlations; and intra-class correlations.  The latter two are of particular relevance to twin studies.
+
 \subsection{Inference on observed correlations}
-Ronald Fisher observed that a geometric transformation of the correlation coefficient using its inverse hyperbolic tangent could be used to approximate a normal distribution \cite{Fisher1915}.  This has the effect of mapping the distribution of correlation of coefficients from a domain of $(-1 < r < +1)$ to $(-\infty < z < +\infty)$, where the quantity $z$ refers to the Fisher's Z transformed correlation $r$. 
+Ronald Fisher observed that a geometric transformation of the correlation coefficient using its inverse hyperbolic tangent could be used to approximate a normal distribution \cite{Fisher1915}.  
 
 $$z = \arctanh(r) = \frac{1}{2} \log_e \frac{1+r}{1-r}$$
 
 \begin{figure}[htbp]
 \sidecaption[t]
 %\centering
-\fbox{\includegraphics[scale=1.4]{../figs/r_to_z.pdf}}
+\fbox{\includegraphics[scale=1.32]{../figs/r_to_z.pdf}}
 %\picplace{5.5cm}{2cm} % Give the correct figure height and width in cm
 \caption{Transformation of $r$ to $z$ using Fisher's method.}
 \label{fig:ztransform}       % Give a unique label
 \end{figure}
 
-\\
-
-Florence Nightingale David was a protege of Pearson's who suggested that she prepare a volume of numerically accurate tables and interpolated plots of the distribution of the sample correlation coefficient r given n and the population correlation rho which could act as a standard against which to judge approximations such as that of Fisher \cite{David1938}.  David compared the use of the z-transformation and other methods such as the Lagrangian four-point formula for use in hypothesis tests concerning $r$, concluding that the z-transformation should be appropriate for most purposes since little difference was observed between the two methods' results given sample sizes greater than 25 \cite{David1938}.  Being a simple and accurate approximation of the normal distribution, this transformation known as Fisher's Z is ubiquitous in statistical treatment of correlation coefficients, for example when seeking to compare their differences and is employed in functions found in contemporary statistical software packages such as $R$ and Stata \cite{R2018,StataCorp2013}.
+Fisher's Z transformation has the effect of mapping the distribution of correlation of coefficients from a domain of $(-1 < r < +1)$ to $(-\infty < z < +\infty)$, and is used for inferences on the Pearson correlation coefficient, as well as the rank-based and ICC varieties described above and in Appendix \ref{ch:alt} \cite{Fisher1990, Fieller1957, Barrett2008}.  Through a comparison of the use of the z-transformation with exact and other methods used in hypothesis tests concerning $r$, David concluded that the z-transformation should be appropriate for most purposes \cite{David1938}.  Being a simple and accurate approximation of the normal distribution, this transformation known as Fisher's Z is ubiquitous in statistical treatment of correlation coefficients, for example when seeking to compare their differences and is employed in functions found in contemporary statistical software packages such as $R$ and Stata \cite{R2018,StataCorp2013}.
 
 \\
 
@@ -107,16 +110,11 @@ Florence Nightingale David was a protege of Pearson's who suggested that she pre
 \label{fig:davidplot}       % Give a unique label
 \end{figure}
 
-\subsection{Alternative approaches to correlation}
-% Spearman correlation
-The Spearman correlation is a non-parametric alternative to Pearson's, using the same formula on the rank ordered variables rather than their raw values.
-
-
 \section{Power analysis and hypothesis testing} 
-Power analysis involves a compromise between type 1 ($\alpha$) and type 2 ($\beta$) error thresholds, respectively representing the expected proportion of null hypotheses to be rejected when true and not rejected when false  \cite{Freiman1978}.  These could be chosen to suit the requirements of a particular study, but for historical reasons the respective values chosen tend to be 5\% ($\alpha = .05$) and 20\% ($\beta = 0.2$)} \cite{Cohen1988}.  
+Power analysis involves a compromise between type 1 ($\alpha$) and type 2 ($\beta$) error thresholds, respectively representing the expected proportion of null hypotheses to be rejected when true and not rejected when false  \cite{Freiman1978}.  These could be chosen to suit the requirements of a particular study, but for historical reasons the respective values chosen tend to be 5\% ($\alpha = .05$) and 20\% ($\beta = 0.2$) \cite{Cohen1988}.  
 
 \subsection{Significance testing and controversy}
-There are controversies around the choice of such values, relating to what it means to deem something as 'statistically significant', a synonym for $p < \alpha$. A recent commentary suggested 'redefining' significance as $p < 0.005$ \cite{Benjamin2018}; other authors in a biostatistics context have advised that reporting of exact p-values is in general preferable to dichotomisation at a somewhat arbitrary $\alpha$ level, and that there is justification for use in some contexts of confidence intervals based on $\alpha=0.1$ \cite{Clayton1993}.  These are epistemological questions, detailed discussion of which is beyond the scope of this research project.  However it is important to acknowledge that the present study is concerned with an applied statistical question (power to detect differences in correlations in groups with distinct genetic relatedness) with strong historical links to the hypothesis testing paradigm.  
+There are controversies around the choice of such values, relating to what it means to deem something as 'statistically significant', a synonym for $p < \alpha$. A recent commentary suggested redefining significance as $p < 0.005$ \cite{Benjamin2018}; other authors writing in a biostatistics context have advised reporting of exact p-values to be prefered in general to dichotomisation at a somewhat arbitrary $\alpha$ level, and that there is justification for use in some contexts of confidence intervals based on $\alpha=0.1$ \cite{Clayton1993}.  These are epistemological questions, detailed discussion of which is beyond the scope of this research project.  However it is important to acknowledge that the present study is concerned with an applied statistical question (power to detect differences in correlations in groups with distinct genetic relatedness) with strong historical links to the hypothesis testing paradigm.  
 
 \subsection{Importance of power analysis}
 Regardless of debates surrounding the use of hypothesis testing and thresholding, the question of power is one of academic rigour with moral implications: if a study is to be conducted with support through significant contribution of public resources in the way of grant funding, there is an ethical imperative to consider $a \ priori$ whether the experiment in question can anticipate production of meaningful evidence \cite{Freiman1978,Cohen1988}.  Power analysis aims to answer this question through consideration of the sample size required to detect an effect of such magnitude to be considered meaningful given the specified values of $\alpha$.  

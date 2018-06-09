@@ -15,7 +15,6 @@
 
 %Remove Springer Logo
 \usepackage{xpatch}
-
 \makeatletter
 \xpatchcmd{\@maketitle}{{\Large Springer\par}}{}{}{}
 \makeatother
@@ -23,8 +22,7 @@
 %extra url help
 
 % Links and colours
-
-\usepackage[english]{babel}
+  \usepackage[english]{babel}
 	\usepackage[pdftex]{hyperref}
 	\usepackage{xcolor}
 	\hypersetup{
@@ -43,26 +41,21 @@
 	
 % Fonts, lists, symbols and matrices
   \usepackage[T1]{fontenc}
-  % \usepackage[utf8]{inputenc}
 	\usepackage{enumitem}
 	\usepackage{graphicx}
-  % \usepackage{mathptmx}
   \usepackage{newtxtext,newtxmath}
   \usepackage{amssymb}
   \usepackage{amsmath}
-	% \usepackage[retainorgcmds]{IEEEtrantools}
 	\usepackage{multirow}
 	\usepackage{rotating}
 	\usepackage{changepage}
 	\usepackage{dcolumn}
 	\usepackage{booktabs}
 	\usepackage{longtable}
-
-\usepackage{csquotes}
-% \usepackage{lmodern}% http://ctan.org/pkg/lm
-\usepackage{bm}
-\usepackage{tikz}
-\usepackage{listings}
+  \usepackage{csquotes}
+  \usepackage{bm}
+  \usepackage{tikz}
+  \usepackage{listings}
 	
 %geometry for electronic version:
 	\usepackage[
@@ -88,78 +81,36 @@
 %Headers and Footers
 	\usepackage{fancyhdr}
 	\pagestyle{fancy}
-	% \fancyhf{}
-	%\renewcommand{\headrulewidth}{1pt}    %remove top horizontal bar
-	% %\fancyheadoffset{0\textwidth}        % center place top horizontal bar?        
-	% \renewcommand{\footrulewidth}{0pt}    %remove bottom horizontal bar
-	% \usepackage{lastpage}
-	% \rightmark
-	 % % \rhead{Student 659810}
-	 % % \lhead{}
 	\cfoot{}
-	% % \cfoot{Page \thepage\ of \pageref{LastPage}}
 	\fancyhead[L]{\nouppercase{\leftmark}}
 	\fancyhead[R]{\thepage}
 	\renewcommand{\chaptermark}[1]{\markright{#1}}
 	
-	\usepackage{pdflscape}
-	
 %formatting miscellanies
 	\renewcommand\thepart{\Alph{part}}
+	\usepackage{pdflscape}
 	\usepackage{capt-of}
-	% \addtolength{\hoffset}{-0.5cm}
-	% \addtolength{\textwidth}{1cm}
-
 	\usepackage{setspace} %For double spacing
-
-
 	\usepackage{todonotes} %For to do notes
-
-	% \usepackage[font=large]{caption} %make captions larger (doesn't seem to work)
-	
-\usepackage{helvet}
-\usepackage{courier}
-%
-\usepackage{type1cm}         
-
-\usepackage{makeidx}         % allows index generation
-
-\usepackage{multicol}        % used for the two-column index
-\usepackage[bottom]{footmisc}% places footnotes at page bottom
-
-
-
+  \usepackage{helvet}
+  \usepackage{courier}
+  \usepackage{type1cm}         
+  \usepackage{makeidx}         % allows index generation
+  \usepackage{multicol}        % used for the two-column index
+  \usepackage[bottom]{footmisc}% places footnotes at page bottom
 	\setlength{\parindent}{0em}  %remove all indenting of paragrapgs
-	% \setlength{\parskip}{1em} 
 	\usepackage{pdfpages} 
 	\usepackage{upgreek}
-
-% %For correction positioning of bibliography
-% \usepackage{bookmark}
-% \bookmarksetup{open,numbered}% I like numbered bookmarks
-
-\usepackage{appendix}    % puts the word 'Appendices' in the ToC
+  \usepackage{appendix}    % puts the word 'Appendices' in the ToC
 	
 %Not sure what this is
-		% \makeatletter
-		% \newcommand*{\gmshow@textheight}{\textheight}
-		% \newdimen\gmshow@@textheight
-		% \g@addto@macro\landscape{%
-		  % \gmshow@@textheight=\hsize
-		  % \renewcommand*{\gmshow@textheight}{\gmshow@@textheight}%
-		% }
-		% \def\Gm@vrule{%
-		  % \vrule width 0.2pt height\gmshow@textheight depth\z@
-		% }%
-		\makeatother
-		% \setlength{\parindent}{0pt}
-
+		% \makeatother
 
 %Custom commands
-\newcommand*{\doi}[1]{\href{http://dx.doi.org/#1}{doi: #1}}
-\renewcommand{\vec}[1]{\bm{#1}}	
+  \newcommand*{\doi}[1]{\href{http://dx.doi.org/#1}{doi: #1}}
+  \renewcommand{\vec}[1]{\bm{#1}}	
 	\newcommand{\tdn}{\todo[inline, color=green!40]}
-  % \newcommand{\E}{\mathrm{E}}
+  \newcommand{\E}{\mathrm{E}}
   \newcommand{\Var}{\mathrm{Var}}
   \newcommand{\Cov}{\mathrm{Cov}}
   \newcommand*{\lcd}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
@@ -177,7 +128,6 @@
 	\definecolor{farb6}{rgb}{230,171,2}
 	\definecolor{farb7}{rgb}{166,118,29}
 	\definecolor{farb8}{rgb}{102,102,102}
-
   \definecolor{rgr}{RGB}{28,144,153}
   \definecolor{commentgreen}{RGB}{2,112,10}
   
@@ -199,32 +149,6 @@
     keywordstyle=\color{blue},
     commentstyle=\color{commentgreen},
 }
-% \lstset{ %
-  % language=R,                % the language of the code
-  % basicstyle=\footnotesize,           % the size of the fonts that are used for the code
-  % numbers=left,                   % where to put the line-numbers
-  % numberstyle=\tiny\color{gray},  % the style that is used for the line-numbers
-  % stepnumber=2,                   % the step between two line-numbers. If it's 1, each line 
-                                  % % will be numbered
-  % numbersep=5pt,                  % how far the line-numbers are from the code
-  % backgroundcolor=\color{white},      % choose the background color. You must add \usepackage{color}
-  % showspaces=false,               % show spaces adding particular underscores
-  % showstringspaces=false,         % underline spaces within strings
-  % showtabs=false,                 % show tabs within strings adding particular underscores
-  % frame=single,                   % adds a frame around the code
-  % rulecolor=\color{black},        % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. commens (green here))
-  % tabsize=2,                      % sets default tabsize to 2 spaces
-  % captionpos=b,                   % sets the caption-position to bottom
-  % breaklines=true,                % sets automatic line breaking
-  % breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
-  % title=\lstname,                   % show the filename of files included with \lstinputlisting;
-                                  % % also try caption instead of title
-  % keywordstyle=\color{blue},          % keyword style
-  % commentstyle=\color{dkgreen},       % comment style
-  % stringstyle=\color{mauve},         % string literal style
-  % escapeinside={\%*}{*)},            % if you want to add a comment within your code
-% }  
-  
   
 %establish correct inset  style for appendices	
 \makeatletter
@@ -256,14 +180,6 @@
 \begin{document}
 
 % \listoftodos
-
-% Title page
-% •	Include: Title of topic
-% •	Your name
-% •	Department
-% •	University
-% •	Course/subject code and name
-% •	Date
 
 \author{Carl Higgs \\ 
 		\large{School of Population and Global Health \\ 
@@ -326,7 +242,7 @@
 \addcontentsline{toc}{chapter}{References}
 \markboth{Rerences}{}
 \renewcommand\refname{}
-% \lhead{\itshape References}
+
 \begingroup
 \small
 

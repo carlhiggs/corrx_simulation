@@ -64,7 +64,7 @@ corr price mpg
 */
 
 * following statistical thinking in epidemiology (yu), we can also approach this as
-foreach var in price mpg {
+foreach var in price mpg weight{
   su `var'
   capture gen `var'_std = (`var'-r(mean))/r(sd)
 }

@@ -5,20 +5,16 @@
 \addcontentsline{toc}{chapter}{2. Methods}
 
 The preceding chapter summarised a review of the literature relating to twins, correlations, power and simulations undertaken to inform our approach to analysis.  Through this review we identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in two groups. Important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  The $R$ programming environment was used for all analyses \cite{R2018}.
-\\
-\\
+
 \section{Hypothesis tests for difference in correlations}
 \subsection{Fisher's Z test (analytical approach)}
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference \cite{Fisher1990,David1938}
-$$\hat{\theta} = z_{MZ} - z_{DZ}$$
-with standard error,
-$$se_{\hat{\theta}}  = \sqrt{(n_{MZ}-3)^{-1}+(n_{DZ}-3)^{-1}} $$
-and test statistic,
-$$t_{\hat{\theta}}   = \hat{\theta} / se_\hat{\theta}$$ 
+$$t_{\hat{\theta}} = {\frac{\hat{\theta}}{se_\hat{\theta}}} = {\frac{z_{MZ} - z_{DZ}}{\sqrt{(n_{MZ}-3)^{-1}+(n_{DZ}-3)^{-1}}}} $$
 
-The type 2 error rate $\beta$ is estimated through comparison of this test statistic $t_{\hat{\theta}}$ to a reference value on the standard normal distribution.   Using the cumulative normal distribution function $\Phi$ (Phi), the reference score $q$ is calculated as the normal probability quantile corresponding to our $\alpha$ level divided by the 'sidedness' of our test. 
+The type 2 error rate $\beta$ is estimated through comparison of this test statistic $t_{\hat{\theta}}$ to a reference value on the standard normal distribution.   Using the cumulative normal distribution function $\Phi$ (Phi), the reference score $q$ is calculated as the normal probability quantile corresponding to our $\alpha$ level divided by the sidedness of our test. 
  $$q = \Phi^{-1}(\alpha/\text{sidedness})$$
 Where we refer to sidedness, we mean whether we are concerned with a single- or two-tailed probability.  Here, we are testing the hypothesis that $\rho_{MZ} = \rho_{DZ}$ using a two-tailed p-value, implying 'admissible alternatives' to be the case that $\rho_{MZ}$ is greater than or less than $\rho_{DZ}$, that is, $|\rho_{MZ} - \rho_{DZ}| > 0$ \cite{David1938}.  One-tailed consideration, for example that $\rho_{MZ} > \rho_{DZ}$, is not considered in this report however, the functions developed may be parameterised in this way if desired. 
+\\
 Employing the concepts detailed above, $\beta$ is calculated as 
 $$\beta = \Phi \big( q - t_\theta \big)$$
 Our power estimate for the detection of difference in correlations is $\power(\theta) = 1 - \beta$. Putting the above altogether, we calculate power using the Fisher's $z$ test statistic as,
@@ -56,9 +52,11 @@ The above method is the de facto standard, as used for example in the Stata \cod
 
 \subsection{Fisher's Z test (simulation approach)}
 Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
-
+\\
+\\
 So where in our formula we might plug in hypothesised sample coefficients of 0.2 and 0.5, in the simulation we use these values to represent the true correlations in the underlying population from which we draw our samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
-
+\\
+\\
 The simulation-based Fisher's Z test function $R$ code is displayed in listing \ref{lst:fz}.
 
 \begin{lstlisting}[float=h,caption={Fisher's Z test (simulation approach)},label={lst:fz}]
@@ -88,16 +86,18 @@ In addition to applying the Fisher Z test in a simulation context, alternate tes
 
 \subsection{Zou's confidence interval}
 Zou's confidence interval is used to calculate a confidence interval for the difference in two correlations, and a hypothesis test employing this method is featured in the R package \code{cocor} \cite{Zou2007,Diedenhofen2015}.  A hypothesis test using Zou's confidence interval evaluates whether zero lies within the lower and upper bounds of the interval estimate of the difference in correlations, returning 1 if so or otherwise zero.  Over a run of simulations this would be expected to return identical results to the Fisher Z test, but may be more efficient.
-
+\\
+\\
 Zou's approach expands on earlier work \cite{Olkin1995} to calculate a confidence interval for a difference in correlations using a so-called Simple Asymptotic approach, using what Zou refers to as a Modified Asymptotic method \cite{Zou2007}.  Both approaches draw heavily on Fisher's earlier work \cite{Fisher1990}.  The modified asymptotic method of Zou consists of first calculating confidence intervals for the two respective z-transformed correlations (transformed as per Fisher's method, described above):
-$$(l_z_k, u_z_k) = z_k \pm \sqrt{\frac{1}{n_k - 3}} \times \Phi_{\alpha/2}^{-1},\ \text{where} \ k \in \{1,2\}$$
+$$(l_{z_k}, u_{z_k}) = z_k \pm \sqrt{\frac{1}{n_k - 3}} \times \Phi_{\alpha/2}^{-1},\ \text{where} \ k \in \{1,2\}$$
 
 Then, the lower (L) and upper (U) bounds of the modified asymptotic confidence interval for the difference in correlations are calculated:
-$$L = r_1 - r_2 - \sqrt{(r_1 - \tanh(l_z_1))^2 + (\tanh(u_z_2)- r_2)^2}$$
-$$U = r_1 - r_2 + \sqrt{(\tanh(u_z_1) - r_1)^2 + (r_2 - \tanh(l_z_2))^2}$$
+$$L = r_1 - r_2 - \sqrt{(r_1 - \tanh(l_{z_1}))^2 + (\tanh(u_{z_2})- r_2)^2}$$
+$$U = r_1 - r_2 + \sqrt{(\tanh(u_{z_1}) - r_1)^2 + (r_2 - \tanh(l_{z_2}))^2}$$
 
 If zero is within the bounds of the confidence interval for the difference, the test returns as 1, and otherwise 0.
-
+\\
+\\
 Our implemenation of the Zou's confidence interval test function is displayed in listing \ref{lst:zou}.
 
 \begin{lstlisting}[float=h,caption={Zou's confidence interval},label={lst:zou}]
@@ -138,12 +138,13 @@ zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
 \subsection{Generalised Variable Test}
 
 The generalised variable (GV) test involves transformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value \cite{Krishnamoorthy2014}. Synthesising two reported approaches \cite{Krishnamoorthy2007,Kazemi2016} this test was first implemented as an example by my supervisor Enes Makalic in a Matlab script, and subsequently adapted by myself as a function in R.  A compiled version using RCPP to leverage C++ routines for random number draws was suggested by my colleague Koen Simons, and adopted to improve the function's run time. However, this later version was not compatible with the parallelised simulation approach, and in this context the non-RCCP 'GVT-r' version was used.
-
-Given two bivariate normal samples $k\in\{1,2\}$, the sample correlation coefficients $r_k$ are used to estimate two respective quantities $r_k^* = \frac{r_k}{\sqrt(1-r_k^2)}$, and the generalised variables $G_{\rho}_k}$:
-$$G_{\rho}_k} = \frac{r_k^*\sqrt{W_k} - U_k}{\sqrt{(r_k^*\sqrt(W_k) - U_k)^2 + V_k}}$$
+\\
+\\
+Given two bivariate normal samples $k\in\{1,2\}$, the sample correlation coefficients $r_k$ are used to estimate two respective quantities $r_k^* = \frac{r_k}{\sqrt(1-r_k^2)}$, and the generalised variables $G_{\rho_k}$:
+$$G_{\rho_k} = \frac{r_k^*\sqrt{W_k} - U_k}{\sqrt{(r_k^*\sqrt(W_k) - U_k)^2 + V_k}}$$
 where,
 $$U_k \sim N(0,1) ,\ V_k \sim \chi_{n_k - 1}^2 ,\ \text{and} \ W_k \sim \chi_{n_k-2}^2$$
-A p-value using the GV test is calculated as twice the value of the smaller of two quantities: the proportion of differences in $G_{\rho}_k}$ less than 0, and the proportion greater than 0.
+A p-value using the GV test is calculated as twice the value of the smaller of two quantities: the proportion of differences in $G_{\rho_k}$ less than 0, and the proportion greater than 0.
 
 The GV test function $R$ code is displayed in listing \ref{lst:gvtr}.
 
@@ -183,7 +184,8 @@ gvt_r <- function(a,b,M=1e4,method = "pearson") {
 
 \subsection{Signed log-likelihood ratio test}
 The signed log likelihood ratio (SLR) test is formulated as the signed difference in sample correlation coefficients multiplied by the square root of the sum of respective coefficients' log-likelihoods.  The test here is a partial implementation of a recently reported modified signed log-likelihood ratio (MSLR) test  for differences in two bivariate normal correlations \cite{Kazemi2016}. The SLR and MSLR tests are well established general hypothesis tests \cite{Barndorff1986,Barndorff1991,Diciccio2001,Krishnamoorthy2014}, the novelty in Kazemi and Jafari's approach being the applied context of difference in correlations. However, we (myself, nor my supervisors) were unable to successfully replicate the 'modified' portion of Kazemi and Jafari's reported algorithm.  Due to time constraints, and noting that the 'unmodified' SLR test appeared to return p-values similar to the other hypothesis tests it was decided that inclusion of the SLR test would be a valid option to consider.
-
+\\
+\\
 The SLR test function $R$ code is displayed in listing \ref{lst:slr}.
 
 \begin{lstlisting}[float=h,caption={Signed log-likelihood ratio test},label={lst:slr}]
@@ -214,7 +216,8 @@ The permutation test is a non-parametric approach which compares the absolute
 difference of the Z-transformed sample correlations with those using correlations 
 from a series of group membership permutations using the sample rank orders as 
 values.  Under a hypothesis of no difference in correlation, those differences arising from permutations would be assumed to be equally likely as those observed, or anticipated to be observed \cite{Efron1993}.  Across a series of $M$ permutations (in this study, 10,000), a $p$-value is calculated as the proportion of permutation derived absolute differences (($\abs(z_{MZ}^* - z_{DZ}^*)$)) of greater magnitude than $\abs(z_{MZ} - z_{DZ})$.
-
+\\
+\\
 The implementation of this permutation test in $R$ is displayed in listing \ref{lst:pt}.
 
 \begin{lstlisting}[float=h,caption={Permutation test},label={lst:pt}]
@@ -252,11 +255,9 @@ pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
 }
 \end{lstlisting}
 
-\section{Analysis plan}
-
-
 \section{Simulation}
-A function was developed to undertake a single simulation of all of the above tests (listing \ref{lst:corr_diff}).  Each test used the same simulated population as source input for the simulation based tests, while the analytic Fisher Z test result was also returned for reference.
+\subsection{Approach for one simulation}
+A function \code{corr\_diff\_test()} was developed to undertake a single comparative simulation of any of the above tests (listing \ref{lst:corr_diff}). Within a single simulation, each simulation based  test is evaluated using the same samples drawn from the two simulated bivariate populations as input, returning a $p$-value.  The analytic Fisher Z test returns either a $p$-value or a power estimate based on the population parameters.  Note that in the detailing of computational aspects of our methodology we use the term 'parameter' to refer to the options which may be specified within a function; an argument is the specific value which is passed to that parameter. For example, the (population) parameter $\rho$ for the respective MZ and DZ groups may be defined by specifying the argument \code{rho = c(-0.65,0.2)}. The main parameters which can be specified in the function call to \code{corr\_diff\_test()} are described with example arguments in table \ref{table:corr_params}.  In the following text we refer to the set of parameters that give rise to a simulation as a scenario.
 
 \begin{lstlisting}[float=h,caption={Single run simulation code},label={lst:corr_diff}]
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
@@ -297,58 +298,104 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
 }
 \end{lstlisting}
 
-The function uses the $R$ package \code{simstudy} function \code{genCorGen} to generate bivariate correlated data for the simulated MZ (group $a$ in the code above) and DZ (group $b$) twin pair samples \cite{simstudy2018}.  The choice of available distributions and parameterisations is normal($\mu,\sigma$), binomial($p$), Poisson(rate $\lambda$) gamma($\mu,\text{dispersion} k$), or uniform($min,max$).  In addition to specifying sample size, distribution and parameterisation, a correlation matrix may be specified.  
-\\
+The function uses the $R$ package \code{simstudy} function \code{genCorGen} to generate bivariate correlated data for the simulated MZ (group \code{a} in the code above) and DZ (group \code{b}) twin pair samples \cite{simstudy2018}.  The choice of available distributions and parameterisations is normal($\mu,\sigma$), binomial(probability $p$), Poisson(rate $\lambda$) gamma($\mu,\text{dispersion} \ k$), or uniform(min, max).  In addition to specifying sample size, distribution and parameterisation, a correlation matrix may be specified; this was used to parameterise the underlying population correlations from which bivariate samples should be drawn.  Three distinct distribution types were modelled in our simulation based power analysis: normal, 'mild' skew and 'extreme' skew. These are respectively explained in the captions of Figures \ref{fig:dist_norm}, \ref{fig:dist_gamma1}, and \ref{fig:dist_gamma2}, which illustrate example sample draws from these distributions.  
 
-%% Example distributions
-\begin{figure}[htb]
-  \centering        
-  \minipage{0.52\textwidth}%
-    \includegraphics[width=\linewidth]{{../figs/distx_normal_60_120}.pdf}
-    \caption{Example bivariate normal draw with $\rho(0.2,0.5)$}
-    \label{fig:dist_norm}
-  \endminipage\hfill   
-  \medskip
-  \minipage{0.52\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/distx_gamma_mildskew_60_120}.pdf}
-    \caption{Example bivariate gamma ("mild skew") draw with $\rho(0.2,0.5)$}
-    \label{fig:dist_gamma1}
-  \endminipage\hfill
-  \medskip
-  \minipage{0.52\textwidth}% 
-    \includegraphics[width=\linewidth]{{../figs/distx_gamma_extrskew_60_120}.pdf}
-    \caption{Example bivariate gamma ("extreme skew") draw with $\rho(0.2,0.5)$}
-    \label{fig:dist_gamma2}
-  \endminipage\hfill
-\end{figure} 
-  
-\\
-Three distribution types were modelled in our simulation based power analysis, with example draws respectively depicted in Figures \ref{fig:dist_norm}, \ref{fig:dist_gamma1}, and \ref{fig:dist_gamma2}:
-\\
-\\
-1. In the case of bivariate normal data, under which our distributional assumptions are asymptotically met, this was specified with the two variable being standardised with mean $mu=zero$ and standard deviation $\sigma=1$:
+\begin{figure}[htbp]
+\sidecaption[t]
+%\centering
+\fbox{\includegraphics[scale=0.52]{{../figs/distx_normal_60_120}.pdf}}
+%\picplace{5cm}{2cm} % Give the correct figure height and width in cm
+\caption{An example of the bivariate normal scenario, with distributional assumptions asymptotically met.  Both variables are standardised with mean $\mu=0$ and standard deviation $\sigma=1$.}
+ % and distribution $\sim N\bigg{\boldsymbol\mu = \begin{pmatrix} 0 \\ 0 \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} 1 & \rho \\ \rho  & 1 \end{pmatrix} \bigg)$.
+% \caption{An example of the bivariate normal scenario, under which our distributional assumptions are asymptotically met.  This was specified with both variables standardised having mean $\mu=0$ and standard deviation $\sigma=1$ and distribution $\sim N\bigg{\boldsymbol\mu = \begin{pmatrix} 0 \\ 0 \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} 1 & \rho \\ \rho  & 1 \end{pmatrix} \bigg)$.}
+\label{fig:dist_norm}       % Give a unique label
+\end{figure}
 
-$$\boldsymbol\mu = \begin{pmatrix} 0 \\ 0 \end{pmatrix}, \quad \boldsymbol\Sigma = \begin{pmatrix} 1 & \rho \\ \rho  & 1 \end{pmatrix}$$.  
- 
-To constrast with the 'assumptions met' normal scenario, two non-normal distribution scenarios were also considered.
-\\
-\\
-2) A 'mild skew' scenario based on a gamma distribution with mean 1.5 and dispersion 0.09 (which the genCorGen function uses to inform shape and scale parameters for the distribution).  This parameterisation was chosen through experimentation with the intent to represent a mild departure from an assumed normal population distribution, with a slight positive skew.
-\\
-\\
-3) An 'extreme skew' scenario based on a gamma distribution with mean 1 and dispersion 5.  This results in an extreme positive skew to the distribution, analogous to that of biological processes where most observations will be clustered around a certain value, however some outliers may be extremely elevated.
+\begin{figure}[htbp]
+\sidecaption[t]
+%\centering
+\fbox{\includegraphics[scale=0.52]{{../figs/distx_gamma_mildskew_60_120}.pdf}}
+%\picplace{5cm}{2cm} % Give the correct figure height and width in cm
+\caption{A 'mild skew' scenario based on a gamma distribution with mean 1.5 and dispersion 0.09 (which the genCorGen function uses to inform shape and scale parameters for the distribution).  This parameterisation was chosen through experimentation with the intent to represent a mild departure from an assumed normal population distribution, with a slight positive skew}
+\label{fig:dist_gamma1}       % Give a unique label
+\end{figure}
+
+\begin{figure}[htbp]
+\sidecaption[t]
+%\centering
+\fbox{\includegraphics[scale=0.52]{{../figs/distx_gamma_extrskew_60_120}.pdf}}
+%\picplace{5cm}{2cm} % Give the correct figure height and width in cm
+\caption{An 'extreme skew' scenario based on a gamma distribution with mean 1 and dispersion 5.  This results in an extreme positive skew to the distribution, analogous to that of biological processes where most observations will be clustered around a certain value, however some outliers may be extremely elevated.}
+\label{fig:dist_gamma2}% Give a unique label
+\end{figure}
 
 
-\section{Feasability appraisal}
-To undertake the simulations as planned for combinations of 
-\begin{itemize}
-  \item correlations at .05 intervals 
-  \item exponentially increasing group sizes of 15 through 960
-  \item three bivariate distribution types being normal, and gamma with mild skew and extreme skew
-  \item two approaches to correlation measurement 
-  \item across 6 tests
-  \item with 1000 simulations per combination 
-\end{itemize}
+\begin{table}\centering
+\caption{Description of parameter options for single simulation \label{table:corrparams}}
+\begin{tabular}{cll}
+  \toprule
+  \textbf{Parameter} & \textbf{Description} & \textbf{Example arguments} \\ [0.5ex] 
+  \midrule
+  \code{method}    & Correlation method to use for testing difference                  & \code{'pearson'}                 \\
+  \code{rho}       & $\rho$ for each group's bivariate distribution                    & \code{c(-0.21,0.59)}             \\
+  \code{n}         & Sample size for groups 1 (MZ) and  2 (DZ)                         & \code{c(30,60)}                  \\
+  \code{dist}      & Distribution to be used for both groups' bivariate distribution \ & \code{'normal'}                  \\
+  \code{param1a}   & Distribution parameter 1 for respective samples in group 1        & \code{c(0,0)}                    \\
+  \code{param1b}   & Distribution parameter 1 for respective samples in group 2        & \code{c(0,0)}                    \\
+  \code{param2a}   & Distribution parameter 2 for respective samples in group 1        & \code{c(1,1)}                    \\
+  \code{param2b}   & Distribution parameter 2 for respective samples in group 2        & \code{c(1,1)}                    \\
+  \code{test}      & Tests to be evaluated                                             & \code{c("fz\_nosim","fz","gtv")} \\
+  \code{alpha}     & $\alpha$ value to use for hypothesis tests                        & \code{0.05}                      \\
+  \code{sidedness} & Sidedness for hypothesis tests                                    & \code{2}                         \\
+  \bottomrule 
+\end{tabular}
+\end{table}
+
+% whether only to compute results for where $rho_1 < rho_2$, which across a series of correlation combinations conceived as a matrix can be used to optionally returne only the lower triangular matrix of results.
+
+\subsection{Approach for multiple simulations}
+The function described above runs a single simulation of drawing from samples from two bivariate populations.  However, for asymptotic normality to hold --- the long run approximation of a normal distribution due to the Central Limit Theorem \cite{Casella2002} --- we know we must run many more simulations to achieve a fair assessment of the proportion of null hypotheses rejected when false for when using a particular hypothesis test under a particular scenario (ie. set of parameterisations).
+\\
+\\
+A wrapper function \code{corr\_power} to allows for the \code{corr\_diff\_test()} function to be called $M$ times for a given scenario, returning a power estimate for each test specified in the function call.  These power estimates are derived from the series of simulated $p$-values for each test considered, or directly in the case of the analytic Fisher's Z test.
+
+\section{Scenario combinations}
+The flexibility of the simulation commands we defined allows for an very broad array of scenarios to be considered.  A researcher could use these tools as is to aid in the development of a statistical analysis plan for their study.  For this report we had to decide on a limited subset of these possibilities.  There are two drivers for the choice made: the number of scenario combinations, and the time taken to run each of these.  Our initial plan for the series of scenarios is reported in table \ref{combinations}.
+\\
+\\
+We \textit{a prior} chose to fix some parameters: we only used two-sided tests with $\alpha$ of 0.05; and having decided on three kinds of distributional forms (normal, and two kinds of non-normal using a gamma distribution) the distribution parameters were fixed to achieve these forms.
+
+\subsection{Feasability testing}
+Each test 
+
+\begin{table}\centering
+\caption{Description of parameter options for single simulation \label{table:combinations}}
+\begin{tabular}{llr}
+  \toprule
+  \textbf{Parameter} & \multicolumn{2}{c}{\textbf{Initial plan}} \\ 
+  \cmidrule(lr){2-3} 
+   & \textbf{argument resolution} & \textbf{combinations}	\\
+  \midrule
+  \code{method}    & Pearson and Spearman correlations                                 & 2 \\
+  \code{rho}       & $\rho$ combinations\: -0.95 through 0.95 at 0.5 resolution         & $39^2 = 1521$ \\
+  \code{n}         & group combinations\: 15, 30, 60, 120, 240, 480, 960                      & $7^2 = 49$ \\
+  \code{dist}      & normal, 'mild skew', 'extreme skew'                               &  3 \\
+  \code{param1a}   & dictated by distribution choice, above                            & -  \\
+  \code{param1b}   & dictated by distribution choice, above (equal to param1a)         & -  \\
+  \code{param2a}   & dictated by distribution choice, above                            & -  \\
+  \code{param2b}   & dictated by distribution choice, above (equal to param2a)         & -  \\
+  \code{test}      & Fisher's Z (analytic and sim), Zou's CI, GVT, SLR, PT             & 6  \\
+  \code{alpha}     & .05                                                               & 1  \\
+  \code{sidedness} & 2                                                                 & 1  \\
+  \midrule
+  Total scenarios &                                                            & 2,683,044  \\
+  Total simulations & 1,000 simulations for each scenario                   & 2,683,044,000 \\
+  Total simulations & 100, 1,000 and 10,000 simulations for each scenario (unrealistic!) &  29,781,788,400 \\
+  \bottomrule 
+\end{tabular}
+\end{table}
+
+2,683,044,00 + 2,683,044,000 + 2,683,044,0000
 
 Briefly summarise timing tests
 \\
@@ -372,34 +419,32 @@ Required sample size to achieve 80% power
 \\  
 Difference to achieve 80% power
 
-\begin{lstlisting}[float=h,caption={Example inspection of simulation results in database, while parallel processing is occurring.},label={lst:corrx_sql}]
-corrx_twins=# SELECT COUNT(*) FROM corrx_100;
- count
--------
- 21466
-(1 row)
+% \begin{lstlisting}[language=SQL,float=h,caption={Example inspection of simulation results in database, while parallel processing is occurring.},label={lst:corrx_sql}]
 
+% corrx_twins=# SELECT NOW() AS time, COUNT(*),106134 AS goal, ROUND(COUNT(*)/106134.0*100,1) AS percent  FROM corrx_100;
+             % time              | count |  goal  | percent
+% -------------------------------+-------+--------+---------
+ % 2018-06-09 10:31:24.646759+10 | 32100 | 106134 |    30.2
+% (1 row)
 
-corrx_twins=# SELECT * FROM corrx_100 LIMIT 10;
- simx  |  method  |  dist  | p1 | p2 | n1 | n2 | rho1 | rho2 |     fz_nosim      |  fz  | gtvr | slr  | zou
--------+----------+--------+----+----+----+----+------+------+-------------------+------+------+------+------
- 53068 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |             0.025 | 0.05 | 0.05 | 0.08 | 0.05
-     1 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |             0.025 | 0.04 | 0.05 | 0.05 | 0.04
- 53069 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 | 0.148053783217244 | 0.08 | 0.09 | 0.14 | 0.07
-     2 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 | 0.148053783217244 | 0.13 | 0.14 | 0.14 | 0.13
- 53070 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 | 0.316246390292816 | 0.34 | 0.35 | 0.39 | 0.34
-     3 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 | 0.316246390292816 | 0.29 | 0.31 | 0.35 | 0.29
- 53071 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 | 0.479410022373891 | 0.55 | 0.57 | 0.63 | 0.55
-     4 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 | 0.479410022373891 | 0.54 | 0.56 | 0.59 | 0.54
- 53072 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 | 0.618179428741035 | 0.63 | 0.63 | 0.66 | 0.63
-     5 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 | 0.618179428741035 | 0.64 | 0.65 | 0.67 | 0.64
-(10 rows)
+% corrx_twins=# SELECT * FROM corrx_100 LIMIT 10;
+ % simx  |  method  |  dist  | p1 | p2 | n1 | n2 | rho1 | rho2 |  fz_nosim  |  fz  | gtvr | slr  | zou
+% -------+----------+--------+----+----+----+----+------+------+------------+------+------+------+------
+ % 53068 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |    0.03    | 0.05 | 0.05 | 0.08 | 0.05
+     % 1 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |    0.03    | 0.04 | 0.05 | 0.05 | 0.04
+ % 53069 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 |    0.15    | 0.08 | 0.09 | 0.14 | 0.07
+     % 2 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 |    0.15    | 0.13 | 0.14 | 0.14 | 0.13
+ % 53070 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 |    0.32    | 0.34 | 0.35 | 0.39 | 0.34
+     % 3 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 |    0.32    | 0.29 | 0.31 | 0.35 | 0.29
+ % 53071 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 |    0.48    | 0.55 | 0.57 | 0.63 | 0.55
+     % 4 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 |    0.48    | 0.54 | 0.56 | 0.59 | 0.54
+ % 53072 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 |    0.62    | 0.63 | 0.63 | 0.66 | 0.63
+     % 5 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 |    0.62    | 0.64 | 0.65 | 0.67 | 0.64
+% (10 rows)
 
-
-corrx_twins=# SELECT COUNT(*) FROM corrx_100;
- count
--------
- 21511
-(1 row)
-
-\end{lstlisting}
+% corrx_twins=# SELECT NOW() AS time, COUNT(*),106134 AS goal, ROUND(COUNT(*)/106134.0*100,1) AS percent  FROM corrx_100;
+             % time              | count |  goal  | percent
+% -------------------------------+-------+--------+---------
+ % 2018-06-09 16:28:25.912515+10 | 36377 | 106134 |    34.3
+% (1 row)
+% \end{lstlisting}
