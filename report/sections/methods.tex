@@ -257,7 +257,7 @@ pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
 
 \section{Simulation}
 \subsection{Approach for one simulation}
-A function \code{corr\_diff\_test()} was developed to undertake a single comparative simulation of any of the above tests (listing \ref{lst:corr_diff}). Within a single simulation, each simulation based  test is evaluated using the same samples drawn from the two simulated bivariate populations as input, returning a $p$-value.  The analytic Fisher Z test returns either a $p$-value or a power estimate based on the population parameters.  Note that in the detailing of computational aspects of our methodology we use the term 'parameter' to refer to the options which may be specified within a function; an argument is the specific value which is passed to that parameter. For example, the (population) parameter $\rho$ for the respective MZ and DZ groups may be defined by specifying the argument \code{rho = c(-0.65,0.2)}. The main parameters which can be specified in the function call to \code{corr\_diff\_test()} are described with example arguments in table \ref{table:corr_params}.  In the following text we refer to the set of parameters that give rise to a simulation as a scenario.
+A function \code{corr\_diff\_test()} was developed to undertake a single comparative simulation of any of the above tests (listing \ref{lst:corr_diff}). Within a single simulation, each simulation based  test is evaluated using the same samples drawn from the two simulated bivariate populations as input, returning a $p$-value.  The analytic Fisher Z test returns either a $p$-value or a power estimate based on the population parameters.  Note that in the detailing of computational aspects of our methodology we use the term 'parameter' to refer to one of the options which may be specified within a function; an argument is the specific value which is passed to that parameter. For example, the (population) parameter $\rho$ for the respective MZ and DZ groups may be defined by specifying the argument \code{rho = c(-0.65,0.2)}. The main parameters which can be specified in the function call to \code{corr\_diff\_test()} are described with example arguments in table \ref{table:corr_params}.  In the following text we refer to the set of parameters that give rise to a simulation as a scenario.
 
 \begin{lstlisting}[float=h,caption={Single run simulation code},label={lst:corr_diff}]
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
@@ -331,7 +331,7 @@ The function uses the $R$ package \code{simstudy} function \code{genCorGen} to g
 
 
 \begin{table}\centering
-\caption{Description of parameter options for single simulation \label{table:corrparams}}
+\caption{Description of parameter options for single simulation \label{table:corr_params}}
 \begin{tabular}{cll}
   \toprule
   \textbf{Parameter} & \textbf{Description} & \textbf{Example arguments} \\ [0.5ex] 
@@ -360,21 +360,16 @@ The function described above runs a single simulation of drawing from samples fr
 A wrapper function \code{corr\_power} to allows for the \code{corr\_diff\_test()} function to be called $M$ times for a given scenario, returning a power estimate for each test specified in the function call.  These power estimates are derived from the series of simulated $p$-values for each test considered, or directly in the case of the analytic Fisher's Z test.
 
 \section{Scenario combinations}
-The flexibility of the simulation commands we defined allows for an very broad array of scenarios to be considered.  A researcher could use these tools as is to aid in the development of a statistical analysis plan for their study.  For this report we had to decide on a limited subset of these possibilities.  There are two drivers for the choice made: the number of scenario combinations, and the time taken to run each of these.  Our initial plan for the series of scenarios is reported in table \ref{combinations}.
+The flexibility of the simulation commands we defined allows for an very broad array of scenarios to be considered.  A researcher could use these tools as is to aid in the development of a statistical analysis plan for their study.  For this report we had to decide on a limited subset of these possibilities.  There are two drivers for the choice made: the number of scenario combinations, and the time taken to run each of these.  Our initial plan for the series of scenarios is reported in table \ref{table:combos}.
 \\
-\\
-We \textit{a prior} chose to fix some parameters: we only used two-sided tests with $\alpha$ of 0.05; and having decided on three kinds of distributional forms (normal, and two kinds of non-normal using a gamma distribution) the distribution parameters were fixed to achieve these forms.
-
-\subsection{Feasability testing}
-Each test 
 
 \begin{table}\centering
-\caption{Description of parameter options for single simulation \label{table:combinations}}
+\caption{Description of parameter options for single simulation \label{table:combos}}
 \begin{tabular}{llr}
   \toprule
   \textbf{Parameter} & \multicolumn{2}{c}{\textbf{Initial plan}} \\ 
   \cmidrule(lr){2-3} 
-   & \textbf{argument resolution} & \textbf{combinations}	\\
+   & \textbf{Argument resolution} & \textbf{Combinations}	\\
   \midrule
   \code{method}    & Pearson and Spearman correlations                                 & 2 \\
   \code{rho}       & $\rho$ combinations\: -0.95 through 0.95 at 0.5 resolution         & $39^2 = 1521$ \\
@@ -395,16 +390,48 @@ Each test
 \end{tabular}
 \end{table}
 
-2,683,044,00 + 2,683,044,000 + 2,683,044,0000
-
-Briefly summarise timing tests
 \\
-Point to appendix for timing test results
+We decided \textit{a prior} to set some parameters as fixed, : we only conducted two-sided tests with $\alpha$ of 0.05;  having decided to limit ourselves to three basic distributional forms (normal, and two kinds of non-normal using distinct gamma distribution parameterisations) the distribution parameters were fixed to achieve these forms; the respective simulations of MZ and DZ twin pair samples each use the same distributional form, although the population correlation and sample size may vary (e.g. we don't compare bivariate normal MZ with a gamma skewed DZ); the simulated bivariate data for each twin group shares the same parameterisation (e.g. for normal data both variables have $\mu$ 0 and $\sigma$ 1).  Nevertheless, we were aware that our intial plan would be over-ambitious: were each scenario to be processed consecutively, each taking 1 second to process at a steady rate optimistically with no computer crashes we might expect 1,000 simulations of each scenario in Table \ref{table:combos} to take $2,683,044,000/60/60/24/365 \approx 85$ years!  Under advice from my colleague Koen Simons, I undertook time tests of 1,000 iterations of each function and their byte code compiled versions, employing only the most efficient versions.  The permutation test implementation was particularly inefficient, and given time constraints for refactoring code this was abandoned.  Noting that the resolution of correlation combinations was a major contributor to anticipated length of processing time, this was reduced to comparison of correlations from -0.9 through 0.9 at a 0.1 resolution resulting in 361 instead of 1,521 correlation combinations.  Based on the preliminary time tests, the initial and revised time estimates are displayed along with function time results in Table \ref{{table:times}}.  These estimates suggested an anticipated running time of 16 days, based on my personal Core2Duo i7 laptop with 16gb RAM.
+\\
 
-would have resulted in more than 2 billion results and taken 33 years.  Instead, I reduced my ambition using a .1 correlation resolution and dropped the permutation test which was implemented inefficiently to get this to 16 days.
+\begin{table}\centering
+\caption{Description of parameter options for single simulation \label{table:times}}
+\begin{tabular}{rcc}
+  \toprule
+  \textbf{Test} &	\multicolumn{2}{c}{\textbf{Time/1000 runs (secs)}} \\
+  \cmidrule(lr){2-3} 
+   & \textbf{as is} & \textbf{compiled}				\\
+  \midrule										
+  Fisher's z (no sim) &         0.03 &    0.02 \\
+  Fisher's Z          &         0.56 &    0.36 \\
+  GTV (r)             &        18.65 &   16.55 \\
+  GTV (R C++)         &              &   12.08 \\
+  Permutation (PT)    &      2473.18 & 2341.62 \\
+  SLR                 &         0.49 &    0.33 \\
+  Zou's CI            &         0.38 &    0.28 \\
+  \midrule
+  \multicolumn{1}{l}{Total 1 (PT, R-compiled GTV)}       &	2493.29 & 2359.16  \\
+  \multicolumn{1}{l}{Total 2 (No PT, RCCP-compiled GTV)} &	       	& 13.07    \\
+  \multicolumn{1}{l}{Total 3 (No PT, R-compiled GTV)}    & 	20.11	  & 17.54    \\
+  \multicolumn{1}{l}{Initial scenario: Total 1 $\times 1521 \times 49 \times 3 \times 2/60/60/24/365$}  & 35 years  & 33 years \\
+  \multicolumn{1}{l}{Best scenario: Total 2 $\times 361 \times 49\times 3 \times 2 /60/60/24$}  & 25 days  & 16 days \\
+  \multicolumn{1}{l}{Next best scenario: Total 3 $\times 361 \times 49\times 3 \times 2 /60/60/24$}  &    & 21 days \\
+\bottomrule 
+\end{tabular}
+\end{table}
+\\
+All parameterisations giving rise to a particular scenario were recorded to ensure accurate scenario retrieval and ability to interpolate power estimates based on a subset of scenarios.  The initial format we used in our post-time estimation run was the R \code{data.table} format, as it was reportedly well optimised 'under the hood'.  The data.table was set up in wide format with rows per scenario (106,134 rows) and columns per parameter with five additional columns to contain power estimates per test (13 columns, once processed).  This format was used to process sets of results using 100 simulations, and select scenarios using 1,000 simulations and 10,000 simulations.  The 100 simulation set of results was used as initial proof of concept for the approach; the scenarios using 1,000 results provide the main results for the inferences made in this report; the 10,000 simulations scenarios were produced in order to evaluate sensitivity of simulated power estimates to the number of simulation runs, and in particular establish validity of the choice of 1,000 simulations for main results.
 
-\section{Revision}
-  
+\section{Evaluating power}
+The results of the simulation analysis using the above options are comprised of more than half a million power estimates, when taken in long form.  These can be accessed to answer specific questions.  The task of this report is to evaluate subsets of these and demostrate the value and validity of the functions giving rise to them, and provide options to researchers such as those of Twins Australia for their analyses which may be expanded upon.
+
+
+ comparisons vis impact on power and required sample size to achieve this: number
+of simulations (justifies 1000 simulation approach); choice of ratio; choice of test method; impact of
+non-normality; magnitude of correlations; etc. I have put more old style contour plots in appendix,
+which may be referred to — specific examples for GTV and SLR
+
+
 results in format of images
 \\
 \\
@@ -418,33 +445,3 @@ Required sample size to achieve 80% power
 \\
 \\  
 Difference to achieve 80% power
-
-% \begin{lstlisting}[language=SQL,float=h,caption={Example inspection of simulation results in database, while parallel processing is occurring.},label={lst:corrx_sql}]
-
-% corrx_twins=# SELECT NOW() AS time, COUNT(*),106134 AS goal, ROUND(COUNT(*)/106134.0*100,1) AS percent  FROM corrx_100;
-             % time              | count |  goal  | percent
-% -------------------------------+-------+--------+---------
- % 2018-06-09 10:31:24.646759+10 | 32100 | 106134 |    30.2
-% (1 row)
-
-% corrx_twins=# SELECT * FROM corrx_100 LIMIT 10;
- % simx  |  method  |  dist  | p1 | p2 | n1 | n2 | rho1 | rho2 |  fz_nosim  |  fz  | gtvr | slr  | zou
-% -------+----------+--------+----+----+----+----+------+------+------------+------+------+------+------
- % 53068 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |    0.03    | 0.05 | 0.05 | 0.08 | 0.05
-     % 1 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.9 |    0.03    | 0.04 | 0.05 | 0.05 | 0.04
- % 53069 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 |    0.15    | 0.08 | 0.09 | 0.14 | 0.07
-     % 2 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.8 |    0.15    | 0.13 | 0.14 | 0.14 | 0.13
- % 53070 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 |    0.32    | 0.34 | 0.35 | 0.39 | 0.34
-     % 3 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.7 |    0.32    | 0.29 | 0.31 | 0.35 | 0.29
- % 53071 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 |    0.48    | 0.55 | 0.57 | 0.63 | 0.55
-     % 4 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.6 |    0.48    | 0.54 | 0.56 | 0.59 | 0.54
- % 53072 | spearman | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 |    0.62    | 0.63 | 0.63 | 0.66 | 0.63
-     % 5 | pearson  | normal |  0 |  1 | 15 | 15 | -0.9 | -0.5 |    0.62    | 0.64 | 0.65 | 0.67 | 0.64
-% (10 rows)
-
-% corrx_twins=# SELECT NOW() AS time, COUNT(*),106134 AS goal, ROUND(COUNT(*)/106134.0*100,1) AS percent  FROM corrx_100;
-             % time              | count |  goal  | percent
-% -------------------------------+-------+--------+---------
- % 2018-06-09 16:28:25.912515+10 | 36377 | 106134 |    34.3
-% (1 row)
-% \end{lstlisting}
