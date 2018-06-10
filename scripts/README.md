@@ -1,10 +1,23 @@
-# Research Project 2, Semester 1 2018 #
+# Scripts undertaking power analysis to detect difference in correlations in MZ and DZ twin groups #
 
-What are the existing methods for estimating power to detect a difference in correlations between identical (monozygotic) and non-identical (dizygotic) twins, how do these compare and can they be improved upon?  This question will be addressed through a literature review, and comparison of methods using both theory and simulation.
+## Conduct simulations
+### Main analysis script
+corr_power_simulation_analysis.r
+### Config file (requires set up with specification of SQL connection detail, if using sql related functions)
+config.yml.README.txt	
 
-### What is this repository for? ###
+## Prepare plots and associated analyses (e.g. spline interpolation to estimate power given sample size)
+corr_power_plots.R	
 
-This repository is intended to contain some of the main project documentation - admin files for context and planning, script files for analyses, and report drafts.
+## Additional
+### Early script testing time of various functions
+corr_timetest.r	
 
-Carl Higgs 6 March 2018
-higgsc@student.unimelb.edu.au
+### C++ file with alternate routines for random number draws (for RCCP gtv function; thanks to Koen Simons)
+test.cpp	       
+
+### A stata do file with early notes experimenting with correlation formulae using mata
+stata_notes.do.txt	
+
+Carl Higgs 11 June 2018
+carlhiggs@gmail.com
