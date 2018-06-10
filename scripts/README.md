@@ -3,7 +3,7 @@ https://bitbucket.org/carlhiggs/bca_rp2/src/master/scripts/
 
 ## Conduct simulations
 ### Main analysis script
-[corr_power_simulation_analysis.r](https://bitbucket.org/carlhiggs/bca_rp2/src/master/scripts/)
+[corr_power_simulation_analysis.r](https://bitbucket.org/carlhiggs/bca_rp2/src/master/scripts/corr_power_simulation_analysis.r)
 ### Config file (requires set up with specification of SQL connection detail, if using sql related functions)
 
 [config.yml.README.txt](https://bitbucket.org/carlhiggs/bca_rp2/src/master/scripts/config.yml.README.txt)
