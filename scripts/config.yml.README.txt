@@ -1,0 +1,21 @@
+# Power calculation for difference in twin correlations
+# Config yml file for Biostatistics Research Project 
+# Carl Higgs May 2018
+#
+# This .yml file is used to hold PostgreSQL database connection information
+# used when processing results using parLapply to an SQL database
+#
+# Replace the dbname, host, port, user and password fields according to your
+# Postgresql set up.
+#
+# This process assumes you have PostgreSQL installed: https://www.postgresql.org/
+# The report was conducted using PostgreSQL 9.6 and R 3.5
+
+default:
+  sql:
+    connection:
+      dbname: "corrx_twins"
+      host: "localhost"
+      port: 5432
+      user: "username"
+      password: "password"

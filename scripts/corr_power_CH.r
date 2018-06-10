@@ -68,7 +68,7 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
-   
+  
   # Step 1: Compute sample correlation coefficients
   z1     <- atanh(cor(a,method = method)[2,1])
   z2     <- atanh(cor(b,method = method)[2,1])
@@ -81,40 +81,40 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 }
 
 ## Using rccp - but this doesn't play nice with parallelisation
-gtv <- function(a,b,M=1e4,method = "pearson") {
+gtv <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
-
+  
   # Step 1: Compute sample correlation coefficients
   r1 <- cor(a,method = method)[2,1]
   r2 <- cor(b,method = method)[2,1]
   r  <- c(r1,r2)
-
+  
   # Step 2: Generate random numbers
   V2     <- matrix(data=0, nrow = M, ncol = 2)
   V2[,1] <- rchisq_cpp(M, df = n1-1, ncp = 1)
   V2[,2] <- rchisq_cpp(M, df = n2-1, ncp = 1)
-
+  
   W2     <- matrix(data=0, nrow = M, ncol = 2)
   W2[,1] <- rchisq_cpp(M, df = n1-2, ncp = 1)
   W2[,2] <- rchisq_cpp(M, df = n2-2, ncp = 1)
-
+  
   Z <-matrix(data = rnorm_cpp(2*M,0,1), nrow=M, ncol = 2)
-
+  
   # Compute test statistic
   rstar <- r/sqrt(1-r^2)
   top   <- c(sqrt(W2[,1])*rstar[1],sqrt(W2[,2])*rstar[2]) - Z
   G     <- top / sqrt( top^2 + V2 )
-
+  
   # Compute p value
   Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) );
+  p    <- sidedness*min( mean(Grho<0), mean(Grho>0) );
   return(p)
 }
 
 # GTV test statistic, redefined not using rccp
-gtv_r <- function(a,b,M=1e4,method = "pearson") {
+gtv_r <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -142,7 +142,7 @@ gtv_r <- function(a,b,M=1e4,method = "pearson") {
   
   # Compute p value
   Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  p    <- sidedness*min( mean(Grho<0), mean(Grho>0) ); 
   return(p)
 }
 
@@ -157,29 +157,29 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   rf <- tanh(mean(z))
   
   slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
-  p    <- 2 * (1 - pnorm(abs(slr))); 
+  p    <- sidedness * (1 - pnorm(abs(slr))); 
   return(p)
 }
 
 
 pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
-# Based on Efron and Tibshirani
-n  <- c(nrow(a),nrow(b))
-r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
-z  <- atanh(r)
-v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
-rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
-rtest <- numeric(0)
-for (i in 1:M){
-  permute <- cbind(v,rbinom(sum(n),1,0.5))
-  rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
-               cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
-  zstar   <- atanh(rstar)
-  rtest   <- c(rtest,
-               abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
+  # Based on Efron and Tibshirani
+  n  <- c(nrow(a),nrow(b))
+  r  <- c(cor(a,method = method)[2,1], cor(b,method = method)[2,1])
+  z  <- atanh(r)
+  v <- cbind(rank(rbind(a[,1],b[,1]),ties.method = "random"),rank(rbind(a[,2],b[,2]),ties.method = "random"))
+  rownames(v) <- c(rep("A",n[1]),rep("B",n[2]))
+  rtest <- numeric(0)
+  for (i in 1:M){
+    permute <- cbind(v,rbinom(sum(n),1,0.5))
+    rstar   <- c(cor(permute[permute[,3]==0,c(1,2)],method = method)[2,1],
+                 cor(permute[permute[,3]==1,c(1,2)],method = method)[2,1])
+    zstar   <- atanh(rstar)
+    rtest   <- c(rtest,
+                 abs(zstar[1]-zstar[2]) > abs(z[1]-z[2]))
   } 
-p <- mean(rtest)
-return(p)
+  p <- mean(rtest)
+  return(p)
 }
 
 zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
@@ -211,9 +211,9 @@ pt_compiled <- cmpfun(pt)
 zou_compiled <- cmpfun(zou)
 
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
-                    param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
-                    alpha = 0.05, sidedness = 2, test = c("fz","gtv","pt","slr","zou"),
-                    method ="pearson", lower.tri = FALSE) {
+                           param1a = c(0,0), param1b = c(0,0),param2a = c(1,1), param2b = c(1,1),
+                           alpha = 0.05, sidedness = 2, test = c("fz","gtv","pt","slr","zou"),
+                           method ="pearson", lower.tri = FALSE) {
   # cat("Parameters: ",rho[1],rho[2], n[1],n[2], param1a, param1b, param2a, param2b, distr, alpha, sidedness, method,"\n")
   if(lower.tri==TRUE){
     # only calculate lower matrix half when comparing across all correlation combinations
@@ -224,22 +224,22 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   results <- list()
   if ("fz_nosim" %in% test) {
     results[["fz_nosim"]] <- fz_ns_compiled(rho[1],rho[2],n[1],n[2], 
-                                      alpha = 0.05, sidedness = 2, method = method, power = FALSE)
+                                            alpha = 0.05, sidedness = 2, method = method, power = FALSE)
     if(length(test)==1) return(results)
   }
   require("simstudy")
   a <- genCorGen(n[1], nvars = 2, params1 = param1a, params2 = param2a,  
-                dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
-                wide = TRUE)[,2:3]
+                 dist = distr, corMatrix = matrix(c(1, rho[1], rho[1], 1), ncol = 2), 
+                 wide = TRUE)[,2:3]
   b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
-                dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
-                wide = TRUE)[,2:3]
-  if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
-  if ("gtv"      %in% test) results[["gtv"]]      <- gtv(a,b) # uses rccp ; so elsewise compiled
-  if ("gtvr"     %in% test) results[["gtvr"]]      <- gtv_compiled(a,b) 
-  if ("pt"       %in% test) results[["pt"]]       <- pt_compiled(a,b)
-  if ("slr"      %in% test) results[["slr"]]      <- slr_compiled(a,b)
-  if ("zou"      %in% test) results[["zou"]]      <- zou_compiled(a,b)[1]
+                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
+                 wide = TRUE)[,2:3]
+  if ("fz"       %in% test) results[["fz"]]   <- fz_compiled(a,b, sidedness = sidedness, method = method)
+  if ("gtv"      %in% test) results[["gtv"]]  <- gtv(a,b, sidedness = sidedness, method = method) # uses rccp ; so elsewise compiled
+  if ("gtvr"     %in% test) results[["gtvr"]] <- gtv_compiled(a,b, sidedness = sidedness,method = method) 
+  if ("pt"       %in% test) results[["pt"]]   <- pt_compiled(a,b, sidedness = sidedness, method = method)
+  if ("slr"      %in% test) results[["slr"]]  <- slr_compiled(a,b, sidedness = sidedness, method = method)
+  if ("zou"      %in% test) results[["zou"]]  <- zou_compiled(a,b, alpha = alpha, sidedness = sidedness, method = method)[1]
   return(rbind(results[test]))
 }
 
@@ -456,6 +456,8 @@ stopCluster(cl)
 
 ## 1000 simulations run
 # open Postgres database (db) connection
+
+# open Postgres database (db) connection
 pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
                           dbname   = config::get("sql")$connection$dbname,
                           host     = config::get("sql")$connection$host,
@@ -463,25 +465,33 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           user     = config::get("sql")$connection$user,
                           password = config::get("sql")$connection$password)
 
-# Create table to hold results
-create_table <- paste0("CREATE TABLE corrx_1k (
-   simx         integer PRIMARY KEY,
-   method       varchar(8),
-   dist         varchar(8),
-   p1           numeric,
-   p2           numeric,
-   n1           integer,
-   n2           integer,
-   rho1         double precision,
-   rho2         double precision,
-   fz_nosim     double precision,
-   fz           double precision,
-   gtvr         double precision,
-   slr          double precision,
-   zou          double precision);")
-res <- dbSendQuery(pg.RPostgres, create_table)
-
-# Clean up and close database connection
+SCENARIO_SET <- "corrx_1k"
+if(dbExistsTable(pg.RPostgres, SCENARIO_SET)==FALSE){
+  
+  # Create table to hold results
+  create_table <- paste0("CREATE TABLE ",SCENARIO_SET," (
+                         simx         integer PRIMARY KEY,
+                         method       varchar(8),
+                         dist         varchar(8),
+                         p1           numeric,
+                         p2           numeric,
+                         n1           integer,
+                         n2           integer,
+                         rho1         double precision,
+                         rho2         double precision,
+                         fz_nosim     double precision,
+                         fz           double precision,
+                         gtvr         double precision,
+                         slr          double precision,
+                         zou          double precision);")
+  res <- dbSendQuery(pg.RPostgres, create_table)
+  
+  # Clean up and close database connection
+  dbClearResult(res)
+}
+check_query <- paste("SELECT simx FROM",SCENARIO_SET)
+res <- dbSendQuery(pg.RPostgres, check_query)
+scenario_set_id_exists <- dbFetch(res)
 dbClearResult(res)
 dbDisconnect(pg.RPostgres)
 
@@ -492,72 +502,74 @@ cl <- makeCluster(cores)
 clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
                      'corr_diff_test',
                      'corr_power_compiled', 
-                     'dt',
+                     'dt','scenario_set_id_exists',
                      'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
 
 # Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
 system.time(
   parLapply(cl, 1:nrow(dt), function(x) { 
-    # run simulation for single row
-    return <-  with(dt, c(id = x, 
-                        method = as.character(method[x]),
-                        dist   = dist[x],
-                        p1     = p1[x],
-                        p2     = p2[x],
-                        n1     = n1[x],
-                        n2     = n2[x],
-                        rho1   = rho1[x],
-                        rho2   = rho2[x],
-                        corr_power_compiled(rho = c(rho1[x],rho2[x]),
-                        n = c(n1[x],n2[x]),
-                        distr = dist,
-                        param1a = c(p1[x],p1[x]),
-                        param1b = c(p1[x],p1[x]),
-                        param2a = c(p2[x],p2[x]),
-                        param2b = c(p2[x],p2[x]),
-                        test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
-                        alpha   = 0.05,
-                        sidedness=2,
-                        method=as.character(method[x]),
-                        nsims = 1000,
-                        power_only = TRUE))) 
-    
-    # open Postgres connection
-    pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
-                              dbname   = config::get("sql")$connection$dbname,
-                              host     = config::get("sql")$connection$host,
-                              port     = config::get("sql")$connection$port,
-                              user     = config::get("sql")$connection$user,
-                              password = config::get("sql")$connection$password)
-    
-   # insert simulation result to as database row 
-    res <- dbSendQuery(pg.RPostgres, 
-                "INSERT INTO corrx_1k VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
-                params=list(as.integer(return["id"]), 
-                            as.character(return["method"]),
-                            as.character(return["dist"]),
-                            as.numeric(return["p1"]),
-                            as.numeric(return["p2"]),
-                            as.integer(return["n1"]),
-                            as.integer(return["n2"]),
-                            as.numeric(return["rho1"]),
-                            as.numeric(return["rho2"]),
-                            as.numeric(return["fz_nosim"]),
-                            as.numeric(return["fz"]),
-                            as.numeric(return["gtvr"]),
-                            as.numeric(return["slr"]),
-                            as.numeric(return["zou"])
-                ))
-    # clean up and release connection
-    dbClearResult(res)
-    dbDisconnect(pg.RPostgres)
-    }))
+    # run simulation for single row if id not in list
+    if(!x %in% unlist(scenario_set_id_exists)) {
+      return <-  with(dt, c(id = x, 
+                                method = as.character(method[x]),
+                                dist   = dist[x],
+                                p1     = p1[x],
+                                p2     = p2[x],
+                                n1     = n1[x],
+                                n2     = n2[x],
+                                rho1   = rho1[x],
+                                rho2   = rho2[x],
+                                corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                                                    n = c(n1[x],n2[x]),
+                                                    distr = dist,
+                                                    param1a = c(p1[x],p1[x]),
+                                                    param1b = c(p1[x],p1[x]),
+                                                    param2a = c(p2[x],p2[x]),
+                                                    param2b = c(p2[x],p2[x]),
+                                                    test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                                                    alpha   = 0.05,
+                                                    sidedness=2,
+                                                    method=as.character(method[x]),
+                                                    nsims = 1000,
+                                                    power_only = TRUE))) 
+      
+      # open Postgres connection
+      pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                                dbname   = config::get("sql")$connection$dbname,
+                                host     = config::get("sql")$connection$host,
+                                port     = config::get("sql")$connection$port,
+                                user     = config::get("sql")$connection$user,
+                                password = config::get("sql")$connection$password)
+      
+      # insert simulation result to as database row 
+      res <- dbSendQuery(pg.RPostgres, 
+                         "INSERT INTO corrx_1k VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
+                         params=list(as.integer(return["id"]), 
+                                     as.character(return["method"]),
+                                     as.character(return["dist"]),
+                                     as.numeric(return["p1"]),
+                                     as.numeric(return["p2"]),
+                                     as.integer(return["n1"]),
+                                     as.integer(return["n2"]),
+                                     as.numeric(return["rho1"]),
+                                     as.numeric(return["rho2"]),
+                                     as.numeric(return["fz_nosim"]),
+                                     as.numeric(return["fz"]),
+                                     as.numeric(return["gtvr"]),
+                                     as.numeric(return["slr"]),
+                                     as.numeric(return["zou"])
+                         ))
+      # clean up and release connection
+      dbClearResult(res)
+      dbDisconnect(pg.RPostgres)
+    }
+  }))
 
 # Full process (parallel with sql) was started
 # on work computer at about 10:01 on Thurs 6 June 2011
 # 09:48 10 June 2018 Timing stopped at: 111.5 1656 2.142e+05
 #  Issues with computer battery and need to restart.
-
+### Due to an 
 # Conclude parallel processing and free cores
 stopCluster(cl)
 
@@ -577,7 +589,7 @@ stopCluster(cl)
 # We need about 100,000 processed - so maybe that's about 7 days
 
 
-## 10,000 simulations run
+## 1000 simulations run for Scenario 3 only
 # open Postgres database (db) connection
 pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
                           dbname   = config::get("sql")$connection$dbname,
@@ -586,8 +598,13 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           user     = config::get("sql")$connection$user,
                           password = config::get("sql")$connection$password)
 
+# res <- dbSendQuery(pg.RPostgres, "SELECT simx FROM corrx_1k_sa3")
+# corrx_1k_sa3_exists <- dbFetch(res)
+# dbClearResult(res)
+# dbDisconnect(pg.RPostgres)
+
 # Create table to hold results
-create_table <- paste0("CREATE TABLE corrx_10k (
+create_table <- paste0("CREATE TABLE corrx_1k_SA3 (
                        simx         integer PRIMARY KEY,
                        method       varchar(8),
                        dist         varchar(8),
@@ -612,17 +629,18 @@ dbDisconnect(pg.RPostgres)
 cores <- detectCores(logical = FALSE)
 cl <- makeCluster(cores)
 # Export required functions and data to cluster workers
+dt_sa3 <- dt[(rho1==0.2)&(rho2==0.5),]
 clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
                      'corr_diff_test',
                      'corr_power_compiled', 
-                     'dt',
+                     'dt_sa3',
                      'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
 
 # Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
 system.time(
-  parLapply(cl, 1:nrow(dt), function(x) { 
+  parLapply(cl, 1:nrow(dt_sa3), function(x) { 
     # run simulation for single row
-    return <-  with(dt, c(id = x, 
+    return <-  with(dt_sa3, c(id = x, 
                           method = as.character(method[x]),
                           dist   = dist[x],
                           p1     = p1[x],
@@ -642,7 +660,7 @@ system.time(
                                               alpha   = 0.05,
                                               sidedness=2,
                                               method=as.character(method[x]),
-                                              nsims = 10000,
+                                              nsims = 1000,
                                               power_only = TRUE))) 
     
     # open Postgres connection
@@ -655,7 +673,7 @@ system.time(
     
     # insert simulation result to as database row 
     res <- dbSendQuery(pg.RPostgres, 
-                       "INSERT INTO corrx_100 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
+                       "INSERT INTO corrx_1k_SA3 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
                        params=list(as.integer(return["id"]), 
                                    as.character(return["method"]),
                                    as.character(return["dist"]),
@@ -679,6 +697,120 @@ system.time(
 # Conclude parallel processing and free cores
 stopCluster(cl)
 
+
+## 10,000 simulations run for Scenario 3 only
+# open Postgres database (db) connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+
+SCENARIO_SET <- "corrx_10k_sa3"
+if(dbExistsTable(pg.RPostgres, SCENARIO_SET)==FALSE){
+
+  # Create table to hold results
+  create_table <- paste0("CREATE TABLE ",SCENARIO_SET," (
+                         simx         integer PRIMARY KEY,
+                         method       varchar(8),
+                         dist         varchar(8),
+                         p1           numeric,
+                         p2           numeric,
+                         n1           integer,
+                         n2           integer,
+                         rho1         double precision,
+                         rho2         double precision,
+                         fz_nosim     double precision,
+                         fz           double precision,
+                         gtvr         double precision,
+                         slr          double precision,
+                         zou          double precision);")
+  res <- dbSendQuery(pg.RPostgres, create_table)
+  
+  # Clean up and close database connection
+  dbClearResult(res)
+}
+check_query <- paste("SELECT simx FROM",SCENARIO_SET)
+res <- dbSendQuery(pg.RPostgres, check_query)
+scenario_set_id_exists <- dbFetch(res)
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+
+# Prepare for parallel processing using all available cores
+cores <- detectCores(logical = FALSE)
+cl <- makeCluster(cores)
+# Export required functions and data to cluster workers
+dt_sa3 <- dt[(rho1==0.2)&(rho2==0.5),]
+clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
+                     'corr_diff_test',
+                     'corr_power_compiled', 
+                     'dt_sa3','scenario_set_id_exists',
+                     'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
+
+# Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
+system.time(
+  parLapply(cl, 1:nrow(dt_sa3), function(x) { 
+    # run simulation for single row if id not in list
+    if(!x %in% unlist(scenario_set_id_exists)) {
+      return <-  with(dt_sa3, c(id = x, 
+                              method = as.character(method[x]),
+                              dist   = dist[x],
+                              p1     = p1[x],
+                              p2     = p2[x],
+                              n1     = n1[x],
+                              n2     = n2[x],
+                              rho1   = rho1[x],
+                              rho2   = rho2[x],
+                              corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                                                  n = c(n1[x],n2[x]),
+                                                  distr = dist,
+                                                  param1a = c(p1[x],p1[x]),
+                                                  param1b = c(p1[x],p1[x]),
+                                                  param2a = c(p2[x],p2[x]),
+                                                  param2b = c(p2[x],p2[x]),
+                                                  test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                                                  alpha   = 0.05,
+                                                  sidedness=2,
+                                                  method=as.character(method[x]),
+                                                  nsims = 10000,
+                                                  power_only = TRUE))) 
+    
+      # open Postgres connection
+      pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                              dbname   = config::get("sql")$connection$dbname,
+                              host     = config::get("sql")$connection$host,
+                              port     = config::get("sql")$connection$port,
+                              user     = config::get("sql")$connection$user,
+                              password = config::get("sql")$connection$password)
+    
+      # insert simulation result to as database row 
+      res <- dbSendQuery(pg.RPostgres, 
+                       "INSERT INTO corrx_10k_SA3 VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)", 
+                       params=list(as.integer(return["id"]), 
+                                   as.character(return["method"]),
+                                   as.character(return["dist"]),
+                                   as.numeric(return["p1"]),
+                                   as.numeric(return["p2"]),
+                                   as.integer(return["n1"]),
+                                   as.integer(return["n2"]),
+                                   as.numeric(return["rho1"]),
+                                   as.numeric(return["rho2"]),
+                                   as.numeric(return["fz_nosim"]),
+                                   as.numeric(return["fz"]),
+                                   as.numeric(return["gtvr"]),
+                                   as.numeric(return["slr"]),
+                                   as.numeric(return["zou"])
+                       ))
+      # clean up and release connection
+      dbClearResult(res)
+      dbDisconnect(pg.RPostgres)
+    }
+  }))
+
+# Conclude parallel processing and free cores
+stopCluster(cl)
+
 ## On core2duo home processor, 634 results at 20180606 11:03 (maybe over half hour??)
 # At about 11:10 the next day, the result was at 12381 
 # So, about 12000 in 12 hours; or about 1000/hour
@@ -686,7 +818,7 @@ stopCluster(cl)
 ## However, most of this time the computer wasn't being used; with computer usage lets guesstimate 6 days.
 
 ## Get processed data
-## 100 Simulations
+## Scenario A3 1000 Simulations - 
 # Open Postgres connection
 pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
                           dbname   = config::get("sql")$connection$dbname,
@@ -695,17 +827,38 @@ pg.RPostgres <- dbConnect(RPostgres::Postgres(),
                           user     = config::get("sql")$connection$user,
                           password = config::get("sql")$connection$password)
 # Fetch results
-res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_100")
-corrx_100 <- dbFetch(res)
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_1k_sa3")
+corrx_1k_sa3 <- data.table(dbFetch(res))[order(simx)]
 
 # clean up and close connection
 dbClearResult(res)
 dbDisconnect(pg.RPostgres)
 
 # add in extra summary vars
-ccorrx_100[,("ratio"):=n1/n2,by=1:nrow(corrx_1k)]
-ccorrx_100[,("n"):=n1+n2,by=1:nrow(corrx_1k)]
-ccorrx_100[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_1k)]
+corrx_1k_sa3[,("ratio"):=n1/n2,by=1:nrow(corrx_1k_sa3)]
+corrx_1k_sa3[,("n"):=n1+n2,by=1:nrow(corrx_1k_sa3)]
+corrx_1k_sa3[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_1k_sa3)]
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_1k_sa3_20180610.RData")
+
+## Scenario A3 10,000 Simulations 
+# Open Postgres connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+# Fetch results
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_10k_sa3")
+corrx_10k_sa3 <- data.table(dbFetch(res))[order(simx)]
+
+# clean up and close connection
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+corrx_10k_sa3[,("ratio"):=n1/n2,by=1:nrow(corrx_10k_sa3)]
+corrx_10k_sa3[,("n"):=n1+n2,by=1:nrow(corrx_10k_sa3)]
+corrx_10k_sa3[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_10k_sa3)]
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_10k_sa3_20180610.RData")
 
 ## 1000 Simulations
 # Open Postgres connection

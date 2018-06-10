@@ -7,16 +7,18 @@
 The preceding chapter summarised a review of the literature relating to twins, correlations, power and simulations undertaken to inform our approach to analysis.  Through this review we identified a series of suitable approaches and tests for evaluating differences in Pearson and Spearman correlations in two groups. Important considerations were the efficiency of our implemented simulation functions, and a well-designed data structure to support our planned as well as future outputs.  The $R$ programming environment was used for all analyses \cite{R2018}.
 
 \section{Hypothesis tests for difference in correlations}
-\subsection{Fisher's Z test (analytical approach)}
+\subsection{Fisher's Z test (analytical approach for calculating power)}
 A test statistic for the difference in correlations can be calculated as the difference in Fisher's Z transformed values weighted by the approximate standard error of the difference \cite{Fisher1990,David1938}
 $$t_{\hat{\theta}} = {\frac{\hat{\theta}}{se_\hat{\theta}}} = {\frac{z_{MZ} - z_{DZ}}{\sqrt{(n_{MZ}-3)^{-1}+(n_{DZ}-3)^{-1}}}} $$
 
-The type 2 error rate $\beta$ is estimated through comparison of this test statistic $t_{\hat{\theta}}$ to a reference value on the standard normal distribution.   Using the cumulative normal distribution function $\Phi$ (Phi), the reference score $q$ is calculated as the normal probability quantile corresponding to our $\alpha$ level divided by the sidedness of our test. 
- $$q = \Phi^{-1}(\alpha/\text{sidedness})$$
-Where we refer to sidedness, we mean whether we are concerned with a single- or two-tailed probability.  Here, we are testing the hypothesis that $\rho_{MZ} = \rho_{DZ}$ using a two-tailed p-value, implying 'admissible alternatives' to be the case that $\rho_{MZ}$ is greater than or less than $\rho_{DZ}$, that is, $|\rho_{MZ} - \rho_{DZ}| > 0$ \cite{David1938}.  One-tailed consideration, for example that $\rho_{MZ} > \rho_{DZ}$, is not considered in this report however, the functions developed may be parameterised in this way if desired. 
+The type 2 error rate $\beta$ is estimated through comparison of this test statistic $t_{\hat{\theta}}$ to a reference value on the standard normal distribution.   Using the cumulative normal distribution function (CDF) $\Phi$ (Phi), the reference score is calculated as the normal probability quantile corresponding to our $\alpha$ level divided by the sidedness of our test. 
+ $$\Phi^{-1}(\alpha/\text{sidedness})$$
+For conciseness and clarity, we will use the notation $\Phi_{\alpha/2}^{-1}$  for the inverse CDF in the following formulas.
+ 
+Where we refer to sidedness, we mean whether we are concerned with a single- or two-tailed probability.  Here, we are testing the hypothesis that $\rho_{MZ} = \rho_{DZ}$ using a two-tailed p-value, implying 'admissible alternatives' to be the case that $\rho_{MZ}$ is greater than or less than $\rho_{DZ}$, that is, $|\rho_{MZ} - \rho_{DZ}| > 0$ \cite{David1938}.  One-tailed consideration, for example that $\rho_{MZ} > \rho_{DZ}$, is not considered in this report however, the functions developed may be parameterised in this way if desired.  
 \\
 Employing the concepts detailed above, $\beta$ is calculated as 
-$$\beta = \Phi \big( q - t_\theta \big)$$
+$$\beta = \Phi \big( \Phi_{\alpha/2}^{-1} - t_\theta \big)$$
 Our power estimate for the detection of difference in correlations is $\power(\theta) = 1 - \beta$. Putting the above altogether, we calculate power using the Fisher's $z$ test statistic as,
 
 $$ \power = 1- \Phi \Bigg(\Phi_{\alpha/2}^{-1} -  \abs\bigg(  \frac{\arctanh(r_{MZ}) - \arctanh(r_{DZ})}{\sqrt{(n_{MZ}-3)^{-1} + (n_{DZ}-3)^{-1}}}  \bigg)  \Bigg) $$ 
@@ -54,7 +56,7 @@ The above method is the de facto standard, as used for example in the Stata \cod
 Using a simulation approach we take our hypothesis tests and apply them to draws from simulated data designed to mimic our samples through parameterisation using the hypothesised underlying bivariate population distributions.  
 \\
 \\
-So where in our formula we might plug in hypothesised sample coefficients of 0.2 and 0.5, in the simulation we use these values to represent the true correlations in the underlying population from which we draw our samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
+So where in our analytic formula we might plug in observed or hypothetical sample coefficients of 0.2 and 0.5, in the simulation we use these values to represent the true correlations in the underlying population from which we draw our samples.  Over a large number of simulations of bivariate twin data the proportion of hypothesis tests returning p-values lower than our type 1 error threshold is our power estimate.
 \\
 \\
 The simulation-based Fisher's Z test function $R$ code is displayed in listing \ref{lst:fz}.
@@ -140,8 +142,8 @@ zou <- function(a,b,alpha = 0.05,sidedness=2,method = "pearson") {
 The generalised variable (GV) test involves transformation of the simulated sample correlations into so-called pivotal quantities the difference of which is used to calculate a test statistic and p-value \cite{Krishnamoorthy2014}. Synthesising two reported approaches \cite{Krishnamoorthy2007,Kazemi2016} this test was first implemented as an example by my supervisor Enes Makalic in a Matlab script, and subsequently adapted by myself as a function in R.  A compiled version using RCPP to leverage C++ routines for random number draws was suggested by my colleague Koen Simons, and adopted to improve the function's run time. However, this later version was not compatible with the parallelised simulation approach, and in this context the non-RCCP 'GVT-r' version was used.
 \\
 \\
-Given two bivariate normal samples $k\in\{1,2\}$, the sample correlation coefficients $r_k$ are used to estimate two respective quantities $r_k^* = \frac{r_k}{\sqrt(1-r_k^2)}$, and the generalised variables $G_{\rho_k}$:
-$$G_{\rho_k} = \frac{r_k^*\sqrt{W_k} - U_k}{\sqrt{(r_k^*\sqrt(W_k) - U_k)^2 + V_k}}$$
+Given two bivariate normal samples $k\in\{1,2\}$, the sample correlation coefficients $r_k$ are used to estimate two respective quantities $r_k^* = \frac{r_k}{\sqrt{1-r_k^2}}$, and the generalised variables $G_{\rho_k}$:
+$$G_{\rho_k} = \frac{r_k^*\sqrt{W_k} - U_k}{\sqrt{(r_k^*\sqrt{W_k} - U_k)^2 + V_k}}$$
 where,
 $$U_k \sim N(0,1) ,\ V_k \sim \chi_{n_k - 1}^2 ,\ \text{and} \ W_k \sim \chi_{n_k-2}^2$$
 A p-value using the GV test is calculated as twice the value of the smaller of two quantities: the proportion of differences in $G_{\rho_k}$ less than 0, and the proportion greater than 0.
@@ -149,7 +151,7 @@ A p-value using the GV test is calculated as twice the value of the smaller of t
 The GV test function $R$ code is displayed in listing \ref{lst:gvtr}.
 
 \begin{lstlisting}[float=h,caption={GV test (R version)},label={lst:gvtr}]
-gvt_r <- function(a,b,M=1e4,method = "pearson") {
+gtv_r <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -177,7 +179,7 @@ gvt_r <- function(a,b,M=1e4,method = "pearson") {
   
   # Compute p value
   Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  p    <- sidedness*min( mean(Grho<0), mean(Grho>0) ); 
   return(p)
 }
 \end{lstlisting}
@@ -206,7 +208,7 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
   
   # return p-value
-  p    <- 2 * (1 - pnorm(abs(slr))); 
+  p    <- sidedness * (1 - pnorm(abs(slr))); 
   return(p)
 }
 \end{lstlisting}
@@ -260,7 +262,7 @@ pt <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
 A function \code{corr\_diff\_test()} was developed to undertake a single comparative simulation using any of the above tests (listing \ref{lst:corr_diff}). Within a single simulation, each requested test is evaluated using samples drawn from the same two simulated bivariate populations (MZ and DZ), returning a $p$-value.  The analytic Fisher Z test returns either a $p$-value or a power estimate based on the population parameters.  
 \\
 \\
-In the detailing of computational aspects of our methodology we use the term 'parameter' to refer to one of the options which may be specified within a function; an argument is the specific value which is passed to that parameter. For example, the parameter $\rho$ for the respective MZ and DZ groups may be defined by specifying the argument \code{rho = c(-0.65,0.2)}. The main parameters which can be specified in the function call to \code{corr\_diff\_test()} are described with example arguments in Table \ref{table:corr_params}.  In the following text we refer to the set of parameters that give rise to a simulation of estimated power for a particular test as a scenario.  Power estimates returned across a series of tests for comparison purposes are refered to as a composite scenario.
+In the detailing of computational aspects of our methodology we use the term 'parameter' to refer to one of the options which may be specified within a function; an argument is the specific value which is passed to that parameter. For example, the parameter $\rho$ for the respective MZ and DZ groups may be defined by specifying the argument \code{rho = c(-0.65,0.2)}. The main parameters which can be specified in the function call to \code{corr\_diff\_test()} are described with example arguments in Table \ref{table:corr_params}.  In the following text we refer to the set of parameters that give rise to a simulation of estimated power for a particular test as a scenario.  Power estimates returned across a series of tests for comparison purposes are referred to as a composite scenario.
 
 \begin{lstlisting}[float=h,caption={Single run simulation code},label={lst:corr_diff}]
 corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
@@ -291,12 +293,12 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
                 wide = TRUE)[,2:3]
-  if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
-  if ("gtv"      %in% test) results[["gtv"]]      <- gtv(a,b) # uses rccp ; so elsewise compiled
-  if ("gtvr"     %in% test) results[["gtvr"]]      <- gtv_compiled(a,b) 
-  if ("pt"       %in% test) results[["pt"]]       <- pt_compiled(a,b)
-  if ("slr"      %in% test) results[["slr"]]      <- slr_compiled(a,b)
-  if ("zou"      %in% test) results[["zou"]]      <- zou_compiled(a,b)[1]
+  if ("fz"   %in% test) results[["fz"]]   <- fz_compiled(a,b,sidedness,method)
+  if ("gtv"  %in% test) results[["gtv"]]  <- gtv(a,b,M=1e4,sidedness,method) # uses rccp
+  if ("gtvr" %in% test) results[["gtvr"]] <- gtv_compiled(a,b, M=1e4,sidedness,method) 
+  if ("pt"   %in% test) results[["pt"]]   <- pt_compiled(a,b,M=1e4,sidedness,method)
+  if ("slr"  %in% test) results[["slr"]]  <- slr_compiled(a,b,M=1e4,sidedness,method)
+  if ("zou"  %in% test) results[["zou"]]  <- zou_compiled(a,b,alpha,sidedness,method)[1]
   return(rbind(results[test]))
 }
 \end{lstlisting}
@@ -354,13 +356,13 @@ The function \code{corr\_diff\_test()} uses the $R$ package \code{simstudy} func
 \end{tabular}
 \end{table}
 
-\subsection{Approach for multiple simulations}
+\subsection{Power evaluation across multiple simulations}
 The \code{corr\_diff\_test()} function described above runs a single simulation of drawing from samples from two bivariate populations.  However, for asymptotic normality to hold --- the long run approximation of a normal distribution due to the Central Limit Theorem \cite{Casella2002} --- many more simulations must be run to achieve a fair assessment of the proportion of null hypotheses rejected when false for a particular scenario.
 \\
 \\
 A wrapper function \code{corr\_power()} allows for the \code{corr\_diff\_test()} function to be called $M$ times, returning a power estimate for each test specified in the function call.  These power estimates are derived from the series of simulated $p$-values for each test considered, or directly in the case of the analytic Fisher's Z test.
 
-\section{Scenario combinations}
+\subsection{Scenario combinations}
 The flexibility of the simulation commands we developed allows for an very broad array of scenarios to be considered.  A researcher could use these tools as is to aid in the development of a statistical analysis plan for their study.  For this report we had to decide on a limited subset of scenarios for consideration.  Two important considerations guiding this decision were the minimum number of scenario combinations required to facilitate useful comparisons of scenarios, and the time taken to run each of these.  Our initial plan for the series of scenarios is reported in table \ref{table:combos}.
 \\
 
@@ -392,7 +394,7 @@ The flexibility of the simulation commands we developed allows for an very broad
 \end{table}
 
 \\
-We decided \textit{a prior} to set some parameters as fixed, : we only conducted two-sided tests with $\alpha$ of 0.05;  having decided to limit ourselves to three basic distributional forms (normal, and two kinds of non-normal using distinct gamma distribution parameterisations) the distribution parameters were fixed to achieve these forms; the respective simulations of MZ and DZ twin pair samples each use the same distributional form, although the population correlation and sample size may vary (e.g. we don't compare bivariate normal MZ with a gamma skewed DZ); the simulated bivariate data for each twin group shares the same parameterisation (e.g. for normal data both MZ or DZ variables simulated based on $\mu$ 0 and $\sigma$ 1).  Nevertheless, we were aware that our initial plan would be over-ambitious: were each scenario to be processed consecutively, each taking 1 second to process at an optimistically steady rate with no computer crashes we might expect 1,000 simulations of each scenario in Table \ref{table:combos} to take $2,683,044,000/60/60/24/365 \approx 85$ years!  Under advice from my colleague Koen Simons, I undertook time tests of 1,000 iterations of each function and their byte code compiled versions, employing only the most efficient versions.  The permutation test implementation was particularly inefficient, and given time constraints for improving the code's efficiency this was abandoned.  Noting that the resolution of correlation combinations was a major contributor to anticipated length of processing time, this was reduced to comparison of correlations from -0.9 through 0.9 at a 0.1 resolution resulting in 361 instead of 1,521 correlation combinations.  Based on the preliminary time tests, the initial and revised time estimates are displayed along with function time results in Table \ref{table:times}.  These estimates suggested an anticipated running time of 16 days, based on my personal two core i7-processor laptop with 8gb RAM.
+We decided \textit{a priori} to set some parameters as fixed: we only conducted two-sided tests with $\alpha$ of 0.05;  having decided to limit ourselves to three basic distributional forms (normal, and two kinds of non-normal using distinct gamma distribution parameterisations) the distribution parameters were fixed to achieve these forms; the respective simulations of MZ and DZ twin pair samples each use the same distributional form, although the population correlation and sample size may vary (e.g. we don't compare bivariate normal MZ with a gamma skewed DZ); the simulated bivariate data for each twin group shares the same parameterisation (e.g. for normal data both MZ or DZ variables simulated based on $\mu$ 0 and $\sigma$ 1).  Nevertheless, we were aware that our initial plan would be over-ambitious: were each scenario to be processed consecutively, each taking 1 second to process at an optimistically steady rate with no computer crashes we might expect 1,000 simulations of each scenario in Table \ref{table:combos} to take $2,683,044,000/60/60/24/365 \approx 85$ years!  Under advice from my colleague Koen Simons, I undertook time tests of 1,000 iterations of each function and their byte code compiled versions, employing only the most efficient versions.  The permutation test implementation was particularly inefficient, and given time constraints for improving the code's efficiency this was abandoned.  Noting that the resolution of correlation combinations was a major contributor to anticipated length of processing time, this was reduced to comparison of correlations from -0.9 through 0.9 at a 0.1 resolution resulting in 361 instead of 1,521 correlation combinations.  Based on the preliminary time tests, the initial and revised time estimates are displayed along with function time results in Table \ref{table:times}.  These estimates suggested an anticipated running time of 16 days, based on my personal two core i7-processor laptop with 8gb RAM.
 \\
 
 \begin{table}\centering
@@ -421,70 +423,18 @@ We decided \textit{a prior} to set some parameters as fixed, : we only conducted
 \end{tabular}
 \end{table}
 \\
-The processing workflow used the R package \code{data.table}, which allows use of reportedly fast and memory efficient framework for reading, writing and otherwise processing results \ref{r_dt}.  The \code{data.table} was set up in wide format with rows per composite scenario (106,134 rows) and columns per parameter with five additional columns to contain power estimates per test (13 columns, once processed).  In long form, this corresponds to 5 \times 106,134 = 530,670 power estimate scenario rows.  Each wide-form row corresponds to a call to the \code{corr\_power()} function. Results as reported in this report were calculated row-wise using the \code{data.table} objects optimised processing syntax.  A subsequent revision to the workflow was made to explicitly employ parallel processing and use an SQL database for result storage and retrieval; see the discussion section for more details on this recommended approach for future work.
-\\
-\\
-The full set of composite scenarios were processed using 100 simulations; select scenario sets were processed using 1,000 simulations and 10,000 simulations.  The 100 simulation set of results provided proof of concept for the approach; the scenarios using 1,000 results provide the main results for the inferences made in this report; the 10,000 simulations scenarios were produced in order to evaluate sensitivity of simulated power estimates to the number of simulation runs, and in particular establish validity of the choice of 1,000 simulations for main results.
+The processing workflow used the R package \code{data.table}, which allows use of reportedly fast and memory efficient framework for reading, writing and otherwise processing results \cite{r_dt}.  The \code{data.table} was set up in wide format with rows per composite scenario (106,134 rows) and columns per parameter with five additional columns to contain power estimates per test (13 columns, once processed).  In long form, this corresponds to $5 \times 106,134 = 530,670$ power estimate scenario rows.  Each wide-form row corresponds to a call to the \code{corr\_power()} function. Results as reported in this report were calculated row-wise using the \code{data.table} objects optimised processing syntax.  A subsequent revision to the workflow was made to explicitly employ parallel processing and use an SQL database for result storage and retrieval; see the discussion section for more details on this recommended approach for future work.
 
+\section{Reporting and evaluation of power estimates}
+The full set of composite scenarios were processed using 100 simulations; select scenario sets were processed using 1,000 simulations and 10,000 simulations.  The 100 simulation set of results provided proof of concept for the approach; the scenarios using 1,000 and 10,000 simulations provide the main results for the inferences made in this report; and their comparison is used to establish validity of the use of 1,000 simulations for scenarios where 10,000 simulations would not be feasible given time constraints, such as consideration of all correlation combinations.  For validation, and to address the question 'How does sample size and MZ:DZ ratio impact power estimates?' we held constant \code{(rho1==0.2)&(rho2==0.5)} and process result using 100, 1000 and 10,000 simulations per composite scenario.  To interrogate the influence of MZ:DZ ratio and magnitude and difference of correlations on power estimates in more detail, we held sample size constant at 180 twin pairs while varying MZ:DZ ratio:  \code{n1 == 60 and n2 == 120}, or MZ:DZ ratio 0.5:1; and  \code{n1 == 90 and n2 == 90}, or MZ:DZ ratio 1:1.
+\\
+\\
+Subsets of results were summarised in table format for completeness, however due to the intense multivariate nature of the data the detail of such multiple cross-combinations is often best appreciated visually, if not interrogated interactively for a specific question.  As such, a custom function was developed to prepare three kinds of plots allowing for test comparison with a consistent visual style: 
 \begin{itemize}
-\item Scenario subset 1: How does sample size impact power estimates?  
-  \begin{itemize}
-    \item Approach:
-    \begin{itemize}
-      \item hold constant \code{(rho1==0.2)&(rho2==0.5)}
-      \item process and report results for 100, 1000 and 10,000 simulations
-    \end{itemize}
-    \item Power considerations for this scenario subset:
-      \item number of simulations (validity)
-      \item use of test
-      \item use of Pearson or Spearman's correlation
-      \item use of Distribution 
-    \end{itemize}
-  \end{itemize}
-\item Scenario subset 2: How does MZ:DZ ratio impact power estimates?  
-  \begin{itemize}
-    \item Approach:
-    \begin{itemize}
-      \item hold constant \code{n1 == 60 and n2 == 120}; ie. n = 180, MZ:DZ ratio 0.5:1
-      \item hold constant \code{n1 == 90 and n2 == 90}; ie. n = 180, MZ:DZ ratio 1:1
-      \item process and report results for 1000 simulations
-    \end{itemize}
-    \item Power considerations for this scenario subset:
-      \item use of test
-      \item use of Pearson or Spearman's correlation
-      \item use of Distribution 
-      \item magnitude and difference of correlations
-    \end{itemize}
-  \end{itemize}
+\item Holding all parameters except for sample size constant, a monotonic spline function based on power and $\log(n)$ is used to interpolate the power by sample size for each test. This in turn is used to estimate for each test the required sample size to achieve 80\% power for these 6 composite scenarios (3 distributions, two MZ:DZ sample size combinations).
+\item A monotonic spline interpolation of power given absolute difference in  Z-transformed correlations (back-transformed to range from -1 to 1), holding other parameters constant.  This provides an estimate of the magnitude of correlation difference required to achieve 80\% power.
+\item Contour profiles of power given correlation combinations, comparing the 0.8 contour across all tests given other parameters held constant (sample size, MZ:DZ ratio, distribution et cetera).
 \end{itemize}
-
-
-
-\section{Evaluating power}
-
-Using results of scenarios based on 10,000 simulations each, power estimates for detection of a difference in correlations from MZ twins with $\rho$ 0.2 and DZ twins with $\rho$ of 0.5 across a range of sample sizes and MZ:DZ ratios of .5:1 and 1:1 were compared using each of 5 tests, across the three distributions and measured with Pearson and Spearman correlations.  
-
-To evaluate the validity of using 1,000 instead of 10,000 simulations to estimate power, results from the same set of parameters giving rise to the above scenarios were considered in graphic form comparing each of 100, 1000 and 10,000 simulations.  Holding all parameters except for sample size constant, a monotonic spline function based on power and $\log(n)$ is used to interpolate the power by sample size for each test. This in turn is used to estimate for each test the required sample size to achieve 80\% power for these 6 composite scenarios (3 distributions, two MZ:DZ sample size combinations).
-
-Impact of magnitude of correlations on power to detect a difference in correlations is evaluated using fitted contour plots for each test, again by the three distribution types and two MZ:DZ ratios using sample size of 180, each evaluated using 1,000 simulations.  These 6 plots, evaluated across all correlation combinations for each test, are based on $ 6 \times 5 \times 361 = 10,830$ scenarios.
-
-The same six composite scenarios as the power plots are used to evaluate 
-
-
- etc. I have put more old style contour plots in appendix,
-which may be referred to — specific examples for GTV and SLR
-
-
-results in format of images
 \\
 \\
-contour plot
-\\
-\\  
-interpolation using monotonic increasing spline function
-\\
-\\
-Required sample size to achieve 80% power
-\\
-\\  
-Difference to achieve 80% power
+In addition, a prototype interactive power calculator was developed, adapting our functions for use in the $R$ Shiny web application framework \cite{r_shiny}.  At the time of writing this was accessible at the following url:  \href{https://anaestheteick.shinyapps.io/corr_power_app/}{https://anaestheteick.shinyapps.io/corr\_power\_app/}.

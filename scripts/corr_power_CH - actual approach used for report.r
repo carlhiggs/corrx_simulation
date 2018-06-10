@@ -81,7 +81,7 @@ fz <- function(a,b,sidedness=2,method = "pearson") {
 }
 
 ## Using rccp - but this doesn't play nice with parallelisation
-gtv <- function(a,b,M=1e4,method = "pearson") {
+gtv <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -109,12 +109,12 @@ gtv <- function(a,b,M=1e4,method = "pearson") {
 
   # Compute p value
   Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) );
+  p    <- sidedness*min( mean(Grho<0), mean(Grho>0) );
   return(p)
 }
 
 # GTV test statistic, redefined not using rccp
-gtv_r <- function(a,b,M=1e4,method = "pearson") {
+gtv_r <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   # Two samples
   n1 <- nrow(a)
   n2 <- nrow(b)
@@ -142,7 +142,7 @@ gtv_r <- function(a,b,M=1e4,method = "pearson") {
   
   # Compute p value
   Grho <- G[,1] - G[,2];
-  p    <- 2*min( mean(Grho<0), mean(Grho>0) ); 
+  p    <- sidedness*min( mean(Grho<0), mean(Grho>0) ); 
   return(p)
 }
 
@@ -157,7 +157,7 @@ slr <- function(a,b,M=1e4,sidedness=2,method = "pearson") {
   rf <- tanh(mean(z))
   
   slr <-sign(r[1]-r[2])*sqrt(sum(n*log(((1-rf*r)^2)/((1-r^2)*(1-rf^2)))))
-  p    <- 2 * (1 - pnorm(abs(slr))); 
+  p    <- sidedness * (1 - pnorm(abs(slr))); 
   return(p)
 }
 
@@ -234,12 +234,12 @@ corr_diff_test <- function(rho = c(.2,.5), n = c(30,90), distr = "normal",
   b <- genCorGen(n[2], nvars = 2, params1 = param1b, params2 = param2b,  
                 dist = distr, corMatrix = matrix(c(1, rho[2], rho[2], 1), ncol = 2), 
                 wide = TRUE)[,2:3]
-  if ("fz"       %in% test) results[["fz"]]       <- fz_compiled(a,b)
-  if ("gtv"      %in% test) results[["gtv"]]      <- gtv(a,b) # uses rccp ; so elsewise compiled
-  if ("gtvr"     %in% test) results[["gtvr"]]      <- gtv_compiled(a,b) 
-  if ("pt"       %in% test) results[["pt"]]       <- pt_compiled(a,b)
-  if ("slr"      %in% test) results[["slr"]]      <- slr_compiled(a,b)
-  if ("zou"      %in% test) results[["zou"]]      <- zou_compiled(a,b)[1]
+  if ("fz"       %in% test) results[["fz"]]   <- fz_compiled(a,b, sidedness = sidedness, method = method)
+  if ("gtv"      %in% test) results[["gtv"]]  <- gtv(a,b, sidedness = sidedness, method = method) # uses rccp ; so elsewise compiled
+  if ("gtvr"     %in% test) results[["gtvr"]] <- gtv_compiled(a,b, sidedness = sidedness,method = method) 
+  if ("pt"       %in% test) results[["pt"]]   <- pt_compiled(a,b, sidedness = sidedness, method = method)
+  if ("slr"      %in% test) results[["slr"]]  <- slr_compiled(a,b, sidedness = sidedness, method = method)
+  if ("zou"      %in% test) results[["zou"]]  <- zou_compiled(a,b, alpha = alpha, sidedness = sidedness, method = method)[1]
   return(rbind(results[test]))
 }
 
@@ -524,6 +524,19 @@ system.time(dt_sA3_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
                               power_only = TRUE))
 },by = 1:nrow(dt_sA3_10k)] )
 
+# retrieve results processed and saved using work computer into home computer .Rdata environment
+
+tmp.env <- new.env() # create a temporary environment
+load("r_power_work_dt_sA1_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA1 <- tmp.env[["dt_sA1"]]
+load("r_power_work_dt_sA2_20180527.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA2 <- tmp.env[["dt_sA2"]]
+load("r_power_work_dt_1k_sa3_20180610.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA3 <- tmp.env[["corrx_1k_sa3"]]
+load("r_power_work_dt_10k_sa3_20180610.RData", envir=tmp.env) # load workspace into temporary environment
+dt_sA3_10k <- tmp.env[["corrx_10k_sa3"]]
+rm(tmp.env) # remove the temporary environment to free up memory
+#x <- tmp.env$x # equivalent to previous line
 
 # additional summary statistics, for each specific scenario
 dt_sA1[,("ratio"):=n1/n2,by=1:nrow(dt_sA1)]
@@ -542,17 +555,22 @@ dt_sA3_10k[,("ratio"):=n1/n2,by=1:nrow(dt_sA3)]
 dt_sA3_10k[,("n"):=n1+n2,by=1:nrow(dt_sA3)]
 dt_sA3_10k[,("diff"):=abs(rho1-rho2),by=1:nrow(dt_sA3)]
 
+dt_sA1[,("distname"):=paste0(dist,'_',p1,'_',p2),by=1:nrow(dt_sA1)]
+dt_sA2[,("distname"):=paste0(dist,'_',p1,'_',p2),by=1:nrow(dt_sA2)]
+dt_sA3[,("distname"):=paste0(dist,'_',p1,'_',p2),by=1:nrow(dt_sA3)]
+dt_sA3_10k[,("distname"):=paste0(dist,'_',p1,'_',p2),by=1:nrow(dt_sA3_10k)]
+
 # convert to long
 # 100 sims
-dt.long <- melt(dt, measure.vars = tests, variable.name = "test", value.name = "power")
+dt.long <- melt(dt, measure.vars = c( "fz_nosim","fz","gtv","slr","zou"), variable.name = "test", value.name = "power")
 # 1000 sims
-dtk.long <- melt(dtk, measure.vars = tests, variable.name = "test", value.name = "power")
-dt_s1.long <- melt(dt_sA1, measure.vars = tests, variable.name = "test", value.name = "power")
-dt_s2.long <- melt(dt_sA2, measure.vars = tests, variable.name = "test", value.name = "power")
-dt_s3.long <- melt(dt_sA3, measure.vars = tests, variable.name = "test", value.name = "power")
+dtk.long <- melt(dtk, measure.vars =  c( "fz_nosim","fz","gtv","slr","zou"), variable.name = "test", value.name = "power")
+dt_s1.long <- melt(dt_sA1, measure.vars =  c( "fz_nosim","fz","gtv","slr","zou"), variable.name = "test", value.name = "power")
+dt_s2.long <- melt(dt_sA2, measure.vars =  c( "fz_nosim","fz","gtv","slr","zou"), variable.name = "test", value.name = "power")
+dt_s3.long <- melt(dt_sA3, measure.vars = c( "fz_nosim","fz","gtvr","slr","zou"), variable.name = "test", value.name = "power")
 
 # 10000 sims
-dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars = tests, variable.name = "test", value.name = "power")
+dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars =  c( "fz_nosim","fz","gtvr","slr","zou"), variable.name = "test", value.name = "power")
 
 # overall average power - NOTE - the below are only for the 100 simulation run
 ## Intent was to produce full sets using 1,000 simulation; as noted in part above two issues occured
@@ -567,172 +585,108 @@ dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars = tests, variable.name = "test",
 ########    Solution 2. if a power outage occurs, or some crash occurs, results are not lost
 
 # Evaluate marginal power estimates for rho of 0.2 and 0.5 using 1,000 and 10,000 simulations
-dt_s3_10k.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
-test   V1
-1: fz_nosim 0.56
-2:       fz 0.57
-3:      gtv 0.58
-4:      slr 0.74
-5:      zou 0.57
+## 1000 simulations
+dt_s3.long[rho1==0.2,][,round(mean(power),2),by=list(test)]
 
-dt_sA3_10k[(method=="pearson")&(dist=="normal"),list(fz_nosim = round(mean(fz_nosim),2),
-                                                     fz  = round(mean(fz),2),
-                                                     zou = round(mean(zou),2),
-                                                     gtv = round(mean(gtv),2),
-                                                     slr = round(mean(slr),2)),
-           ,by=list(ratio)]
-# ratio fz_nosim   fz  zou  gtv  slr
-# 1:  1.000000     0.65 0.65 0.65 0.66 0.67
-# 2:  0.500000     0.65 0.65 0.65 0.66 0.69
-# 3:  0.250000     0.63 0.62 0.62 0.64 0.73
-# 4:  0.125000     0.56 0.56 0.56 0.58 0.78
-# 5:  0.062500     0.45 0.45 0.45 0.47 0.81
-# 6:  0.031250     0.32 0.31 0.32 0.35 0.81
-# 7:  0.015625     0.22 0.20 0.21 0.25 0.82
-# 8:  2.000000     0.65 0.66 0.65 0.66 0.69
-# 9:  4.000000     0.63 0.63 0.63 0.64 0.74
-# 10:  8.000000     0.56 0.57 0.57 0.57 0.79
-# 11: 16.000000     0.45 0.47 0.46 0.47 0.82
-# 12: 32.000000     0.32 0.34 0.34 0.34 0.83
-# 13: 64.000000     0.22 0.24 0.24 0.25 0.84
 
-dt_sA3_10k[(method=="pearson")&(dist=="normal"),list(n1 = n1,
-                                                     n2 = n2,
-                                                     fz_nosim = round(mean(fz_nosim),2),
-                                                     fz  = round(mean(fz),2),
-                                                     zou = round(mean(zou),2),
-                                                     gtv = round(mean(gtv),2),
-                                                     slr = round(mean(slr),2)),
-                                                     ,by=list(ratio)]
-# ratio  n1  n2 fz_nosim   fz  zou  gtv  slr
-# 1:  1.000000  15  15     0.65 0.65 0.65 0.66 0.67
-# 2:  1.000000  30  30     0.65 0.65 0.65 0.66 0.67
-# 3:  1.000000  60  60     0.65 0.65 0.65 0.66 0.67
-# 4:  1.000000 120 120     0.65 0.65 0.65 0.66 0.67
-# 5:  1.000000 240 240     0.65 0.65 0.65 0.66 0.67
-# 6:  1.000000 480 480     0.65 0.65 0.65 0.66 0.67
-# 7:  1.000000 960 960     0.65 0.65 0.65 0.66 0.67
-# 8:  0.500000  15  30     0.65 0.65 0.65 0.66 0.69
-# 9:  0.500000  30  60     0.65 0.65 0.65 0.66 0.69
-# 10:  0.500000  60 120     0.65 0.65 0.65 0.66 0.69
-# 11:  0.500000 120 240     0.65 0.65 0.65 0.66 0.69
-# 12:  0.500000 240 480     0.65 0.65 0.65 0.66 0.69
-# 13:  0.500000 480 960     0.65 0.65 0.65 0.66 0.69
-# 14:  0.250000  15  60     0.63 0.62 0.62 0.64 0.73
-# 15:  0.250000  30 120     0.63 0.62 0.62 0.64 0.73
-# 16:  0.250000  60 240     0.63 0.62 0.62 0.64 0.73
-# 17:  0.250000 120 480     0.63 0.62 0.62 0.64 0.73
-# 18:  0.250000 240 960     0.63 0.62 0.62 0.64 0.73
-# 19:  0.125000  15 120     0.56 0.56 0.56 0.58 0.78
-# 20:  0.125000  30 240     0.56 0.56 0.56 0.58 0.78
-# 21:  0.125000  60 480     0.56 0.56 0.56 0.58 0.78
-# 22:  0.125000 120 960     0.56 0.56 0.56 0.58 0.78
-# 23:  0.062500  15 240     0.45 0.45 0.45 0.47 0.81
-# 24:  0.062500  30 480     0.45 0.45 0.45 0.47 0.81
-# 25:  0.062500  60 960     0.45 0.45 0.45 0.47 0.81
-# 26:  0.031250  15 480     0.32 0.31 0.32 0.35 0.81
-# 27:  0.031250  30 960     0.32 0.31 0.32 0.35 0.81
-# 28:  0.015625  15 960     0.22 0.20 0.21 0.25 0.82
-# 29:  2.000000  30  15     0.65 0.66 0.65 0.66 0.69
-# 30:  2.000000  60  30     0.65 0.66 0.65 0.66 0.69
-# 31:  2.000000 120  60     0.65 0.66 0.65 0.66 0.69
-# 32:  2.000000 240 120     0.65 0.66 0.65 0.66 0.69
-# 33:  2.000000 480 240     0.65 0.66 0.65 0.66 0.69
-# 34:  2.000000 960 480     0.65 0.66 0.65 0.66 0.69
-# 35:  4.000000  60  15     0.63 0.63 0.63 0.64 0.74
-# 36:  4.000000 120  30     0.63 0.63 0.63 0.64 0.74
-# 37:  4.000000 240  60     0.63 0.63 0.63 0.64 0.74
-# 38:  4.000000 480 120     0.63 0.63 0.63 0.64 0.74
-# 39:  4.000000 960 240     0.63 0.63 0.63 0.64 0.74
-# 40:  8.000000 120  15     0.56 0.57 0.57 0.57 0.79
-# 41:  8.000000 240  30     0.56 0.57 0.57 0.57 0.79
-# 42:  8.000000 480  60     0.56 0.57 0.57 0.57 0.79
-# 43:  8.000000 960 120     0.56 0.57 0.57 0.57 0.79
-# 44: 16.000000 240  15     0.45 0.47 0.46 0.47 0.82
-# 45: 16.000000 480  30     0.45 0.47 0.46 0.47 0.82
-# 46: 16.000000 960  60     0.45 0.47 0.46 0.47 0.82
-# 47: 32.000000 480  15     0.32 0.34 0.34 0.34 0.83
-# 48: 32.000000 960  30     0.32 0.34 0.34 0.34 0.83
-# 49: 64.000000 960  15     0.22 0.24 0.24 0.25 0.84
-# ratio  n1  n2 fz_nosim   fz  zou  gtv  slr
-dt_sA3_10k[(method=="spearman")&(dist=="normal"),list(fz_nosim = round(mean(fz_nosim),2),
-                                                     fz  = round(mean(fz),2),
-                                                     zou = round(mean(zou),2),
-                                                     gtv = round(mean(gtv),2),
-                                                     slr = round(mean(slr),2)),
-           ,by=list(ratio)]
-# ratio fz_nosim   fz  zou  gtv  slr
-# 1:  1.000000     0.65 0.65 0.65 0.66 0.67
-# 2:  0.500000     0.65 0.65 0.65 0.66 0.69
-# 3:  0.250000     0.63 0.62 0.62 0.63 0.73
-# 4:  0.125000     0.56 0.56 0.56 0.58 0.78
-# 5:  0.062500     0.45 0.44 0.44 0.47 0.80
-# 6:  0.031250     0.32 0.32 0.32 0.35 0.81
-# 7:  0.015625     0.22 0.21 0.21 0.25 0.83
-# 8:  2.000000     0.65 0.66 0.66 0.66 0.70
-# 9:  4.000000     0.63 0.63 0.63 0.64 0.75
-# 10:  8.000000     0.56 0.57 0.57 0.58 0.79
-# 11: 16.000000     0.45 0.47 0.47 0.47 0.82
-# 12: 32.000000     0.32 0.34 0.33 0.34 0.83
-# 13: 64.000000     0.22 0.24 0.24 0.25 0.85
-dt_sA3_10k[(method=="spearman")&(dist=="normal"),list(n1 = n1,
-                                                     n2 = n2,
-                                                     fz_nosim = round(mean(fz_nosim),2),
-                                                     fz  = round(mean(fz),2),
-                                                     zou = round(mean(zou),2),
-                                                     gtv = round(mean(gtv),2),
-                                                     slr = round(mean(slr),2)),
-           ,by=list(ratio)]
-# ratio  n1  n2 fz_nosim   fz  zou  gtv  slr
-# 1:  1.000000  15  15     0.65 0.65 0.65 0.66 0.67
-# 2:  1.000000  30  30     0.65 0.65 0.65 0.66 0.67
-# 3:  1.000000  60  60     0.65 0.65 0.65 0.66 0.67
-# 4:  1.000000 120 120     0.65 0.65 0.65 0.66 0.67
-# 5:  1.000000 240 240     0.65 0.65 0.65 0.66 0.67
-# 6:  1.000000 480 480     0.65 0.65 0.65 0.66 0.67
-# 7:  1.000000 960 960     0.65 0.65 0.65 0.66 0.67
-# 8:  0.500000  15  30     0.65 0.65 0.65 0.66 0.69
-# 9:  0.500000  30  60     0.65 0.65 0.65 0.66 0.69
-# 10:  0.500000  60 120     0.65 0.65 0.65 0.66 0.69
-# 11:  0.500000 120 240     0.65 0.65 0.65 0.66 0.69
-# 12:  0.500000 240 480     0.65 0.65 0.65 0.66 0.69
-# 13:  0.500000 480 960     0.65 0.65 0.65 0.66 0.69
-# 14:  0.250000  15  60     0.63 0.62 0.62 0.63 0.73
-# 15:  0.250000  30 120     0.63 0.62 0.62 0.63 0.73
-# 16:  0.250000  60 240     0.63 0.62 0.62 0.63 0.73
-# 17:  0.250000 120 480     0.63 0.62 0.62 0.63 0.73
-# 18:  0.250000 240 960     0.63 0.62 0.62 0.63 0.73
-# 19:  0.125000  15 120     0.56 0.56 0.56 0.58 0.78
-# 20:  0.125000  30 240     0.56 0.56 0.56 0.58 0.78
-# 21:  0.125000  60 480     0.56 0.56 0.56 0.58 0.78
-# 22:  0.125000 120 960     0.56 0.56 0.56 0.58 0.78
-# 23:  0.062500  15 240     0.45 0.44 0.44 0.47 0.80
-# 24:  0.062500  30 480     0.45 0.44 0.44 0.47 0.80
-# 25:  0.062500  60 960     0.45 0.44 0.44 0.47 0.80
-# 26:  0.031250  15 480     0.32 0.32 0.32 0.35 0.81
-# 27:  0.031250  30 960     0.32 0.32 0.32 0.35 0.81
-# 28:  0.015625  15 960     0.22 0.21 0.21 0.25 0.83
-# 29:  2.000000  30  15     0.65 0.66 0.66 0.66 0.70
-# 30:  2.000000  60  30     0.65 0.66 0.66 0.66 0.70
-# 31:  2.000000 120  60     0.65 0.66 0.66 0.66 0.70
-# 32:  2.000000 240 120     0.65 0.66 0.66 0.66 0.70
-# 33:  2.000000 480 240     0.65 0.66 0.66 0.66 0.70
-# 34:  2.000000 960 480     0.65 0.66 0.66 0.66 0.70
-# 35:  4.000000  60  15     0.63 0.63 0.63 0.64 0.75
-# 36:  4.000000 120  30     0.63 0.63 0.63 0.64 0.75
-# 37:  4.000000 240  60     0.63 0.63 0.63 0.64 0.75
-# 38:  4.000000 480 120     0.63 0.63 0.63 0.64 0.75
-# 39:  4.000000 960 240     0.63 0.63 0.63 0.64 0.75
-# 40:  8.000000 120  15     0.56 0.57 0.57 0.58 0.79
-# 41:  8.000000 240  30     0.56 0.57 0.57 0.58 0.79
-# 42:  8.000000 480  60     0.56 0.57 0.57 0.58 0.79
-# 43:  8.000000 960 120     0.56 0.57 0.57 0.58 0.79
-# 44: 16.000000 240  15     0.45 0.47 0.47 0.47 0.82
-# 45: 16.000000 480  30     0.45 0.47 0.47 0.47 0.82
-# 46: 16.000000 960  60     0.45 0.47 0.47 0.47 0.82
-# 47: 32.000000 480  15     0.32 0.34 0.33 0.34 0.83
-# 48: 32.000000 960  30     0.32 0.34 0.33 0.34 0.83
-# 49: 64.000000 960  15     0.22 0.24 0.24 0.25 0.85
+
+t_1k_ratio_margin <- dt_sA3[, list(n1 = NA,
+                                 n2 = NA,
+                                 fz_nosim = round(mean(fz_nosim),2),
+                                 fz  = round(mean(fz),2),
+                                 zou = round(mean(zou),2),
+                                 gtv = round(mean(gtvr),2),
+                                 slr = round(mean(slr),2)),
+                                 ,by=list(method,distname,ratio)]
+
+
+t_1k_ratio_n1n2 <- dt_sA3[,
+                               list(fz_nosim = round(mean(fz_nosim),2),
+                                    fz  = round(mean(fz),2),
+                                    zou = round(mean(zou),2),
+                                    gtv = round(mean(gtvr),2),
+                                    slr = round(mean(slr),2))
+                               ,by=list(method,distname,ratio, n1,n2)]
+
+t_1k_ratio_table <- rbind(t_1k_ratio_margin,t_1k_ratio_n1n2)[order(method,distname,ratio)]
+write.csv(t_1k_ratio_n1n2[order(method,distname,ratio)], "t_1k_ratio_table.csv")
+
+t_10k_ratio_n1n2 <- dt_sA3_10k[,
+                          list(fz_nosim = round(mean(fz_nosim),2),
+                               fz  = round(mean(fz),2),
+                               zou = round(mean(zou),2),
+                               gtv = round(mean(gtvr),2),
+                               slr = round(mean(slr),2))
+                          ,by=list(method,distname,ratio, n1,n2)]
+
+write.csv(t_10k_ratio_n1n2[order(method,distname,ratio)], "t_10k_ratio_table.csv")
+# t_1k_s_n_r_margin <- dt_sA3[(method=="spearman")&(dist=="normal"),
+#                                  list(n1 = NA,
+#                                       n2 = NA,
+#                                       fz_nosim = round(mean(fz_nosim),2),
+#                                       fz  = round(mean(fz),2),
+#                                       zou = round(mean(zou),2),
+#                                       gtv = round(mean(gtvr),2),
+#                                       slr = round(mean(slr),2)),
+#                                  ,by=list(ratio)]
+# 
+# t_1k_s_n_r_n1n2 <- dt_sA3[(method=="spearman")&(dist=="normal"),
+#                                list(fz_nosim = round(mean(fz_nosim),2),
+#                                     fz  = round(mean(fz),2),
+#                                     zou = round(mean(zou),2),
+#                                     gtv = round(mean(gtvr),2),
+#                                     slr = round(mean(slr),2))
+#                                ,by=list(ratio, n1,n2)]
+# t_1k_norm_ratio <- rbind(cbind(t_1k_p_n_r_n1n2, t_1k_p_n_r_n1n2),
+#                           cbind(t_1k_p_n_r_margin, t_1k_p_n_r_margin))[order(ratio)]
+
+# Evaluate marginal power estimates for rho of 0.2 and 0.5 using 1,000 and 10,000 simulations
+# dt_s3_10k.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
+# test   V1
+# 1: fz_nosim 0.56
+# 2:       fz 0.57
+# 3:      gtv 0.58
+# 4:      slr 0.74
+# 5:      zou 0.57
+# 
+# t_10k_p_n_r_margin <- dt_sA3_10k[(method=="pearson")&(dist=="normal"),
+#                                  list(n1 = NA,
+#                                       n2 = NA,
+#                                       fz_nosim = round(mean(fz_nosim),2),
+#                                       fz  = round(mean(fz),2),
+#                                       zou = round(mean(zou),2),
+#                                       gtv = round(mean(gtv),2),
+#                                       slr = round(mean(slr),2)),
+#            ,by=list(ratio)]
+# 
+# 
+# t_10k_p_n_r_n1n2 <- dt_sA3_10k[(method=="pearson")&(dist=="normal"),
+#                                list(fz_nosim = round(mean(fz_nosim),2),
+#                                     fz  = round(mean(fz),2),
+#                                     zou = round(mean(zou),2),
+#                                     gtv = round(mean(gtv),2),
+#                                     slr = round(mean(slr),2))
+#                                ,by=list(ratio, n1,n2)]
+# 
+# t_10k_s_n_r_margin <- dt_sA3_10k[(method=="spearman")&(dist=="normal"),
+#                                  list(n1 = NA,
+#                                       n2 = NA,
+#                                       fz_nosim = round(mean(fz_nosim),2),
+#                                       fz  = round(mean(fz),2),
+#                                       zou = round(mean(zou),2),
+#                                       gtv = round(mean(gtv),2),
+#                                       slr = round(mean(slr),2)),
+#                                  ,by=list(ratio)]
+# 
+# t_10k_s_n_r_n1n2 <- dt_sA3_10k[(method=="spearman")&(dist=="normal"),
+#                                list(fz_nosim = round(mean(fz_nosim),2),
+#                                     fz  = round(mean(fz),2),
+#                                     zou = round(mean(zou),2),
+#                                     gtv = round(mean(gtv),2),
+#                                     slr = round(mean(slr),2))
+#                                ,by=list(ratio, n1,n2)]
+# t_10k_norm_ratio <- rbind(cbind(t_10k_p_n_r_n1n2, t_10k_p_n_r_n1n2),
+#                           cbind(t_10k_p_n_r_margin, t_10k_p_n_r_margin))[order(ratio)]
 
 #  SO - marginal results using 100 simulations (ie. LIMITED VALIDITY IN THE BELOW; proof of concept)
 dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]

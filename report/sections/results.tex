@@ -4,7 +4,10 @@
 \setcounter{section}{0}
 \addcontentsline{toc}{chapter}{3. Results}
 
-Power estimates were calculated for a series of 530,670 parameter combination scenarios. Example draws from the three considered distributions of normal, mild skew, and extreme skew are displayed respectively in Figures \ref{fig:dist_norm}, \ref{fig:dist_gamma1} and \ref{fig:dist_gamma2}.
+Power estimates were calculated for a series of 530,670 parameter combination scenarios. 
+
+
+
 \\
 Mean power estimates by test were.... (note will point out in discussion why this metric is not useful)
 \\
@@ -199,3 +202,69 @@ Appendix plots - test specific contour plots (don't show in results)
 
 \tdn{Main results relate to images contained here.  These will be introduced and explained, and involve the key important comparisons vis impact on power and required sample size to achieve this: number of simulations (justifies 1000 simulation approach); choice of ratio; choice of test method; impact of non-normality; magnitude of correlations; etc.  I have put more old style contour plots in appendix, which may be referred to --- specific examples for GTV and SLR}
 
+
+\singlespacing
+\subsection{Scenario subset 1: How does sample size impact power estimates?}  
+    \item Approach:
+    \begin{itemize}
+      \item hold constant \code{(rho1==0.2)&(rho2==0.5)}
+      \item process and report results for 100, 1000 and 10,000 simulations
+    \end{itemize}
+    \item Power considerations for this scenario subset:
+      \begin{itemize}
+        \item number of simulations (validity)
+        \item use of test
+        \item use of Pearson or Spearman's correlation
+        \item use of Distribution 
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\subsection{Scenario subset 2: How does MZ:DZ ratio impact power estimates?}
+  \begin{itemize}
+    \item Approach:
+    \begin{itemize}
+      \item hold constant \code{n1 == 60 and n2 == 120}; ie. n = 180, MZ:DZ ratio 0.5:1
+      \item hold constant \code{n1 == 90 and n2 == 90}; ie. n = 180, MZ:DZ ratio 1:1
+      \item process and report results for 1000 simulations
+    \end{itemize}
+    \item Power considerations for this scenario subset:
+      \begin{itemize}
+        \item use of test
+        \item use of Pearson or Spearman's correlation
+        \item use of Distribution 
+        \item magnitude and difference of correlations
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\doublespacing
+
+
+
+
+Using results of scenarios based on 100, 1000 and 10,000 simulations each, power estimates for detection of a difference in correlations from MZ twins with $\rho$ 0.2 and DZ twins with $\rho$ of 0.5 across a range of sample sizes and MZ:DZ ratios of .5:1 and 1:1 were compared using each of 5 tests, across the three distributions and measured with Pearson and Spearman correlations.  
+  
+
+To evaluate the validity of using 1,000 instead of 10,000 simulations to estimate power, results from the same set of parameters giving rise to the above scenarios were considered in graphic form comparing each of 100, 1000 and 10,000 simulations.  
+
+Impact of magnitude of correlations on power to detect a difference in correlations is evaluated using fitted contour plots for each test, again by the three distribution types and two MZ:DZ ratios using sample size of 180, each evaluated using 1,000 simulations.  These 6 plots, evaluated across all correlation combinations for each test, are based on $ 6 \times 5 \times 361 = 10,830$ scenarios.
+
+The same six composite scenarios as the power plots are used to evaluate 
+
+
+ etc. I have put more old style contour plots in appendix,
+which may be referred to — specific examples for GTV and SLR
+
+
+results in format of images
+\\
+\\
+contour plot
+\\
+\\  
+interpolation using monotonic increasing spline function
+\\
+\\
+Required sample size to achieve 80% power
+\\
+\\  
+Difference to achieve 80% power

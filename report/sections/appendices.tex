@@ -46,9 +46,31 @@ The above is considered a more accurate approach to correlation in contexts such
 \label{ch:lit}
 \section{"twin pearson difference" - 15 May 2018}
 \markboth{Appendix \thesection}{}
-% \begin{landscape}
 \includepdf[landscape=true,scale=.9, pagecommand={\pagestyle{fancy}},pages=-]{sections/pubmed_result__twin_pearson_difference.pdf}
-% \end{landscape}
+
+
+\chapter{Simulation tables}
+\markboth{Appendix \thechapter}{}
+\label{ch:simtab}
+\section{Colour scale legend}
+\includepdf[scale=.3, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_colour_scales.pdf}
+\section{Power estimates by test, correlation method, distribution, MZ:DZ ratio and sample size holding rho = {0.2,0.5}, using 10,000 simulations per scenario}
+\markboth{Appendix \thesection}{}
+\label{ch:sim_est}
+% \includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_1k_normal.pdf}
+% \includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_1k_gamma1.pdf}
+% \includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_1k_gamma2.pdf}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_10k_normal.pdf}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_10k_gamma2.pdf}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_10k_gamma1.pdf}
+
+\section{Difference in power estimate using simulations (1,000 simulation estimates - 10,000 simulations estimates) by test, correlation method, distribution, MZ:DZ ratio and sample size holding at rho = {0.2,0.5}.  The 10,000 simulation results are reported in Appendix \ref{ch:sim_est}.  For conciseness, the corresponding results using 1,000 simulations have been omitted but can be gleaned from the following table, for the purposes of establishing validity of using 1,000 simulations.}
+\markboth{Appendix \thesection}{}
+\label{ch:sim_dif}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_diff_normal.pdf}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_diff_gamma1.pdf}
+\includepdf[scale=.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/sa3_diff_gamma2.pdf}
+
 
 \chapter{GTV test, varying ratio}
 \markboth{Appendix \thechapter}{}
@@ -124,9 +146,9 @@ The above is considered a more accurate approach to correlation in contexts such
 \end{figure} 
 
 % Code
-\chapter{R scripts}
-\markboth{Appendix \thechapter}{}
-\label{ch:aDo}
+% \chapter{R scripts}
+% \markboth{Appendix \thechapter}{}
+% \label{ch:aDo}
 % \section{Simulation}
 % \markboth{Appendix \thesection}{}
 % \includepdf[scale=0.75, pagecommand={\pagestyle{fancy}},pages=-]{sections/scripts/corr_power_CH.pdf}
