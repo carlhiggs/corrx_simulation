@@ -407,25 +407,6 @@ system.time(dt_sA1[, c( "fz_nosim","fz","gtv","slr","zou"):={
 # 48278.95   673.58 48780.27 
 
 
-# A1 - 10,000 simulations
-dt_sA1_10k <- dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
-system.time(dt_sA1_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2),
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1),
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2),
-                              param2b = c(p2,p2),
-                              test    = tests,
-                              alpha   = 0.05,
-                              sidedness=2,
-                              method=as.character(method),
-                              nsims = 10000,
-                              power_only = TRUE))
-},by = 1:nrow(dt_sA1_10k)] )
-
 # Scenario set A2 
 # n1 == 90 and n2 == 90
 # Note - this doesn't exist in the dt definition; will manually redefine n1 and n2
@@ -454,77 +435,298 @@ system.time(dt_sA2[, c( "fz_nosim","fz","gtv","slr","zou"):={
 # user   system  elapsed 
 # 48350.98   736.72 48922.11 
 
-# A2 10,000 simulations
-dt_sA2_10k <-  dt[(n1==60)&(n2==120),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
-dt_sA2_10k$n1 <- 90
-dt_sA2_10k$n2 <- 90
-system.time(dt_sA2_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2),
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1),
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2),
-                              param2b = c(p2,p2),
-                              test    = tests,
-                              alpha   = 0.05,
-                              sidedness=2,
-                              method=as.character(method),
-                              nsims = 10000,
-                              power_only = TRUE))
-},by = 1:nrow(dt_sA2_10k)] )
-
 
 ## How does sample size impact power estimates?
-# Scenario set B1
+# Scenario set 3
 # rho1 == 0.2 && rho2 == 0.5
 # nrow(dtk[(rho1==0.2)&(rho2==0.5),])
 # 294 rows
+## Calculated using 1,000 and 10,000 simulations
 
-# B 1,000 simulations
-dt_sA3 <-  dt[(rho1==0.2)&(rho2==0.5),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
+## Note --- instead of the above approach, Scenario 3 was calculate using parLapply and SQL
+# This is a more robust approach making better use of available computing power.
+# However, the tradeoff to achieve this is that the code is more involved.
+# This is worth it given the benefits 
+# --- if your computer crashes, you don't lose your work!
+# --  you can track progress interactively using the database utility program psql
+#
+# The below assumes you have installed PostgreSQL (I used version 9.6) and have set up
+# a config.yml file with connection details stored in same directory as scripts.
+# See config.yml.README.txt for a template.
 
-system.time(dt_sA3[, c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2),
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1),
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2),
-                              param2b = c(p2,p2),
-                              test    = tests,
-                              alpha   = 0.05,
-                              sidedness=2,
-                              method=as.character(method),
-                              nsims = 1000,
-                              power_only = TRUE))
-},by = 1:nrow(dt_sA3)] )
-# at work
-# user  system elapsed 
-# 6834.87   92.21 6921.39 
+## 1000 simulations run for Scenario 3 only
+# open Postgres database (db) connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+nsims <- 1000
+SCENARIO_SET <- "corrx_1k_sa3"
+if(dbExistsTable(pg.RPostgres, SCENARIO_SET)==FALSE){
+  
+  # Create table to hold results
+  create_table <- paste0("CREATE TABLE ",SCENARIO_SET," (
+                         simx         integer PRIMARY KEY,
+                         method       varchar(8),
+                         dist         varchar(8),
+                         p1           numeric,
+                         p2           numeric,
+                         n1           integer,
+                         n2           integer,
+                         rho1         double precision,
+                         rho2         double precision,
+                         fz_nosim     double precision,
+                         fz           double precision,
+                         gtvr         double precision,
+                         slr          double precision,
+                         zou          double precision);")
+  res <- dbSendQuery(pg.RPostgres, create_table)
+  
+  # Clean up and close database connection
+  dbClearResult(res)
+}
+check_query <- paste("SELECT simx FROM",SCENARIO_SET)
+res <- dbSendQuery(pg.RPostgres, check_query)
+scenario_set_id_exists <- dbFetch(res)
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
 
-# B 10,000 simulations
-dt_sA3_10k <-  dt[(rho1==0.2)&(rho2==0.5),c("method","dist","p1","p2","n1","n2","rho1","rho2")]
-system.time(dt_sA3_10k[, c( "fz_nosim","fz","gtv","slr","zou"):={
-  cat("\r",.GRP,"\r")
-  as.list(corr_power_compiled(rho = c(rho1,rho2),
-                              n = c(n1,n2),
-                              distr = dist,
-                              param1a = c(p1,p1),
-                              param1b = c(p1,p1),
-                              param2a = c(p2,p2),
-                              param2b = c(p2,p2),
-                              test    = tests,
-                              alpha   = 0.05,
-                              sidedness=2,
-                              method=as.character(method),
-                              nsims = 10000,
-                              power_only = TRUE))
-},by = 1:nrow(dt_sA3_10k)] )
+# Prepare for parallel processing using all available cores
+cores <- detectCores(logical = FALSE)
+cl <- makeCluster(cores)
+# Export required functions and data to cluster workers
+dt_sa3 <- dt[(rho1==0.2)&(rho2==0.5),]
+clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
+                     'corr_diff_test',
+                     'corr_power_compiled', 
+                     'dt_sa3','scenario_set_id_exists',
+                     'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
 
-# retrieve results processed and saved using work computer into home computer .Rdata environment
+# Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
+system.time(
+  parLapply(cl, 1:nrow(dt_sa3), function(x) { 
+    # run simulation for single row if id not in list
+    if(!x %in% unlist(scenario_set_id_exists)) {
+      return <-  with(dt_sa3, c(id = x, 
+                                method = as.character(method[x]),
+                                dist   = dist[x],
+                                p1     = p1[x],
+                                p2     = p2[x],
+                                n1     = n1[x],
+                                n2     = n2[x],
+                                rho1   = rho1[x],
+                                rho2   = rho2[x],
+                                corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                                                    n = c(n1[x],n2[x]),
+                                                    distr = dist,
+                                                    param1a = c(p1[x],p1[x]),
+                                                    param1b = c(p1[x],p1[x]),
+                                                    param2a = c(p2[x],p2[x]),
+                                                    param2b = c(p2[x],p2[x]),
+                                                    test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                                                    alpha   = 0.05,
+                                                    sidedness=2,
+                                                    method=as.character(method[x]),
+                                                    nsims = nsims,
+                                                    power_only = TRUE))) 
+      
+      # open Postgres connection
+      pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                                dbname   = config::get("sql")$connection$dbname,
+                                host     = config::get("sql")$connection$host,
+                                port     = config::get("sql")$connection$port,
+                                user     = config::get("sql")$connection$user,
+                                password = config::get("sql")$connection$password)
+      insert_query <- paste("INSERT INTO",SCENARIO_SET,"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)")
+      # insert simulation result to as database row 
+      res <- dbSendQuery(pg.RPostgres, 
+                         insert_query, 
+                         params=list(as.integer(return["id"]), 
+                                     as.character(return["method"]),
+                                     as.character(return["dist"]),
+                                     as.numeric(return["p1"]),
+                                     as.numeric(return["p2"]),
+                                     as.integer(return["n1"]),
+                                     as.integer(return["n2"]),
+                                     as.numeric(return["rho1"]),
+                                     as.numeric(return["rho2"]),
+                                     as.numeric(return["fz_nosim"]),
+                                     as.numeric(return["fz"]),
+                                     as.numeric(return["gtvr"]),
+                                     as.numeric(return["slr"]),
+                                     as.numeric(return["zou"])
+                         ))
+      # clean up and release connection
+      dbClearResult(res)
+      dbDisconnect(pg.RPostgres)
+    }
+  }))
+
+# Conclude parallel processing and free cores
+stopCluster(cl)
+
+
+## 10,000 simulations run for Scenario 3 only
+# open Postgres database (db) connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+nsims <- 10000
+SCENARIO_SET <- "corrx_10k_sa3"
+if(dbExistsTable(pg.RPostgres, SCENARIO_SET)==FALSE){
+  
+  # Create table to hold results
+  create_table <- paste0("CREATE TABLE ",SCENARIO_SET," (
+                         simx         integer PRIMARY KEY,
+                         method       varchar(8),
+                         dist         varchar(8),
+                         p1           numeric,
+                         p2           numeric,
+                         n1           integer,
+                         n2           integer,
+                         rho1         double precision,
+                         rho2         double precision,
+                         fz_nosim     double precision,
+                         fz           double precision,
+                         gtvr         double precision,
+                         slr          double precision,
+                         zou          double precision);")
+  res <- dbSendQuery(pg.RPostgres, create_table)
+  
+  # Clean up and close database connection
+  dbClearResult(res)
+}
+check_query <- paste("SELECT simx FROM",SCENARIO_SET)
+res <- dbSendQuery(pg.RPostgres, check_query)
+scenario_set_id_exists <- dbFetch(res)
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+
+# Prepare for parallel processing using all available cores
+cores <- detectCores(logical = FALSE)
+cl <- makeCluster(cores)
+# Export required functions and data to cluster workers
+dt_sa3 <- dt[(rho1==0.2)&(rho2==0.5),]
+clusterExport(cl, c( "fz_nosim","fz_compiled","gtv_compiled","slr_compiled","zou_compiled",
+                     'corr_diff_test',
+                     'corr_power_compiled', 
+                     'dt_sa3','scenario_set_id_exists',
+                     'dbConnect','dbSendQuery','dbClearResult','dbDisconnect'))
+
+# Execute parallelised task (per row of combination list, execute power query and insert idx, params and results in db)
+system.time(
+  parLapply(cl, 1:nrow(dt_sa3), function(x) { 
+    # run simulation for single row if id not in list
+    if(!x %in% unlist(scenario_set_id_exists)) {
+      return <-  with(dt_sa3, c(id = x, 
+                                method = as.character(method[x]),
+                                dist   = dist[x],
+                                p1     = p1[x],
+                                p2     = p2[x],
+                                n1     = n1[x],
+                                n2     = n2[x],
+                                rho1   = rho1[x],
+                                rho2   = rho2[x],
+                                corr_power_compiled(rho = c(rho1[x],rho2[x]),
+                                                    n = c(n1[x],n2[x]),
+                                                    distr = dist,
+                                                    param1a = c(p1[x],p1[x]),
+                                                    param1b = c(p1[x],p1[x]),
+                                                    param2a = c(p2[x],p2[x]),
+                                                    param2b = c(p2[x],p2[x]),
+                                                    test    =  c( "fz_nosim","fz","gtvr","slr","zou"),
+                                                    alpha   = 0.05,
+                                                    sidedness=2,
+                                                    method=as.character(method[x]),
+                                                    nsims = nsims,
+                                                    power_only = TRUE))) 
+      
+      # open Postgres connection
+      pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                                dbname   = config::get("sql")$connection$dbname,
+                                host     = config::get("sql")$connection$host,
+                                port     = config::get("sql")$connection$port,
+                                user     = config::get("sql")$connection$user,
+                                password = config::get("sql")$connection$password)
+      insert_query <- paste("INSERT INTO",SCENARIO_SET,"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)")
+      # insert simulation result to as database row 
+      res <- dbSendQuery(pg.RPostgres, 
+                         insert_query, 
+                         params=list(as.integer(return["id"]), 
+                                     as.character(return["method"]),
+                                     as.character(return["dist"]),
+                                     as.numeric(return["p1"]),
+                                     as.numeric(return["p2"]),
+                                     as.integer(return["n1"]),
+                                     as.integer(return["n2"]),
+                                     as.numeric(return["rho1"]),
+                                     as.numeric(return["rho2"]),
+                                     as.numeric(return["fz_nosim"]),
+                                     as.numeric(return["fz"]),
+                                     as.numeric(return["gtvr"]),
+                                     as.numeric(return["slr"]),
+                                     as.numeric(return["zou"])
+                         ))
+      # clean up and release connection
+      dbClearResult(res)
+      dbDisconnect(pg.RPostgres)
+    }
+  }))
+
+# Conclude parallel processing and free cores
+stopCluster(cl)
+
+## Get processed data from PostgreSQL back into R
+## Scenario A3 1000 Simulations - 
+# Open Postgres connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+# Fetch results
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_1k_sa3")
+corrx_1k_sa3 <- data.table(dbFetch(res))[order(simx)]
+
+# clean up and close connection
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+
+# add in extra summary vars
+corrx_1k_sa3[,("ratio"):=n1/n2,by=1:nrow(corrx_1k_sa3)]
+corrx_1k_sa3[,("n"):=n1+n2,by=1:nrow(corrx_1k_sa3)]
+corrx_1k_sa3[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_1k_sa3)]
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_1k_sa3_20180610.RData")
+
+## Scenario A3 10,000 Simulations 
+# Open Postgres connection
+pg.RPostgres <- dbConnect(RPostgres::Postgres(), 
+                          dbname   = config::get("sql")$connection$dbname,
+                          host     = config::get("sql")$connection$host,
+                          port     = config::get("sql")$connection$port,
+                          user     = config::get("sql")$connection$user,
+                          password = config::get("sql")$connection$password)
+# Fetch results
+res <- dbSendQuery(pg.RPostgres, "SELECT * FROM corrx_10k_sa3")
+corrx_10k_sa3 <- data.table(dbFetch(res))[order(simx)]
+
+# clean up and close connection
+dbClearResult(res)
+dbDisconnect(pg.RPostgres)
+corrx_10k_sa3[,("ratio"):=n1/n2,by=1:nrow(corrx_10k_sa3)]
+corrx_10k_sa3[,("n"):=n1+n2,by=1:nrow(corrx_10k_sa3)]
+corrx_10k_sa3[,("diff"):=abs(rho1-rho2),by=1:nrow(corrx_10k_sa3)]
+save.image("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts/r_power_work_dt_10k_sa3_20180610.RData")
+
+
+# retrieve results processed and saved using work computer 
+# into home computer .Rdata environment from shared cloud storage
 
 tmp.env <- new.env() # create a temporary environment
 load("r_power_work_dt_sA1_20180527.RData", envir=tmp.env) # load workspace into temporary environment
@@ -572,7 +774,6 @@ dt_s3.long <- melt(dt_sA3, measure.vars = c( "fz_nosim","fz","gtvr","slr","zou")
 # 10000 sims
 dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars =  c( "fz_nosim","fz","gtvr","slr","zou"), variable.name = "test", value.name = "power")
 
-# overall average power - NOTE - the below are only for the 100 simulation run
 ## Intent was to produce full sets using 1,000 simulation; as noted in part above two issues occured
 # 1. a syntactical error rendered processed results not being retained (described above, full code not shown)
 # 2. when reprocessing using an alternate parallelised approach (not shown in this script), 
@@ -584,6 +785,10 @@ dt_s3_10k.long <- melt(dt_sA3_10k, measure.vars =  c( "fz_nosim","fz","gtvr","sl
 ########    Solution 1. progress can be checked to ensure results are processing as intended
 ########    Solution 2. if a power outage occurs, or some crash occurs, results are not lost
 
+# See file corr_power_plots.R for code to produce included plots
+#  (including spline interpolation and associated sample size estimation (X given Y), etc
+
+# SUMMARY RESULTS AND OUTPUT TO CSV FOR TABULATION
 # Evaluate marginal power estimates for rho of 0.2 and 0.5 using 1,000 and 10,000 simulations
 ## 1000 simulations
 dt_s3.long[rho1==0.2,][,round(mean(power),2),by=list(test)]
@@ -620,75 +825,9 @@ t_10k_ratio_n1n2 <- dt_sA3_10k[,
                           ,by=list(method,distname,ratio, n1,n2)]
 
 write.csv(t_10k_ratio_n1n2[order(method,distname,ratio)], "t_10k_ratio_table.csv")
-# t_1k_s_n_r_margin <- dt_sA3[(method=="spearman")&(dist=="normal"),
-#                                  list(n1 = NA,
-#                                       n2 = NA,
-#                                       fz_nosim = round(mean(fz_nosim),2),
-#                                       fz  = round(mean(fz),2),
-#                                       zou = round(mean(zou),2),
-#                                       gtv = round(mean(gtvr),2),
-#                                       slr = round(mean(slr),2)),
-#                                  ,by=list(ratio)]
-# 
-# t_1k_s_n_r_n1n2 <- dt_sA3[(method=="spearman")&(dist=="normal"),
-#                                list(fz_nosim = round(mean(fz_nosim),2),
-#                                     fz  = round(mean(fz),2),
-#                                     zou = round(mean(zou),2),
-#                                     gtv = round(mean(gtvr),2),
-#                                     slr = round(mean(slr),2))
-#                                ,by=list(ratio, n1,n2)]
-# t_1k_norm_ratio <- rbind(cbind(t_1k_p_n_r_n1n2, t_1k_p_n_r_n1n2),
-#                           cbind(t_1k_p_n_r_margin, t_1k_p_n_r_margin))[order(ratio)]
 
-# Evaluate marginal power estimates for rho of 0.2 and 0.5 using 1,000 and 10,000 simulations
-# dt_s3_10k.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
-# test   V1
-# 1: fz_nosim 0.56
-# 2:       fz 0.57
-# 3:      gtv 0.58
-# 4:      slr 0.74
-# 5:      zou 0.57
-# 
-# t_10k_p_n_r_margin <- dt_sA3_10k[(method=="pearson")&(dist=="normal"),
-#                                  list(n1 = NA,
-#                                       n2 = NA,
-#                                       fz_nosim = round(mean(fz_nosim),2),
-#                                       fz  = round(mean(fz),2),
-#                                       zou = round(mean(zou),2),
-#                                       gtv = round(mean(gtv),2),
-#                                       slr = round(mean(slr),2)),
-#            ,by=list(ratio)]
-# 
-# 
-# t_10k_p_n_r_n1n2 <- dt_sA3_10k[(method=="pearson")&(dist=="normal"),
-#                                list(fz_nosim = round(mean(fz_nosim),2),
-#                                     fz  = round(mean(fz),2),
-#                                     zou = round(mean(zou),2),
-#                                     gtv = round(mean(gtv),2),
-#                                     slr = round(mean(slr),2))
-#                                ,by=list(ratio, n1,n2)]
-# 
-# t_10k_s_n_r_margin <- dt_sA3_10k[(method=="spearman")&(dist=="normal"),
-#                                  list(n1 = NA,
-#                                       n2 = NA,
-#                                       fz_nosim = round(mean(fz_nosim),2),
-#                                       fz  = round(mean(fz),2),
-#                                       zou = round(mean(zou),2),
-#                                       gtv = round(mean(gtv),2),
-#                                       slr = round(mean(slr),2)),
-#                                  ,by=list(ratio)]
-# 
-# t_10k_s_n_r_n1n2 <- dt_sA3_10k[(method=="spearman")&(dist=="normal"),
-#                                list(fz_nosim = round(mean(fz_nosim),2),
-#                                     fz  = round(mean(fz),2),
-#                                     zou = round(mean(zou),2),
-#                                     gtv = round(mean(gtv),2),
-#                                     slr = round(mean(slr),2))
-#                                ,by=list(ratio, n1,n2)]
-# t_10k_norm_ratio <- rbind(cbind(t_10k_p_n_r_n1n2, t_10k_p_n_r_n1n2),
-#                           cbind(t_10k_p_n_r_margin, t_10k_p_n_r_margin))[order(ratio)]
 
-#  SO - marginal results using 100 simulations (ie. LIMITED VALIDITY IN THE BELOW; proof of concept)
+#  Marginal results using 100 simulations (ie. LIMITED VALIDITY IN THE BELOW; proof of concept)
 dt.long[(method=="pearson")&(dist=="normal"),round(mean(power),2),by=test]
 #        test   V1
 # 1: fz_nosim 0.74
