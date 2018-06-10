@@ -555,6 +555,8 @@ system.time(
 
 # Full process (parallel with sql) was started
 # on work computer at about 10:01 on Thurs 6 June 2011
+# 09:48 10 June 2018 Timing stopped at: 111.5 1656 2.142e+05
+#  Issues with computer battery and need to restart.
 
 # Conclude parallel processing and free cores
 stopCluster(cl)
