@@ -17,22 +17,33 @@
 # To develop
 #    - accounting for clustering (ie. icc in twin studies)
 
+# may have to set working directory
+setwd("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts")
+
+# import required libraries (installing them, if necessary)
 # install.packages("Rcpp")
 # install.packages("simstudy")
 # install.packages("ggplot2")
 # install.packages("data.table")
-# install.packages('RPostgres')
 
-# may have to set working directory
-setwd("C:/Users/Carl/OneDrive/Research/2 - BCA/Research project/bca_rp2/scripts")
 require("simstudy") # simstudy is used to generate bivariate data
 require(compiler)   # for byte code compilation
 require(Rcpp)       # for alternate compilation approach, using C++
 sourceCpp('test.cpp') # a C++ script, with more efficient number generators
 require(data.table) # Results are stored using data.table
+
+# Note that some later processing of results ("Scenario 3") used a combination of parallel processing and SQL
+# This is an optional approach, but is recommended if your system has multiple processors.
+# The code assumes you have 
+#   - installed and set up PostgreSQL (the present analysis used version 9.6)
+#   - create a database to store tables of results
+#       - using psql you can run a query such as: "CREATE DATABASE corrx_twins;" 
+#   - set up a config.yml containing connection details for sql database (see config.yml.README.txt for template)
+#   - installed the 'RPostgres' package, which is used to interface R and PostgreSQL
+# install.packages('RPostgres')
 require(parallel) # For parallel processing
-require(DBI)  # used to connext to Postgresql using RPostgres
-require(config) # used to access config.yml file with Postgres connection parameters
+require(DBI)      # used to connext to Postgresql using RPostgres
+require(config)   # used to access config.yml file with Postgres connection parameters
 
 # to deploy R power app (code elsewhere
 
