@@ -31,12 +31,15 @@ In this chapter we first define key genetic concepts, how these are exploited by
  
 \section{The classic twin study and power}
 Identical twins (\mz, MZ) arise from the same zygote, or fertilised egg, and are genetically very similar.  Non-identical twins (\dz, DZ) arise from fertilisation of two seperate eggs, and are as genetically alike as ordinary siblings.  The comparison of phenotypic traits within identical and non-identical twin pair samples allows for partitioning the variance in traits into that attributable to  shared environment, individual environment or to genetics  \cite{Teare2011}.  Known as the classic twin study, this approach can help us to better understand the mechanics of health and disease processes so that we can develop intervention measures which appropriately target the hypothesised causal mechanisms.
-% \\
-% \\
-\tdn{Falconer,  heritability and difference in MZ and DZ; Paraphrase Visscher re heritability and the various sense of this}
-% \cite{Visscher2008b}
+\\
+\\
 % In the context of genetics and kinship, Douglas Falconer outlined methods of using comparison of identical and non-identical twins for estimating heritability, and noted some of the assumptions that this involves \cite{Falconer1960}.
-
+Falconer defined heritability $h^2$ as the ratio of additive genetic variance to phenotypic variance, providing a formula for its estimation through contrast of phenotypic trait correlations $r$ in samples of identical and non-identical twin pairs \cite{Falconer1960}:
+$$\hat{h}^2 = r_{\text{MZ}} - r_{\text{DZ}}$$
+As evidenced in a recent meta-analysis of heritability estimates arising from twin studies \cite{Polderman2015}, researchers have employed various approaches to correlation when using this formula, including the Pearson's and intra-class correlations, summarised below and in Appendix \ref{ch:alt}.  
+\\
+\\
+A distinction is made between 'narrow sense' and 'broad sense' heritability \cite{Visscher2008b}.  Narrow sense heritability, with which we are concerned, relates to the proportion of additive genetic variance which explains variation in a phenotype (as per Falconer's definition, above).  Broad sense heritability takes dominant and epistatic genetic effects into consideration in addition to additive genetic effects, and is beyond the scope of the present report.
 \\
 \\
 Contemporary twin studies use mixed effects and structural equation modelling to evaluate differences in variance components for a particular trait between mono and dizygotic twins accounting for differential within pair similarities related to zygosity \cite{Neale1992,Carlin2005}.  Michael Neale and colleagues developed methods and software to facilitate the analysis of variance components in twin studies using structural equation modelling \cite{Neale1992}.  Brad Verhulst, building on the work of Peter Visscher, developed functions for power analyses in this variance component modelling context, for example detecting a difference in genetic correlations \cite{Verhulst2017,Visscher2004,Visscher2008a}. 
@@ -72,8 +75,8 @@ The population correlation $\rho$ (rho) is the covariance $\Cov(x_1,x_2) =  \ope
 $$r = \frac{\sum_{i=1}^n (x_{1_i} - \bar{x}_1)(x_{2_i} - \bar{x}_2)}{\sqrt{\sum_{i=1}^n (x_{1_i} - \bar{x}_1)^2 \sum_{i=1}^n (x_{2_i} - \bar{x}_2)^2}}$$
 \\
 \\
-If the variables $\boldsymbol{x}$ are standardised using their respective sample means ${\bar{x}} = \frac{1}{n}\sum_{i=1}x_i$ and standard deviations $s = \frac{1}{\sqrt{n-1}}$ where $n$ is the sample size, as $u$
-$$u = \frac{1}{\sqrt{n-1}}(x_i - \bar{u}),$$
+If the variables $\boldsymbol{x}$ are standardised using their respective sample means ${\bar{x}} = \frac{1}{n}\sum_{i=1}^n x_i$ and standard deviations $s = \sqrt{\frac{\sum_{i=1}^n(x_i - \bar{x})^2}{n-1}}$ where $n$ is the sample size, as $u$
+$$u = \frac{\bar{x}}{s}$$
 then the standardised regression coefficient $b_1$ arising from the simple linear regression of $u_1 = b_0 + b_1 u_2$ is equal to the Pearson correlation \cite{Tu2012}.  
 
 \subsection{Spearman rank correlation}
